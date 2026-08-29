@@ -53,4 +53,8 @@ describe('formatMessage', () => {
 	test('치환 자리가 없는 문구는 그대로 반환한다', () => {
 		expect(formatMessage('EXT_EMPTY')).toBe('확장자를 입력해 주세요.');
 	});
+
+	test('치환 값이 빠지면 자리표시자를 그대로 남긴다(문구를 깨뜨리지 않음)', () => {
+		expect(formatMessage('BLOCKED_EXTENSION')).toBe('차단된 확장자예요: {matched}');
+	});
 });

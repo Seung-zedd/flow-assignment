@@ -15,6 +15,24 @@ function textBytes(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
 }
 
+// 최소 유효 리틀엔디언 TIFF — file-type은 서명 4바이트만으로는 판별하지 않고 첫 IFD까지
+// 읽으므로 엔트리 1개짜리 IFD를 실제로 구성한다.
+function tiffBytes(): Uint8Array {
+	const buf = new Uint8Array(64);
+	const view = new DataView(buf.buffer);
+	buf[0] = 0x49; // 'I'
+	buf[1] = 0x49; // 'I' — 리틀엔디언 바이트 순서
+	view.setUint16(2, 42, true); // 매직 0x002A
+	view.setUint32(4, 8, true); // 첫 IFD 오프셋
+	view.setUint16(8, 1, true); // IFD 엔트리 수 = 1
+	view.setUint16(10, 256, true); // 태그 0x0100 (ImageWidth)
+	view.setUint16(12, 3, true); // 값 타입 SHORT
+	view.setUint32(14, 1, true); // 값 개수
+	view.setUint32(18, 16, true); // 값
+	view.setUint32(22, 0, true); // 다음 IFD 없음
+	return buf;
+}
+
 describe('sniffSignature', () => {
 	test('PE 실행 파일(MZ 헤더) → exe', async () => {
 		const peBytes = padded([0x4d, 0x5a]);
@@ -84,6 +102,29 @@ describe('sniffSignature', () => {
 		const scriptDoc = textBytes('<script>alert(1)</script>');
 		const result = await sniffSignature(scriptDoc);
 		expect(result.detectedExt).toBe('html');
+	});
+
+	test('UTF-8 BOM · 선행 공백 · 대문자 태그가 섞여도 텍스트 prefix를 인식한다', async () => {
+		// BOM(EF BB BF) + 개행/공백 + 대문자 `<?PHP` — 세 가지 관용을 한 번에 확인한다.
+		const bom = [0xef, 0xbb, 0xbf];
+		const withBom = new Uint8Array([...bom, ...textBytes('\n  <?PHP echo 1;')]);
+		const result = await sniffSignature(withBom);
+		expect(result.detectedExt).toBe('php');
+		expect(result.detectedMime).toBe('application/x-httpd-php');
+	});
+
+	test('실제 TIFF 시그니처 → tif (별칭 tiff가 대표형 tif로 접힘, 오거부 회귀 방지)', async () => {
+		const result = await sniffSignature(tiffBytes());
+		expect(result.detectedExt).toBe('tif');
+		expect(result.detectedMime).toBe('image/tiff');
+		expect(result.source).toBe('file-type');
+	});
+
+	test('시그니처보다 짧은 버퍼(1바이트)도 예외 없이 판별 불가(none)로 떨어진다', async () => {
+		// MZ 헤더의 앞 1바이트만 — 이진 prefix 비교의 길이-부족 조기 반환 경로.
+		const result = await sniffSignature(bytes(0x4d));
+		expect(result.source).toBe('none');
+		expect(result.detectedExt).toBeUndefined();
 	});
 
 	test('평범한 순수 텍스트 → 판별 불가(none)', async () => {

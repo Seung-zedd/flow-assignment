@@ -1,0 +1,15 @@
+# 저장소 전체를 LF로 고정한다. Windows의 core.autocrlf=true가 체크아웃 시 CRLF를 넣으면
+# Prettier(endOfLine 기본값 lf)가 모든 파일을 포맷 위반으로 보고해 `pnpm lint`가 깨진다.
+* text=auto eol=lf
+
+# 바이너리는 변환 대상에서 제외한다.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# SVG는 텍스트지만 명시해 둔다.
+*.svg text

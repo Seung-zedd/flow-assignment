@@ -27,6 +27,23 @@ export async function loadMigrations(): Promise<Migration[]> {
 	);
 }
 
+// 마이그레이션 목록을 파일명 정렬 순서대로 하나씩 적용한다. 실행 방식(Neon은 세미콜론
+// 분리 후 단일 문장, PGlite는 다중 문장 exec)만 주입받으므로 "무엇을 어떤 순서로
+// 적용하는가"라는 계약은 Neon 스크립트와 PGlite 통합 테스트가 같은 코드를 공유한다.
+// 적용된 파일명을 순서대로 돌려준다.
+export async function applyMigrations(
+	apply: (migration: Migration) => Promise<void>,
+	migrations?: readonly Migration[]
+): Promise<string[]> {
+	const pending = migrations ?? (await loadMigrations());
+	const applied: string[] = [];
+	for (const migration of pending) {
+		await apply(migration);
+		applied.push(migration.filename);
+	}
+	return applied;
+}
+
 // Neon HTTP 드라이버는 단일 문장 파라미터화 쿼리를 기본 형태로 삼는다. 마이그레이션
 // 파일은 우리가 직접 작성한 정적 DDL이라(문자열 리터럴에 세미콜론이 없다) 세미콜론
 // 기준 분리가 안전하다.
@@ -40,7 +57,9 @@ function splitStatements(sqlText: string): string[] {
 async function main(): Promise<void> {
 	const databaseUrl = process.env.DATABASE_URL;
 	if (!databaseUrl) {
-		throw new Error('DATABASE_URL is not set');
+		throw new Error(
+			'DATABASE_URL is not set. Export the Neon connection string before running `pnpm db:migrate`.'
+		);
 	}
 	const sql = neon(databaseUrl);
 
@@ -51,19 +70,21 @@ async function main(): Promise<void> {
 		)
 	`;
 
-	const applied = await sql`SELECT filename FROM _migration`;
-	const appliedNames = new Set(applied.map((row) => row.filename as string));
+	const alreadyApplied = await sql`SELECT filename FROM _migration`;
+	const appliedNames = new Set(alreadyApplied.map((row) => row.filename as string));
+	const pending = (await loadMigrations()).filter(
+		(migration) => !appliedNames.has(migration.filename)
+	);
 
-	for (const migration of await loadMigrations()) {
-		if (appliedNames.has(migration.filename)) {
-			continue;
-		}
+	// 기록(_migration INSERT)은 각 마이그레이션 직후에 남긴다 — 중간에 실패해도 앞선
+	// 마이그레이션은 적용 완료로 남아 재실행 시 건너뛴다.
+	await applyMigrations(async (migration) => {
 		for (const statement of splitStatements(migration.sql)) {
 			await sql.query(statement);
 		}
 		await sql`INSERT INTO _migration (filename) VALUES (${migration.filename})`;
 		console.log(`applied ${migration.filename}`);
-	}
+	}, pending);
 }
 
 const isDirectRun =

@@ -1,9 +1,11 @@
 import { MAX_UPLOAD_BYTES } from '$lib/constants';
+import type { DetectedType } from './signature';
 
 export interface DecideUploadInput {
-	segments: string[];
+	segments: readonly string[];
 	blockedSet: ReadonlySet<string>;
-	detected: { detectedExt?: string; detectedMime?: string };
+	// sniffSignature()가 돌려주는 것과 같은 모양을 재사용한다(signature.ts가 단일 원본).
+	detected: DetectedType;
 	sizeBytes: number;
 }
 

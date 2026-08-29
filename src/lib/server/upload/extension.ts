@@ -3,7 +3,7 @@ import { MAX_EXTENSION_LENGTH, MAX_FILENAME_BYTES } from '$lib/constants';
 // @MX:ANCHOR: [AUTO] 별칭 표의 단일 원본 — 업로드 판정(확장자 후보·시그니처 판별)과
 // 정책 저장 경로가 모두 이 표 하나만 참조한다.
 // @MX:REASON: 표가 갈라지면 한쪽만 고쳐지는 순간 오탐이 조용히 돌아온다(plan.md §3.3).
-export const EXTENSION_ALIASES: Record<string, string> = {
+export const EXTENSION_ALIASES: Readonly<Record<string, string>> = {
 	jpeg: 'jpg',
 	tiff: 'tif',
 	htm: 'html',

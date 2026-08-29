@@ -2,9 +2,15 @@ import { fileTypeFromBuffer } from 'file-type';
 import { SNIFF_BYTES } from '$lib/constants';
 import { canonicalizeExtension } from './extension';
 
-export interface SignatureResult {
+// 정책 대조에 넘어가는 탐지 결과의 모양. decideUpload의 `detected` 입력과 같은 타입을
+// 여기 한 곳에서 정의한다 — 두 곳에 같은 필드를 적어 두면 한쪽만 바뀌어도 컴파일러가
+// 알려주지 않는다.
+export interface DetectedType {
 	detectedExt?: string;
 	detectedMime?: string;
+}
+
+export interface SignatureResult extends DetectedType {
 	source: 'file-type' | 'prefix' | 'none';
 }
 
@@ -42,7 +48,7 @@ interface PrefixMapping {
 // 명시적 prefix 스니핑(plan.md §3 단계 8): file-type이 원리적으로 못 잡는
 // 텍스트 실행 파일·마크업을 직접 본다. 각 prefix는 합성 탐지 확장자로 매핑되고
 // 그 값은 file-type 탐지 결과와 완전히 같은 정책 대조를 통과한다.
-const PREFIX_MAPPINGS: PrefixMapping[] = [
+const PREFIX_MAPPINGS: readonly PrefixMapping[] = [
 	{ match: (b) => startsWithBinary(b, [0x4d, 0x5a]), ext: 'exe', mime: 'application/x-msdownload' },
 	{
 		match: (b) => startsWithBinary(b, [0x7f, 0x45, 0x4c, 0x46]),

@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
-import { loadMigrations } from '../../../../scripts/migrate';
+import { applyMigrations } from '../../../../scripts/migrate';
 
 let db: PGlite;
 
 beforeAll(async () => {
 	db = new PGlite();
-	const migrations = await loadMigrations();
-	for (const migration of migrations) {
+	// scripts/migrate.ts와 같은 목록·순서 계약을 공유한다 — PGlite는 다중 문장 exec을 쓴다.
+	await applyMigrations(async (migration) => {
 		await db.exec(migration.sql);
-	}
+	});
 });
 
 afterAll(async () => {

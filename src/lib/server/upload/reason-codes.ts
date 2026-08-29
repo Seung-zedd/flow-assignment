@@ -24,7 +24,7 @@ interface NoticeCodeEntry {
 	message: string;
 }
 
-export const REASON_CODES: Record<ReasonCode, ReasonCodeEntry> = {
+export const REASON_CODES: Readonly<Record<ReasonCode, ReasonCodeEntry>> = {
 	EXT_EMPTY: { http: 400, message: '확장자를 입력해 주세요.' },
 	EXT_TOO_LONG: { http: 400, message: '확장자는 최대 20자까지 입력할 수 있어요.' },
 	EXT_INVALID_CHARS: { http: 400, message: '확장자는 영문 소문자와 숫자만 사용할 수 있어요.' },
@@ -37,7 +37,7 @@ export const REASON_CODES: Record<ReasonCode, ReasonCodeEntry> = {
 	FILE_TOO_LARGE: { http: 413, message: '파일은 4MB까지 올릴 수 있어요.' }
 };
 
-export const NOTICE_CODES: Record<NoticeCode, NoticeCodeEntry> = {
+export const NOTICE_CODES: Readonly<Record<NoticeCode, NoticeCodeEntry>> = {
 	ALIAS_FOLDED: { message: '{input}는 {canonical}와 같은 형식이라 {canonical}로 저장돼요.' },
 	CLIENT_HINT_BLOCKED: {
 		message: '이 확장자는 지금 차단 목록에 있어요. 올리면 서버에서 거부돼요.'
