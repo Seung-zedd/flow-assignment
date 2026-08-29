@@ -116,7 +116,61 @@ iter1 결함별 조치 요약:
 
 ## §E.2 Run-phase Evidence
 
-_<pending run-phase>_
+### M1 (RED→GREEN, Sonnet)
+
+#### Acceptance scenario completion — 21 / 21 (M1 스코프)
+
+| # | 시나리오 | 테스트 파일 | 상태 |
+|---|---|---|---|
+| 엣지 | `archive.tar.gz` → `['tar','gz']` | `extension.test.ts` | PASS |
+| 엣지 | `report.PDF` → `['pdf']` (대소문자 무시) | `extension.test.ts` | PASS |
+| 엣지 | 300자 파일명 → 255바이트 절단, 예외 없음 | `extension.test.ts` | PASS |
+| 엣지 | `..\..\etc\passwd` → 경로 구분자·`..` 제거 후 후보 없음 | `extension.test.ts` | PASS |
+| 엣지 | `exe.`(후행 점) → 정규화 후 `exe` | `extension.test.ts` | PASS |
+| 엣지 | `.`만 있는 파일명 / 빈 파일명 → 예외 없이 후보 없음 | `extension.test.ts` | PASS |
+| 엣지 | `#!/bin/sh` 셔뱅 → `sh` 합성 확장자 탐지 | `signature.test.ts` | PASS |
+| 엣지 | `scan.tiff` 별칭 → `tif` (canonicalizeExtension) | `extension.test.ts` | PASS |
+| 엣지 | 커스텀 `jpeg` 추가 시 `jpg`로 정규화 | `extension.test.ts` | PASS |
+| 엣지 | `jpg` 차단 상태에서 `photo.jpeg` → `matched: jpg` | `decide.test.ts` | PASS |
+| 엣지 | 목록에 `jpg` 있을 때 입력 `jpeg` → 대표형 동일 확인 | `extension.test.ts` | PASS |
+| AC-009a (단위) | `report.exe.txt` → 첫 세그먼트 `exe` matched (마지막 아님) | `decide.test.ts` | PASS |
+| AC-009b (단위) | `.env` 업로드 → `matched: env` (dotfile 추출) | `extension.test.ts` | PASS |
+| AC-010 (단위) | 빈 차단 목록 + `README` → `NO_EXTENSION` (정책 무관 강제) | `decide.test.ts` | PASS |
+| AC-010 (단위) | 빈 목록 + PNG 내용 `notes.txt` → 성공 + `mismatch:true` | `decide.test.ts` | PASS |
+| AC-011 (단위) | `sizeBytes > MAX_UPLOAD_BYTES` → `FILE_TOO_LARGE`(413), 정확히 4MB는 통과 | `decide.test.ts` | PASS |
+| AC-012 (단위) | `exe` 차단 + PE 시그니처(`photo.jpg`) → `SIGNATURE_BLOCKED`(`detected:"exe"`) | `decide.test.ts` + `signature.test.ts` | PASS |
+| AC-013 (단위) | 차단 목록에 `jpg`/`jpeg` 없을 때 `photo.jpeg`(JPEG 내용) → 성공 | `decide.test.ts`(별칭 동치) | PASS |
+| AC-014 (단위) | `html` 미차단 시 `<!DOCTYPE html>` → 성공(prefix 적중이 곧 거부 아님) | `signature.test.ts` + `decide.test.ts` | PASS |
+| G1(스키마) | 고정 확장자 7개 `is_blocked=false` 시드, `sort_order` 1..7 | `schema.test.ts` | PASS |
+| G1(스키마) | `UNIQUE`·`CHECK kind`·`CHECK format`·`upload_attempt CHECK outcome`·인덱스 존재 | `schema.test.ts` | PASS |
+
+엔드포인트 레벨 AC(AC-001~007, AC-008 HTTP 계약, AC-012~015 HTTP/DB 통합, AC-016a/016b 화면)는 정책 API·업로드 라우트·UI가 아직 없으므로 **deferred (M2/M3)**입니다.
+
+#### Test counts
+
+- 테스트 파일 5개, 테스트 87개, 전부 PASS. 실행: `pnpm test` → exit 0.
+- `pnpm lint` (prettier --check + eslint) → exit 1 — **이번 마일스톤이 만든 파일은 0건**, 남은 11건은 스캐폴드 커밋(`4c6112e`)에서 이미 포맷이 어긋난 기존 파일(`eslint.config.js`, `package.json`, `pnpm-workspace.yaml`, `prettier.config.js`, `src/app.d.ts`, `src/app.html`, `src/lib/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `tsconfig.json`, `vite.config.ts`) — PRESERVE 범위 밖이라 손대지 않음(pre-existing baseline, NOT a new defect).
+- `pnpm check` (svelte-check) → exit 0, `0 ERRORS 0 WARNINGS`.
+- `pnpm build` → exit 0.
+- `pnpm test:coverage` (`src/lib/server/**`, v8): 전체 Stmts 98.82% · Branch 92.68% · Funcs 100% · Lines 98.75% (85% 목표 상회). 파일별: `reason-codes.ts` 100/80/100/100(라인 57 `formatMessage` 미치환 fallback 분기 미커버), `signature.ts` 96.15/83.33/100/96(라인 13 `startsWithBinary`의 길이-부족 조기 반환 분기 미커버) — `extension.ts`·`decide.ts`는 4개 지표 전부 100%.
+
+#### Migration status
+
+- `migrations/001_init.sql`을 PGlite(in-memory)에 `scripts/migrate.ts`의 `loadMigrations()` 헬퍼로 적용 — 시드·제약 전부 통과(`schema.test.ts` 10 테스트 PASS).
+- `scripts/migrate.ts`의 Neon 경로(`sql.query()` 다중 문장 분리 적용)는 `DATABASE_URL` 미설정으로 **이 환경에서 검증 불가 — 명시적 gap**입니다. M4 배포 직전 실측 필요.
+
+#### Deviations from spec/plan
+
+1. `.prettierignore`에 `.mcp.json`을 추가했습니다(계획대로) — 다른 스캐폴드 baseline 파일은 건드리지 않았습니다.
+2. `signature.test.ts`의 PNG 픽스처는 8바이트 서명만으로는 `file-type`이 탐지하지 못해(내부적으로 IHDR 청크까지 파싱) 최소 유효 IHDR 청크(길이 13 + `IHDR` + 데이터 13바이트 + CRC 4바이트)를 덧붙였습니다 — 계획 문서에 없던 구현 중 발견 사항이며 동작·계약에는 영향 없습니다.
+3. TIFF는 `file-type`이 실제 IFD 태그 파싱을 요구해(최소 유효 바이너리 구성이 M1 범위를 넘어섬) `signature.test.ts`의 실바이트 픽스처에서 제외했습니다. 별칭 폴딩 자체는 `canonicalizeExtension('tiff') === 'tif'`(`extension.test.ts`)와 `decide.test.ts`의 스텁 `detected` 입력으로 계속 커버합니다.
+4. 계획된 13개 산출물(§A.1) 전부 생성·수정 완료 — **drift-guard 0%**(planned-vs-actual 파일 목록 완전 일치).
+
+#### Founder-attention notes
+
+- `scripts/migrate.ts`의 Neon 실경로는 미검증 gap입니다(§Migration status).
+- 커버리지 미달 2줄(§Test counts)은 REFACTOR 단계(Opus 2차 스폰)에서 다듬을 후보로 남겨둡니다 — 동작에는 영향 없는 방어적 분기입니다.
+- 잔여 lint 11건은 M1 스코프 밖 기존 스캐폴드 파일이며, PRESERVE 원칙에 따라 그대로 두었습니다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
