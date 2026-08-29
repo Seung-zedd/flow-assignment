@@ -125,3 +125,62 @@ _<pending run-phase>_
 ## §E.4 Sync-phase Audit-Ready Signal
 
 _<pending sync-phase>_
+
+## §F Phase 4 Mode Selection
+
+> run 단계 진입 시 오케스트레이터가 기록. 2026-08-29 세션 2 (`01ba20be`).
+
+**입력 파라미터**
+
+| 항목 | 값 |
+|---|---|
+| tier | M |
+| scope | 약 25개 소스 + 8개 테스트 파일 (`spec-compact.md` "Files to create / modify") — 전부 신규(greenfield, `package.json` 없음) |
+| domain count | 4 (db / server-validation / api / ui) + test |
+| language mix | TypeScript · Svelte 5 · SQL |
+| concurrency benefit | LOW — 코딩 중심, M1→M2→M3→M4 순차 의존 |
+| Agent Teams | 요청 없음 (`--team` 미지정) |
+| harness level | **standard** (auto: file_count > 3, feature). 보안 키워드로 thorough 조건도 성립하나 `contract.md` 추가 산출물이 사용자의 과잉 계획 금지 결정(PROMPT_LOG #15)과 충돌 → standard 유지. evaluator-active는 Phase 2.8a final-pass에서 Security 25%를 HARD FAIL 기준으로 판정 |
+| route | **A** (Hybrid Trunk main-direct, Tier M) — 브랜치·PR 없음, manager-develop이 `main`에 직접 커밋·push |
+| secrets | `DATABASE_URL`·`BLOB_READ_WRITE_TOKEN` 미설정, `.env` 없음 → M1~M3는 PGlite·모의 Blob으로 진행, M4 배포 직전 필요 |
+
+**모드 평가**
+
+| 모드 | 선택 | 근거 |
+|---|---|---|
+| direct | 아니오 | 신규 코드 900+ LOC, 의미 변경 |
+| serial | **선택** | 코딩 중심 + 마일스톤 간 순차 의존. 마일스톤당 manager-develop 1명 순차 위임 |
+| fanout | 아니오 | 조사 작업이 아닌 코딩 작업 (Anthropic coding-task parallelism caveat) |
+| sweep | 아니오 | 기계적 일괄 변환이 아님 |
+
+**Decision: serial**
+
+근거 — 순수 함수 4개(M1)에 이후 모든 판정이 종속되므로 마일스톤을 순서대로 확정·검증하는 편이 안전하고, 파일 수(약 33)와 4개 도메인이 `manager-lead` Tier L 진입 조건(≥3 M AND ≥10 files, Tier L)에는 해당하지 않는다. 동일 세션에서 마일스톤 범위가 바뀌면(blocker report) Phase 4를 재평가한다.
+
+**Plan Audit Gate**: 재실행 — iter2 PASS 0.86(`review-2.md`, 20:19) 이후 v0.2.0 반영(21:26~21:31)으로 artifact hash 변경 → skip 계약 3조건 중 (3) 불충족. 결과는 §F.1에 기록.
+
+**모델 배분 (사용자 결정 2026-08-29 22:0x, PROMPT_LOG #30)** — Opus 단일 배분으로 M1 첫 스폰이 세션 사용량 한도(429)에 걸려 중단된 뒤 pillwriter 방식으로 전환:
+
+| 역할 | 모델 | 근거 |
+|---|---|---|
+| 메인 세션(오케스트레이터) | Fable | 사용자와 직접 상호작용 |
+| SPEC 작성·감사 (manager-spec / plan-auditor / sync-auditor) | Opus | 프로필 행 그대로 |
+| 단순 구현 + TDD RED→GREEN (manager-develop) | **Sonnet** | `llm.yaml` `agent_overrides` |
+| TDD REFACTOR + 구현 리뷰 (manager-develop 2차 스폰) | **Opus** | 스폰 시 `model: "opus"` 명시 — 프로필 한 행에 두 모델을 못 적어 문서화된 편차 |
+
+M1 1차 시도(Opus) 기록: 스캐폴드(package.json·vite.config.ts·src/·pnpm-workspace.yaml 등 13파일)까지 런타임 L1 워크트리에서 생성 후 429로 종료 → 오케스트레이터가 main 체크아웃으로 이관·커밋, 워크트리 정리. 홈 폴더 `C:\Users\sdok1`의 `pnpm-workspace.yaml`이 install을 흡수하는 문제는 프로젝트 `pnpm-workspace.yaml`(`packages: []`)로 격리.
+
+**progress.md 기록 방식 (사용자 결정, PROMPT_LOG #28)**: 이후 기록은 pillwriter 방식 — RED→GREEN이 끝난 마일스톤마다 §E.2에 `Acceptance scenario completion / Test counts / Migration status / Deviations / Founder-attention` 5절로 남기고, 코드와 분리한 `chore(SPEC-UPLOAD-001): M<n> run-phase bookkeeping` 커밋으로 올린다. 이미 커밋된 §E.1은 유지.
+
+### §F.1 Plan Audit Gate (run-gate)
+
+| 항목 | 값 |
+|---|---|
+| verdict | **PASS** 0.85 (Tier M 임계 0.80) |
+| dimensions | Clarity 0.80 · Completeness 0.80 · Testability 0.85 · Traceability 0.95 |
+| must-pass | 7/7 (MP-4 단일 언어 N/A) |
+| audit model | Claude-only (`audit_model` 키 없음, codex/GLM 미호출) |
+| report | `.moai/reports/plan-audit/SPEC-UPLOAD-001-2026-08-29.md` (로컬) |
+| blocking | 3 — D1 `plan.md:301` 매트릭스 3-1-f `5개` 잔존 / D2 `spec.md:209`·`plan.md:358` rate-limit 근거가 삭제된 개수 상한 참조 / D3 spec §5에 `/api/uploads/recent` Out of Scope h3 부재 |
+| optional | D5 `EXT_EMPTY` AC 미보유 → AC-005b 절 추가 / D6 `upload-repo.ts` "최근 조회"·`created_at DESC` 근거 정정 / D4·D7 조치 불요 |
+| 조치 | 요구사항 의미 불변의 문장 정합성 교정 → manager-spec 자동 반영(D1·D2·D3·D5·D6), **재감사 생략** (감사관 권고 "진입 차단 아님") |

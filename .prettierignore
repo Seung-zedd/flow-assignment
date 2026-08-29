@@ -1,0 +1,17 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Miscellaneous
+/static/
+
+# 코드가 아닌 문서·도구 산출물은 Prettier 검사 대상에서 제외한다.
+.moai/
+.serena/
+.claude/
+docs/
+*.md
+.github/

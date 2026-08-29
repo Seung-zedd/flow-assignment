@@ -166,7 +166,18 @@ llm:
   # Example (uncomment + edit to pin an agent):
   #   agent_overrides:
   #     manager-develop: { model: opus, effort: xhigh }
-  agent_overrides: {}
+  #
+  # flow-assignment routing (user decision 2026-08-29, PROMPT_LOG #30 — mirrors
+  # the pillwriter split after the Opus-only run exhausted the session limit):
+  #   main session (orchestrator)              -> Fable (not an agent row)
+  #   plan-phase / audits (manager-spec,
+  #     plan-auditor, sync-auditor)            -> opus  (profile matrix, unchanged)
+  #   manager-develop RED->GREEN + mechanical  -> sonnet (this override)
+  #   manager-develop REFACTOR pass            -> opus, passed per-spawn as
+  #                                               model: "opus" (documented
+  #                                               deviation, progress.md §F)
+  agent_overrides:
+    manager-develop: { model: sonnet, effort: high }
 
   # GLM backend configuration
   glm:

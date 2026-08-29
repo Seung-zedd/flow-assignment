@@ -164,6 +164,47 @@
 - **Issue**: #1 생성(`spec` 라벨 신규 생성 후), `spec.md` `issue_number: 1`, Issue에 SPEC 경로 댓글. 커밋은 환경 설정 / SPEC 산출물 2건으로 분리(되돌리기 용이).
 - **판단**: 🟢 plan 단계 종료. 감사 보고서(`.moai/reports/plan-audit/`)는 규칙상 로컬 산출물이라 커밋하지 않음 — 이 로그와 progress.md에 결과 요약이 있음.
 
+### 2026-08-29 — 세션 2: run 단계 진입 (`/clear` 후 재개)
+
+#### #25 (paste-ready 재개 메시지 붙여넣기)
+> ultrathink. SPEC-UPLOAD-001 run 진입. … 전제 검증 4건 … 실행: /moai run SPEC-UPLOAD-001
+- **의도**: 세션 1 말미에 AI가 만들어 준 6블록 재개 메시지를 그대로 붙여 넣어, 새 컨텍스트에서 곧바로 구현 단계로 들어가기. 전제 4건(커밋 상태·SPEC 버전·Issue 상태·가드 훅)을 먼저 기계적으로 확인하게 함.
+- **AI 검증 결과**: ① `git log` fc160ce/8fc999c ✓ — 단, 메시지엔 "2 ahead 미push"라 적혀 있었으나 실제는 origin/main과 `0 0`(이미 동기화). 재개 메시지의 전제가 낡은 사례 — 명령으로 확인했기에 무해. ② `version "0.2.0"`, `issue_number 1`, `status draft` ✓ ③ Issue #1 OPEN ✓ ④ 가드 훅 테스트 14/14 ALL PASS ✓. `rtk` 접두어(전역 CLAUDE.md 규칙)는 Bash 도구 PATH에 없어 두 명령이 실패 → 일반 명령으로 재실행.
+- **AI 판단(run 진입 전 결정 3건, 사용자에게 묻지 않음)**:
+  1. **Plan Audit Gate 재실행** — iter2 PASS 0.86(20:19) 이후 v0.2.0 반영(21:26~21:31)으로 SPEC 해시가 바뀌어 skip 계약(PASS·점수≥0.80·해시 불변) 중 해시 조건 불충족. #23에서 "run 진입 시 자동 재실행"으로 예고된 대로 `plan-auditor`(Opus)를 run-gate 스트림(`SPEC-UPLOAD-001-2026-08-29.md`)으로 실행.
+  2. **product.md 없음 → 재질문 생략** — #06에서 "프로젝트 문서 인터뷰 건너뜀"으로 이미 결정됨. 같은 질문을 다시 하지 않음.
+  3. **실행 모드 `serial` · 하네스 `standard` · Route A(main 직접 커밋)** — `progress.md` §F에 근거 기록. 보안 키워드로 thorough 조건도 걸리지만 `contract.md`가 하나 더 생겨 #15(과잉 계획 금지)와 충돌 → standard. 보안 판정은 Phase 2.8a evaluator-active가 HARD 기준으로 수행.
+- **환경 확인**: `package.json` 없음(완전 백지), `.env` 없음, `DATABASE_URL`·`BLOB_READ_WRITE_TOKEN` 미설정 → M1~M3는 PGlite(인프로세스 PostgreSQL)·Blob 모의로 시크릿 없이 진행 가능, M4 배포 직전에 필요. Node 24.11 / pnpm 11.10.
+- **오류 1건**: 감사관 호출에 `name`(팀 모드 이름표)을 붙였더니 "team file for session … not found"로 거부. 이 세션엔 Agent Teams 런타임이 초기화되지 않은 상태 — 이름표 없이 일반 서브에이전트로 재호출해 해결(프롬프트 동일). 🟡 사소한 호출 방식 수정.
+- **재감사 결과**: **PASS 0.85** (Clarity 0.80 · Completeness 0.80 · Testability 0.85 · Traceability 0.95, must-pass 7/7, Claude 단독). blocking 3건은 전부 "요청당 1파일" 결정 뒤에 남은 낡은 문장 — D1 매트릭스 3-1-f `5개`(CONSIDERATIONS 뼈대라 실질 감점 위험), D2 rate-limit 제외 근거가 삭제된 개수 상한 참조, D3 `/api/uploads/recent` Out of Scope h3 부재. optional D5(`EXT_EMPTY` AC 없음)·D6(`upload-repo` 최근 조회 잔재)도 같이 수정, D4·D7은 조치 불요. 🟢 절차대로 founder 판정 없이 manager-spec(Opus)에 자동 수정 위임 → 커밋 `15a5205`(v0.2.1, REQ 16/AC 논리 16 불변). 의미 불변의 문장 정합 교정이라 재감사는 생략.
+
+#### #26 (AskUserQuestion 응답 3건) `시작 (권장)` · `자율 진행 (권장)` · `M3 끝나면 안내 받고 준비`
+- **의도**: 킥오프 승인 + 진행 방식 + 시크릿 준비 시점을 한 라운드에 결정.
+- **결과**: manager-develop(Opus)에게 M1(스캐폴드 + `001_init.sql` + 순수 함수 4개 + 표 기반 단위 테스트, TDD) 위임. Tier M이라 Section A~E 5절 위임 프롬프트(맥락·알려진 이슈·사전 점검·제약·자체 검증) 전부 포함.
+- **중단**: 에이전트가 스캐폴드(package.json·src/·vite.config 등)까지 만든 시점에 **API 세션 사용량 한도(429, 11:30pm 초기화)** 로 종료. 런타임이 자동으로 L1 워크트리(`.claude/worktrees/agent-…`)에 격리해 둔 상태라 main 체크아웃은 깨끗함. 부수 발견: 홈 폴더 `C:\Users\sdok1`에 `package.json` + `pnpm-workspace.yaml`이 있어 pnpm install이 그 워크스페이스로 흡수됨 → 에이전트가 프로젝트 안에 `pnpm-workspace.yaml`을 두어 격리(🟡 타당, 유지).
+
+#### #27
+> 아마 general-moai-adk 아니면 pillwriter에서 vercel-supply-chain-attack에 대비한 vercel cli에서 --sensitive로 env value 직접 설정하기 관련 룰이 있을꺼야 그것도 여기에 적용할꺼임 / (이어서) 거기에도 없으면 github mcp server를 사용해서 cubrain 쪽에서도 찾아봐봐
+- **의도**: 다른 프로젝트에서 세운 시크릿 취급 규칙을 이 과제 배포에도 적용.
+- **AI 조사**: 로컬(pillwriter·컨테이너·실습 레포)엔 `--sensitive`/`vercel env` 규칙 없음(일반 "sensitive data" 언급뿐). GitHub MCP 서버는 이 세션에 미등록이라 `gh api`로 대체 → **cubrain `skills/AGENTS.md` §28 Zero-Trust Secret Management**에서 발견: AI는 실제 시크릿을 요청·읽지 않음 / CLI env 추가 시 값을 명령 문자열에 넣지 말고 대화형 프롬프트(히스토리 유출 방지) / Vercel 환경변수 전부 Sensitive 필수 / `.env` gitignore 누락은 최우선 수정. 배경: 2026-04 Vercel 보안 사고 후 cubrain 키 전수 교체(`whats-new/v1-6-0`).
+- **교차 검증(Vercel 공식 문서, 2026-08-20 갱신)**: `vercel env add`는 production/preview에 **기본 sensitive**, `--no-sensitive`로만 해제, development 타깃엔 sensitive 불가(`--sensitive` 오류). Sensitive 값은 대시보드·`vercel env ls`로 재열람 불가. `echo value | vercel env add`는 bash 히스토리에 남는다고 문서가 직접 경고.
+- **판단**: 🟢 적용 — 프로젝트 규칙 파일 + 가드 훅(`--no-sensitive`·값 인라인·`vercel env pull` 차단) + README 배포 절·CONSIDERATIONS E5 반영. M1 에이전트가 트리를 쓰는 동안은 보류했다가 중단 후 착수.
+
+#### #28
+> progress.md는 아마 SPEC 단계에서 산출물을 생성하는게 아닐꺼야 pillwriter를 보면 moai 워크플로우를 끝내거나 아니면 RED -> GREEN 까지의 단순 구현을 끝내고 나서 산출하는 걸로 알고 있는데 가서 확인하고 확인한 방법을 여기에 그대로 적용해
+- **AI 검증(pillwriter git 이력)**: SPEC 7개 중 6개에서 `progress.md`는 spec.md 초안보다 2~6일 뒤 **run 단계에서 첫 커밋**(`chore: … run-phase bookkeeping`, `docs: … run artifacts — tasks/progress tracking`, `… post-hoc run-close record`). 예외는 부트스트랩 1커밋 SPEC뿐. 구조는 `Acceptance scenario completion N/N` 표 → `Test counts`(exit code 포함) → `Migration status` → `Deviations from spec/plan` → founder 메모.
+- **판단**: 🟢 사용자 판단이 맞음. 여기 §E.1이 plan 단계에 생긴 건 moai 3.1.2 템플릿 규칙이지 pillwriter 방식이 아님. 적용 — 이미 커밋된 §E.1은 두고(삭제는 diff 소음), 이후 기록은 RED→GREEN 완료 마일스톤마다 위 5절 구조로, 코드 커밋과 분리한 `chore(SPEC-UPLOAD-001): M<n> run-phase bookkeeping` 커밋으로. M1 에이전트에 즉시 전달(SendMessage).
+
+#### #29
+> 앞으로 git commit msg도 전부 에이전트가 읽잖아? 근데 굳이 commit msg도 ko로 작성할 필요가 있을까? … PRD 문서에 별도의 커밋 메시지 제약조건이 있으면 ko로 하고 그렇지 않으면 en로 해도 된다고 나는 생각해
+- **AI 답변 요지**: "에이전트가 영어 특화"는 근거 약함 — 커밋 메시지는 수십 글자라 토큰 차이가 무시 수준이고 기계 파싱 부분(`feat`, scope, `Refs #1`)은 어차피 영어. 진짜 기준은 최종 독자(Flow 평가자, 한국어). PRD 확인 결과 커밋 관련 제약 **없음**(112행 GitHub 주소 요건뿐).
+- **판단**: 사용자가 두 라운드 모두 🟢 **ko 유지** 선택 — "PRD 제약 없으면 en" 기준을 스스로 세웠지만 최종적으로 평가자 읽기 톤 일관성을 우선. 설정 변경 없음.
+
+#### #30
+> 아무래도 기존의 방식대로 하니까 세션이 너무 빨리 한도에 도달하는 것 같아. 그래서 기존의 pillwriter 방식과 동일하게 메인 세션(너하고 내가 직접 interact하는 곳은 Fable) / SPEC 단계와 TDD의 REFACTOR은 Opus / 단순 구현 및 TDD의 RED -> GREEN은 Sonnet로 변경할 것. (e.g. model: "opus")
+- **의도**: Opus 단일 배분이 세션 한도를 너무 빨리 소진 → 모델을 역할별로 나눠 비용을 낮추기. (#08에서 GLM 위임을 보류했던 결정의 후속 — GLM 대신 Sonnet.)
+- **AI 적용**: `llm.yaml` medium 프로필의 `manager-develop`을 `sonnet`으로(RED→GREEN·단순 구현 스폰의 기본값), REFACTOR·감사·SPEC 스폰은 `model: "opus"` 명시. 메인 세션은 Fable 그대로. `progress.md` §F에 배분표 기록. 같은 메시지의 open-provider(OpenRouter) 컨텍스트 이관 질문은 사용자가 철회(ChatGPT로 확인 완료).
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구

@@ -1,0 +1,10 @@
+# 이 파일은 프로젝트를 자체 pnpm 워크스페이스 루트로 고정한다.
+# 없으면 pnpm이 상위 디렉터리(사용자 홈)의 워크스페이스를 찾아 올라가
+# node_modules 를 엉뚱한 위치에 설치한다(실측: 홈 디렉터리 워크스페이스에 흡수됨).
+packages: []
+
+# pnpm 10+ 는 의존성 lifecycle 스크립트를 기본 차단한다. 이 차단을 유지한다.
+# esbuild(vite 의존)의 postinstall 은 플랫폼 바이너리 검증용이며,
+# 실제 바이너리는 optional dependency(@esbuild/<platform>)로 배포되므로 실행하지 않아도 동작한다.
+allowBuilds:
+  esbuild: false
