@@ -112,6 +112,14 @@
             ],
             "timeout": 5,
             "type": "command"
+          },
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/block-vercel-env-insecure.mjs"
+            ],
+            "timeout": 5,
+            "type": "command"
           }
         ],
         "matcher": "Bash"
