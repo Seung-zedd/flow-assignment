@@ -172,6 +172,53 @@ iter1 결함별 조치 요약:
 - 커버리지 미달 2줄(§Test counts)은 REFACTOR 단계(Opus 2차 스폰)에서 다듬을 후보로 남겨둡니다 — 동작에는 영향 없는 방어적 분기입니다.
 - 잔여 lint 11건은 M1 스코프 밖 기존 스캐폴드 파일이며, PRESERVE 원칙에 따라 그대로 두었습니다.
 
+#### REFACTOR (Opus)
+
+커밋 `07d4602`. 동작 변경 없음 — RED→GREEN이 만든 87개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 추가한 4건을 포함해 91개가 통과한다.
+
+##### 무엇을 왜 바꿨나
+
+1. **줄바꿈 정규화 (Q5 게이트 해소)** — `.gitattributes`에 `* text=auto eol=lf`를 추가하고 `git add --renormalize .` 후 `pnpm format`을 돌렸다. `pnpm lint`가 22개 파일에서 실패하던 원인은 스타일이 아니라 **줄바꿈**이었다: Windows `core.autocrlf=true`가 체크아웃 시 CRLF를 넣는데 Prettier의 `endOfLine` 기본값이 `lf`라 전 파일이 포맷 위반으로 잡혔다. `git ls-files --eol`로 `i/lf w/crlf`를 확인해 진단했고(인덱스는 이미 LF), 파일마다 고치는 대신 저장소 차원에서 한 번 막았다. renormalize 자체는 내용 diff 0건 — `.gitattributes` 추가와 `pnpm format`의 줄바꿈 치환만 남았다.
+2. **탐지 결과 타입 단일화** — `signature.ts`에 `DetectedType`을 두고 `SignatureResult`가 이를 확장하게 했다. `decide.ts`의 `detected` 입력이 `{ detectedExt?, detectedMime? }`를 따로 적어 두고 있어 한쪽만 바뀌어도 컴파일러가 알려주지 않는 상태였다. `import type`이라 런타임 결합은 생기지 않는다. `segments`도 `readonly string[]`로.
+3. **단일 원본 표를 변이 불가로** — `EXTENSION_ALIASES`·`REASON_CODES`·`NOTICE_CODES`를 `Readonly`로, `PREFIX_MAPPINGS`를 `readonly`로 고정했다. 앞의 둘은 `@MX:ANCHOR`가 "표가 갈라지면 오탐이 조용히 돌아온다"고 선언한 대상이라, 선언을 타입으로도 강제하는 편이 일관된다.
+4. **마이그레이션 적용 계약 공유** — `scripts/migrate.ts`에서 `applyMigrations()`를 뽑아 Neon 스크립트와 PGlite 통합 테스트가 "무엇을 어떤 순서로 적용하는가"를 같은 코드로 쓰게 했다(실행 방식만 주입: Neon은 세미콜론 분리 후 단일 문장, PGlite는 다중 문장 `exec`). `schema.test.ts`가 직접 돌리던 루프를 제거했고 단언은 그대로다. `_migration` 기록은 여전히 마이그레이션 직후에 남아 중간 실패 시 앞선 항목을 건너뛴다. `DATABASE_URL` 미설정 오류 문구에 실행 방법(`pnpm db:migrate`)을 넣어 구체화했다.
+5. **테스트 4건 추가 (87 → 91)** — `formatMessage` 치환 값 누락 시 자리표시자 유지 / 시그니처보다 짧은 1바이트 버퍼의 조기 반환 / **실제 TIFF 시그니처**(`II*\0` + 최소 유효 IFD) → `tif` / BOM + 선행 공백 + 대문자 `<?PHP` prefix 관용. TIFF는 M1에서 "`file-type`이 IFD 파싱을 요구한다"는 이유로 제외됐던 케이스인데(§Deviations 3), 엔트리 1개짜리 최소 IFD를 구성하면 `{ ext: 'tif', mime: 'image/tiff' }`로 탐지되는 것을 확인해 실바이트로 덮었다 — **Deviations 3 해소**.
+
+##### 계획 대비 점검 (변경 불요로 판정한 항목)
+
+`decideUpload` 판정 순서(크기 → 확장자 부재 → 파일명 순서상 먼저 걸린 차단 세그먼트 → 시그니처 → 성공/mismatch), `normalizeFilename`의 코드 포인트 단위 255바이트 절단, `normalizeExtensionInput`의 앞뒤 점 제거·NFKC 선행·정규화 후 길이 측정, `reason-codes.ts` 13개 문구의 `plan.md` §4.1 표와의 문자 단위 일치, 별칭 표가 파일명 후보·시그니처 결과·정책 입력 세 경로 모두에서 `canonicalizeExtension` 하나만 거치는지 — 전부 계획과 일치해 손대지 않았다.
+
+##### 검증 (커밋 `07d4602` 기준)
+
+| 명령 | 종료 코드 | 결과 |
+|---|---|---|
+| `pnpm test` | 0 | Test Files 5 passed (5) / Tests **91 passed (91)** |
+| `pnpm lint` | **0** | `All matched files use Prettier code style!` + eslint 무출력 (REFACTOR 전 exit 1 / 22 files) |
+| `pnpm check` | 0 | `359 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS` |
+| `pnpm build` | 0 | — |
+| `pnpm test:coverage` | 0 | `src/lib/server/**` Stmts **100** (85/85) · Branch **97.56** (40/41) · Funcs **100** (23/23) · Lines **100** (80/80) |
+
+커버리지 변화: Stmts 98.82 → 100, Lines 98.75 → 100, Branch 92.68 → 97.56, Funcs 100 유지. M1이 남겨 둔 미커버 2줄(`reason-codes.ts:57`, `signature.ts:13`)은 모두 해소됐다.
+
+##### MX 태그 (plan.md §13 M1 부분집합 4곳)
+
+네 곳 모두 `[AUTO]` 접두와 필수 `@MX:REASON`을 이미 갖추고 있어 추가·수정 없이 **검증만** 했다. 파일당 한도(ANCHOR 3 / WARN 5 / NOTE 10) 이내.
+
+| 파일 | 태그 | 줄 |
+|---|---|---|
+| `src/lib/server/upload/decide.ts` | `@MX:ANCHOR` (+ `@MX:REASON` 21) | 19 |
+| `src/lib/server/upload/extension.ts` | `@MX:ANCHOR` (+ `@MX:REASON` 5) | 3 |
+| `src/lib/server/upload/signature.ts` | `@MX:WARN` (+ `@MX:REASON` 74) | 71 |
+| `src/lib/constants.ts` | `@MX:NOTE` | 1 |
+
+`grep -rn "@MX:TODO" src/ scripts/` → 0건(exit 1). GREEN에서 해소된 TODO 잔재 없음.
+
+##### 남은 gap
+
+- **`scripts/migrate.ts`의 Neon 실경로는 여전히 미검증**입니다. `DATABASE_URL`이 없어 `main()` 경로(HTTP 드라이버·`_migration` 기록·세미콜론 분리)를 이 환경에서 실행할 수 없습니다. `applyMigrations()`로 공유되는 것은 **목록·순서 계약**이지 Neon 드라이버 동작이 아니므로, PGlite 통합 테스트 통과가 Neon 성공의 증거가 되지 않습니다. M4 배포 직전 실측 필요.
+- **`signature.ts:32` BOM 스트립 분기(유일한 미커버 분기)는 구조적으로 도달 불가**입니다. `TextDecoder('utf-8')`가 `ignoreBOM` 기본값(false)으로 BOM을 먼저 제거하므로 `text.startsWith(BOM)`이 참이 되는 경로가 없습니다. 방어적으로 남겨 두되, BOM 관용 **동작 자체**는 위 5번의 BOM 테스트가 종단 간으로 고정합니다. 선행 공백 뒤에 오는 BOM(`" ﻿<?php"`)은 현재도 처리하지 못하며, 실사용 시나리오가 아니라 판단해 확장하지 않았습니다.
+- M2~M4 스코프의 엔드포인트·화면 AC는 여전히 deferred입니다(변동 없음).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
