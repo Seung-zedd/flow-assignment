@@ -1,0 +1,56 @@
+import { MAX_UPLOAD_BYTES } from '$lib/constants';
+
+export interface DecideUploadInput {
+	segments: string[];
+	blockedSet: ReadonlySet<string>;
+	detected: { detectedExt?: string; detectedMime?: string };
+	sizeBytes: number;
+}
+
+export type DecideUploadResult =
+	| { ok: true; mismatch: boolean; detectedMime?: string }
+	| { ok: false; code: 'FILE_TOO_LARGE'; http: 413 }
+	| { ok: false; code: 'NO_EXTENSION'; http: 415 }
+	| { ok: false; code: 'BLOCKED_EXTENSION'; http: 415; details: { matched: string } }
+	| { ok: false; code: 'SIGNATURE_BLOCKED'; http: 415; details: { detected: string } };
+
+// @MX:ANCHOR: [AUTO] 업로드 판정의 단일 진입점 — 엔드포인트, 테스트, 클라이언트 힌트가
+// 모두 이 함수 하나를 호출한다(호출부 3곳 이상).
+// @MX:REASON: 판정 로직이 갈라지면 서버·클라이언트 힌트·테스트 사이에 조용한 불일치가
+// 생긴다(plan.md §13 MX 태그 계획).
+export function decideUpload(input: DecideUploadInput): DecideUploadResult {
+	const { segments, blockedSet, detected, sizeBytes } = input;
+
+	// 1) 크기 상한 — REQ-UPLOAD-012.
+	if (sizeBytes > MAX_UPLOAD_BYTES) {
+		return { ok: false, code: 'FILE_TOO_LARGE', http: 413 };
+	}
+
+	// 2) 확장자 후보 부재 — 차단 목록이 비어 있어도 계속 강제된다(REQ-UPLOAD-013).
+	if (segments.length === 0) {
+		return { ok: false, code: 'NO_EXTENSION', http: 415 };
+	}
+
+	// 3) 정책 대조 — 파일명 순서상 먼저 걸린 세그먼트를 matched로 보고한다(REQ-UPLOAD-008).
+	const matched = segments.find((segment) => blockedSet.has(segment));
+	if (matched) {
+		return { ok: false, code: 'BLOCKED_EXTENSION', http: 415, details: { matched } };
+	}
+
+	// 4) 시그니처 대조 — 탐지된 확장자가 차단 목록에 있을 때만 거부한다(REQ-UPLOAD-009).
+	if (detected.detectedExt && blockedSet.has(detected.detectedExt)) {
+		return {
+			ok: false,
+			code: 'SIGNATURE_BLOCKED',
+			http: 415,
+			details: { detected: detected.detectedExt }
+		};
+	}
+
+	// 5) 성공 — 탐지 결과가 선언 확장자(마지막 세그먼트)와 다르면 mismatch로만 기록한다.
+	// 단순 불일치는 거부 사유가 아니다(REQ-UPLOAD-010).
+	const declaredExtension = segments.at(-1);
+	const mismatch = Boolean(detected.detectedExt) && detected.detectedExt !== declaredExtension;
+
+	return { ok: true, mismatch, detectedMime: detected.detectedMime };
+}
