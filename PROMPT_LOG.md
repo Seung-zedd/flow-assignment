@@ -203,7 +203,31 @@
 #### #30
 > 아무래도 기존의 방식대로 하니까 세션이 너무 빨리 한도에 도달하는 것 같아. 그래서 기존의 pillwriter 방식과 동일하게 메인 세션(너하고 내가 직접 interact하는 곳은 Fable) / SPEC 단계와 TDD의 REFACTOR은 Opus / 단순 구현 및 TDD의 RED -> GREEN은 Sonnet로 변경할 것. (e.g. model: "opus")
 - **의도**: Opus 단일 배분이 세션 한도를 너무 빨리 소진 → 모델을 역할별로 나눠 비용을 낮추기. (#08에서 GLM 위임을 보류했던 결정의 후속 — GLM 대신 Sonnet.)
-- **AI 적용**: `llm.yaml` medium 프로필의 `manager-develop`을 `sonnet`으로(RED→GREEN·단순 구현 스폰의 기본값), REFACTOR·감사·SPEC 스폰은 `model: "opus"` 명시. 메인 세션은 Fable 그대로. `progress.md` §F에 배분표 기록. 같은 메시지의 open-provider(OpenRouter) 컨텍스트 이관 질문은 사용자가 철회(ChatGPT로 확인 완료).
+- **AI 적용**: `llm.yaml` `agent_overrides`로 `manager-develop`을 `sonnet`으로(RED→GREEN·단순 구현 스폰의 기본값), REFACTOR·감사·SPEC 스폰은 `model: "opus"` 명시. 메인 세션은 Fable 그대로. `progress.md` §F에 배분표 기록. 같은 메시지의 open-provider(OpenRouter) 컨텍스트 이관 질문은 사용자가 철회(ChatGPT로 확인 완료).
+
+#### #31 (AI 주도) M1 재개 — 스캐폴드 복구 → Sonnet RED→GREEN → 검증
+- **복구**: Sonnet 호출 가능 여부를 읽기 전용 프로브(1콜)로 확인한 뒤, 중단된 워크트리의 스캐폴드 13파일을 main으로 복사·커밋(`4c6112e`). 이 과정에서 잡은 결함 2건 — ① `sv create` 최소 템플릿의 `eslint.config.js`가 `svelte.configs.prettier`(배열)를 스프레드 없이 넣어 ESLint 10에서 `Unexpected array`로 터짐 → js/ts/svelte recommended + prettier 스프레드 구성으로 교체. ② pre-commit 훅(`moai gate`)이 `prettier --check .`로 `.moai/`·`docs/`·`*.md`까지 검사 → `.prettierignore` 확장. 🟡 스캐폴드 수정 후 채택. (부수: 실패한 첫 커밋 시도에서 스테이징돼 있던 `llm.yaml`·`progress.md`·`PROMPT_LOG.md`가 스캐폴드 커밋에 함께 들어감 — 이력 재작성은 하지 않음.)
+- **M1 RED→GREEN (manager-develop, Sonnet)**: `migrations/001_init.sql`(plan §2.5 DDL 그대로) · `scripts/migrate.ts` · `src/lib/constants.ts` · `src/lib/server/upload/{reason-codes,extension,signature,decide}.ts` + 테스트 4개 · PGlite `schema.test.ts`. RED 증거(모듈 없음으로 5개 스위트 실패) 캡처 후 GREEN. 커밋 `6cb5d6b`(코드) + `dc51fe9`(bookkeeping, pillwriter 방식 5절) → origin/main push. `spec.md` status `draft → in-progress`.
+- **오케스트레이터 재검증(main 체크아웃, 직접 실행)**: `pnpm test` **87/87 통과** · `pnpm check` **0 errors** · 커버리지 98.8%(에이전트 보고) · `pnpm lint`는 11파일 실패 — 코드가 아니라 **CRLF**: 에이전트 워크트리가 `core.autocrlf=true`라 M1 파일이 CRLF로 체크아웃됐고 Prettier는 LF 기대(`decide.ts` CR 56개, 스캐폴드 파일 0개). `.gitattributes`(`eol=lf`) + 포맷 1회로 해소 예정 → REFACTOR에 포함.
+- **에이전트 자체 판단 2건(수용)**: 워크트리 HEAD가 위임 프롬프트의 가정(`4c6112e`)과 달라 `git merge --ff-only main`으로 스스로 동기화 / TIFF 실바이트 픽스처는 `file-type`의 IFD 파싱 요구로 M1에서 제외(별칭 폴딩은 다른 테스트로 커버).
+- **Vercel 시크릿 룰 적용(#27 후속)**: `.claude/rules/local/secret-management.md` + `block-vercel-env-insecure.mjs`(settings.json PreToolUse Bash 등록). 가드 테스트 26/26 PASS(신규 9: `--no-sensitive`·파이프 값·`--value`·4번째 인자·`env pull` 차단, 대화형 추가·`< file`·`ls`/`deploy` 허용). 🟢 채택. 커밋 `fed4548`.
+
+#### #32
+> 오케이 이제 .moai/specs/SPEC-UPLOAD-001/progress.md를 읽으려고 하는데 코드 라인을 보니까 240줄이 넘어가거든? 이걸 전부 다 읽을 필요가 있을까? … 결국 founder가 읽을 부분은 어디지? / (이어서) 앞으로 progress.md를 읽을 때 founder가 정말 읽어야 할 부분만 압축해서 업로드해줘 … PRD 문서와 맞게 구현이 됐는지 체크리스트 정도를 작성하면 될 것 같은데 맞니?
+- **의도**: 사람이 읽는 양을 줄이기 — 기계 검증(TDD·TRUST 5) 결과는 AI가 확인하고, 사람은 결정에 필요한 것만 읽는다.
+- **AI 답변**: progress.md 240줄 중 founder용은 `Deviations from spec/plan` + `Founder-attention notes` 12줄뿐. "PRD 대조 체크리스트"는 방향이 맞지만 그것만으론 부족 — AC 표가 이미 PRD→REQ→AC→테스트로 기계 대조를 하므로, 사람이 봐야 할 건 **기계가 결정할 수 없는 것**: ① 편차·제품 결정(권장+근거) ② 의식적으로 감수한 갭 ③ PRD 항목별 증거 유무(AC 표에서 AI가 추출). 🟢 마일스톤마다 이 3블록 "Founder digest"만 채팅에 올리는 것으로 확정(새 파일 없음). M1 digest 1차 제시 — 판단 1건(TIFF 실바이트 픽스처 → M3 엔드포인트 테스트에 포함 권장), 감수 갭 2건, PRD 체크리스트.
+
+#### #33 (AI 주도) M1 REFACTOR (manager-develop, Opus) → M1 완료
+- **결과**: 커밋 `07d4602`(refactor) + `5f905a4`(bookkeeping), origin/main push. 테스트 87 → **91**(추가 4: `formatMessage` fallback, 1바이트 버퍼, 실제 TIFF 시그니처, BOM+공백+대문자 `<?PHP`), 커버리지 Statements/Lines **100%** · Branch 97.6%(유일한 미커버 분기는 `TextDecoder`가 BOM을 먼저 제거해 구조적으로 도달 불가 — 방어 코드로 유지), `pnpm lint` **exit 0**, `pnpm check` 0, MX 태그 4곳(plan §13 M1 부분집합) `[AUTO]`+`@MX:REASON` 구비 확인.
+- **CRLF 근본 해결**: `.gitattributes`(`* text=auto eol=lf`) + `git add --renormalize .`(내용 diff 0건 확인) + `pnpm format`. 에이전트 진단 — 인덱스는 이미 LF, 워킹 카피만 `core.autocrlf=true`로 CRLF. 🟢 채택.
+- **동작 불변 검증 8건**: 기존 테스트 파일은 순수 추가(+셋업 1건, 단언 무변경), `decideUpload` 판정 순서·문구 13종·별칭 표 5항목·255바이트 절단 로직 미변경 — 에이전트가 diff 단위로 대조.
+- **오케스트레이터 재검증(main)**: ff-merge 후 `pnpm test` 91/91 · `pnpm lint` exit 0. `pnpm format`이 로컬 파일 3개를 건드렸는데 줄바꿈 차이만인지 확인 후 처리(아래 #34).
+- **에이전트 자체 판단(수용)**: 두 번째 커밋의 pre-commit `moai gate`가 1회 일시 실패(단독 재실행 exit 0, HEAD 불변 확인 후 재커밋) — 우회 플래그 미사용. 재발 시 병렬 게이트 경합 점검.
+- **M1 완료 판정**: plan §11 M1 완료 기준(001_init.sql PGlite 적용 · 순수 함수 4개 표 기반 테스트 · 커버리지 ≥ 85%) 전부 충족. Q2·Q4·Q5·Q6 게이트 M1 스코프 통과.
+
+#### #34
+> M1 끝나면 지금 새벽 1시라서 세션을 마무리해야 돼. 끝나면 짧게 브리핑해줘
+- **AI 마무리**: 로컬 main 동기화(`5f905a4`) → 재검증 → PROMPT_LOG 커밋·push → 재개 메시지(전제 검증 4건 + `/moai run SPEC-UPLOAD-001` M2) 채팅 출력 + 메모리 저장. 세션 2 종료 시점 상태: M1 완료, M2~M4 대기, 시크릿 미준비(의도됨), stale 에이전트 워크트리 3개(`rm -rf` 승인 대기).
 
 ---
 
