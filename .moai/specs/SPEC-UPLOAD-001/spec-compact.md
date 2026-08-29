@@ -1,7 +1,7 @@
 # SPEC-UPLOAD-001 — Compact Digest
 
 > 자동 생성 요약. 원본: `spec.md` (요구사항) · `acceptance.md` (인수 기준) · `plan.md` (설계 근거).
-> Tier M · status draft · v0.2.0 · 16 REQ · 16 AC · founder verdicts Q1–Q17 반영본
+> Tier M · status draft · v0.2.1 · 16 REQ · 16 AC · founder verdicts Q1–Q17 + run-gate 재감사 결함 반영본
 
 ## Requirements (16)
 
@@ -33,7 +33,7 @@
 | AC-UPLOAD-003 | 중복 `sh` 추가 → 409 `EXT_DUPLICATE`, 행 수 불변 | 006 |
 | AC-UPLOAD-004 | 커스텀에 `exe` → 409 `EXT_IS_FIXED`, 추가 안 됨 | 006 |
 | AC-UPLOAD-005a | 21자 입력 → 400 `EXT_TOO_LONG` | 006 |
-| AC-UPLOAD-005b | 공백/키릴/점 → 400 `EXT_INVALID_CHARS`; 전각 `ｅｘｅ` → 409 `EXT_IS_FIXED` | 005, 006 |
+| AC-UPLOAD-005b | 공백/키릴/점 → 400 `EXT_INVALID_CHARS`; 전각 `ｅｘｅ` → 409 `EXT_IS_FIXED`; 빈 입력 → 400 `EXT_EMPTY` | 005, 006 |
 | AC-UPLOAD-006 | 200개 상태에서 추가 → 409 `EXT_LIMIT_REACHED`, count 여전히 200 | 004 |
 | AC-UPLOAD-007 | `X` 삭제 → 새로고침 후에도 사라짐 + 같은 `script.sh` 업로드가 이번엔 성공 | 003 |
 | AC-UPLOAD-008 | `setup.exe` → 415 `BLOCKED_EXTENSION` + `matched:"exe"`, Blob 미생성 | 008, 015 |

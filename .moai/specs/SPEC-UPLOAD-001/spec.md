@@ -1,7 +1,7 @@
 ---
 id: SPEC-UPLOAD-001
 title: "확장자 차단 정책 관리 및 서버 사이드 업로드 검증"
-version: "0.2.0"
+version: "0.2.1"
 status: draft
 created: 2026-08-29
 updated: 2026-08-29
@@ -25,6 +25,7 @@ issue_number: 1
 | 0.1.0 | 2026-08-29 | michael_jo | plan-audit iter1 결함 D1~D6 수정. 고정 토글·커스텀 삭제 REQ 신설(D3), REQ-016·REQ-013에 AC 부여(D1·D2), 커스텀 추가 거부 REQ 2건 통합으로 상한 확보. 버전은 audit PASS 전까지 0.1.0 유지 |
 | 0.1.0 | 2026-08-29 | michael_jo | plan-audit iter2 PASS 0.86. N1(컴포넌트 테스트 표면 선언)·N3(REQ-007 NFC 명시) 적용, N2·N5 표기 통일. REQ/AC 본문 개수 불변(16/16) |
 | 0.2.0 | 2026-08-29 | michael_jo | founder verdicts Q1–Q17 applied (interrogation-draft). 요청당 1파일 확정(`TOO_MANY_FILES` 제거), 요청 단위 거부 미기록, 별칭 정규화를 파일명 후보까지 확대, 문구 상수 표 고정, 클라이언트 힌트 구현 명시, `/api/uploads/recent` 스코프 제외 |
+| 0.2.1 | 2026-08-29 | michael_jo | run-gate 재감사(2026-08-29, PASS 0.85) 결함 D1·D2·D3·D5·D6 반영 — 요청당 1파일 결정 잔여 문구 정합, Out of Scope 5.6 추가, AC-005b 빈 입력 절 |
 
 ---
 
@@ -155,7 +156,7 @@ issue_number: 1
 | `src/lib/constants.ts` | 신규 | `MAX_CUSTOM_EXTENSIONS` · `MAX_EXTENSION_LENGTH` · `MAX_UPLOAD_BYTES` + `plan.md` §4.1 문구 상수 표 |
 | `src/lib/server/db/client.ts` | 신규 | `@neondatabase/serverless` HTTP 클라이언트 |
 | `src/lib/server/db/policy-repo.ts` | 신규 | 정책 조회·토글·추가·삭제 SQL |
-| `src/lib/server/db/upload-repo.ts` | 신규 | `upload_attempt` 기록·최근 조회 |
+| `src/lib/server/db/upload-repo.ts` | 신규 | 업로드 시도 기록 INSERT (`upload_attempt`) |
 | `src/lib/server/upload/extension.ts` | 신규 | `normalizeExtensionInput` · `extractExtensionSegments` · `canonicalizeExtension` · `EXTENSION_ALIASES` |
 | `src/lib/server/upload/signature.ts` | 신규 | `sniffSignature` (매직 넘버 + prefix 스니핑) |
 | `src/lib/server/upload/decide.ts` | 신규 | `decideUpload` — 판정 단일 진입점 |
@@ -206,7 +207,12 @@ issue_number: 1
 
 ### 5.5 Out of Scope — E2E 테스트 및 rate limiting
 - 브라우저 자동화 E2E와 IP 기반 요청 제한을 만들지 않는다.
-- 근거: 배포 URL의 수동 데모가 E2E와 같은 확신을 주고 CI 배선 비용이 과제 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기·개수 상한과 저장소 무료 한도가 실질적 차단기 역할을 한다.
+- 근거: 배포 URL의 수동 데모가 E2E와 같은 확신을 주고 CI 배선 비용이 과제 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기 상한(4MB)과 요청당 1파일 제약, 그리고 Blob Hobby 무료 한도가 실질적 차단기 역할을 한다.
+
+### 5.6 Out of Scope — 업로드 시도 조회 API
+- 최근 업로드 시도를 돌려주는 `GET /api/uploads/recent` 엔드포인트를 만들지 않는다.
+- `upload_attempt` 테이블은 그대로 유지하므로 감사 기록 자체는 남으며, 필요하면 DB를 직접 조회한다.
+- 근거: 무인증 공개 배포에서는 다른 사용자가 올린 파일명·선언 MIME·탐지 MIME을 누구나 열람하게 된다. 운영 관점 데모라는 편익보다 노출 비용이 크다(`plan.md` §1.1 / §9 매트릭스 E9와 동일 근거).
 
 ---
 
