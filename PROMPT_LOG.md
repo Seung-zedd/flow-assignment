@@ -1,0 +1,192 @@
+# PROMPT_LOG — AI 활용 & 개발 기록
+
+> 과제 안내문 §4 (AI 활용 & 개발 기록) 제출용.
+> 환경: Claude Code (Sonnet 5) + MoAI-ADK 3.1.2, 출력 스타일 MoAI-Easy. 프롬프트 원문은 그대로 보존하고, 의도·결과·판단은 뒤에 덧붙임.
+> 표기: 🟢 채택 / 🟡 수정 후 채택 / 🔴 폐기 / ⏳ 미정
+
+---
+
+## 1. 타임라인 (프롬프트 · 의도 · 결과)
+
+### 2026-08-29 — 세션 1: 환경 정리 & 기술 스택 결정
+
+#### #01 `! moai cc -k` (터미널 명령, 2회 실행)
+- **의도**: MoAI의 칸반 모드(lead/plan/run/sync 세션을 나눠 협업하는 모드)로 과제를 시작하려 함.
+- **결과**: 두 가지 오류로 즉시 종료.
+  - `Input must be provided either through stdin or as a prompt argument when using --print`
+  - `SessionEnd hook ... Executable not found in $PATH: "bash"`
+- **AI 진단**:
+  - 오류 1은 moai 바이너리가 Claude를 `--print`(헤드리스) 모드로 띄우면서 프롬프트를 못 넘긴 것. 프로젝트 규칙 파일(`cross-session-messaging.md`)에 세션 간 메시징이 **네이티브 Windows에서는 미지원**이라 명시돼 있어 칸반 모드 자체가 이 환경에서 성립하지 않음.
+  - 오류 2는 `.claude/settings.json`의 `env.PATH`가 PATH를 통째로 덮어쓰면서 `C:\Program Files\Git\usr\bin`(bash 위치)을 빠뜨린 것. 새 PowerShell에서는 `where.exe bash`가 정상 탐지됨 → settings의 PATH 문자열만 문제.
+- **판단**: 🟢 PATH 수정 채택(1줄, 되돌리기 쉬움) / 🔴 칸반 모드 폐기(Windows 미지원) → 일반 세션에서 진행.
+- **검증**: settings.json의 PATH 문자열을 PowerShell에 그대로 적용해 `Get-Command bash` → `C:\Program Files\Git\usr\bin\bash.exe` 확인.
+
+#### #02 (AskUserQuestion 응답) `PATH 수정 + 칸반 없이 과제 진행 (권장)`
+- **의도**: 환경 문제는 최소 수정으로 닫고, 과제 본체로 빨리 넘어가기.
+- **결과**: `.claude/settings.json:485` PATH 앞에 `C:\Program Files\Git\usr\bin;C:\Program Files\Git\bin;` 추가.
+
+#### #03 (AI가 기술 스택을 물었을 때 → 답 대신 방향 수정)
+> https://github.com/Seung-zedd 내가 지금까지 만든 레포(Lucidify 포함)에서 최적의 기술 스택을 적용할 만한게 없을까? 그리고 아마 까먹었을텐데 과제_파일업로드_AI개발.md의 4. AI 활용 & 개발 기록 (필수 제출)은 필수
+- **의도**:
+  1. AI가 제시한 일반적인 스택 후보(Next.js / FastAPI 등) 대신, **내가 이미 운영해 본 스택**을 기준으로 고르게 하기 — 면접에서 "왜 이 스택인지"를 실제 경험으로 설명할 수 있어야 하므로.
+  2. AI가 §4(AI 활용 기록)를 빠뜨리지 않도록 못 박기.
+- **AI 작업**: `gh repo list` + `gh api`로 40개 레포의 언어·의존성·배포 설정을 조사.
+- **결과 (요약)**:
+  | 레포 | 스택 | 배포 | 과제 연관 |
+  |---|---|---|---|
+  | cubrain (실서비스) | Java 21 · Spring Boot 3.5 · PostgreSQL · Flyway · Svelte 5 | Docker → Railway, GitHub Actions | PDF 업로드 처리(`FileDropzone.svelte`, `PdfIngestionController`), JPA 감사(`BaseEntity`) 보유 |
+  | lucidify | SvelteKit(Svelte 5) · Supabase · adapter-vercel | Vercel | 서버리스 API 라우트, Vercel 배포 경험 |
+  | sbb_board | Spring Boot 3.4 · Thymeleaf · JPA | Docker | 서버 렌더링 화면 |
+  - 로컬 환경: `JAVA_HOME`=jdk-21(단, PATH의 `java`는 JRE 8), Node 24, pnpm 11, gh/Vercel CLI, Docker Desktop(미실행).
+- **AI 제안**: cubrain 스택 기반 + 배포 형태 4가지(백엔드/프론트 분리, Spring 단일, Thymeleaf, SvelteKit 단독) 제시.
+- **판단**: ⏳ (아래 #04에서 방향 재질문)
+
+#### #04 (AskUserQuestion 응답 — 옵션 대신 직접 입력)
+> 아 그러니까 파일 업로드에 제일 최적화된 기술스택은 cubrain이란 말이지? 만약에 lucidify 방식으로 깔끔하게 vercel로 무료 호스팅 및 배포하고 sveltekit를 사용하면 어떻지?
+- **의도**: AI의 "cubrain 권장"이 **기술적 최적**인지, **경험 재사용** 때문인지 구분해서 확인. 과제 규모(작음)와 무료 호스팅·단일 배포를 고려하면 SvelteKit + Vercel이 더 단순할 수 있다는 가설 제시.
+- **AI 답변 요지**: cubrain은 "최적"이 아니라 "이미 다뤄본 코드가 있음"이었음을 정정. SvelteKit + Vercel은 이 과제 규모에 적합하며, 대신 **서버리스 특유의 제약(요청 본문 크기 한도, 영구 디스크 없음, 무료 DB의 절전/일시정지 정책)** 을 고려사항으로 문서화해야 함. (상세는 CONSIDERATIONS.md에 반영 예정)
+- **같은 응답에서 결정**: 🟢 PROMPT_LOG.md는 AI가 매 단계 자동 기록, 회고(§3)는 본인이 직접 작성.
+
+#### #05
+> 그치? 굳이 무겁고 환경세팅하는데 시간 다날라가는 스프링부트3을 기술 스택으로 채택할 필요가 없지? 다량 컬렉션 조회에 유리한 JPA를 사용할 것도 아니고
+- **의도**: SvelteKit + Vercel 채택을 확정하고, Spring Boot를 제외하는 근거를 내 말로 정리.
+- **AI 답변**: 결론 동의. 단 근거 표현을 정정 — JPA의 강점은 "다량 조회"가 아니라 "복잡한 객체 관계 매핑"이며(다량 조회는 오히려 N+1을 조심해야 하는 영역), 이 과제는 테이블 2개·정책 행 최대 207개로 ORM·컨테이너·상시 서버를 정당화할 크기가 아님. 절약한 세팅 시간을 채점 비중 1위인 "고려사항의 깊이"에 쓰는 것이 합리적.
+- **최종 결정**: 🟢 **SvelteKit(Svelte 5) + Neon PostgreSQL + Vercel Blob → Vercel 단일 배포**. cubrain 경험은 코드가 아니라 CONSIDERATIONS.md의 비교 근거로 활용.
+- **다음 단계**: `/moai plan`으로 SPEC(요구사항·인수 기준) 작성.
+
+#### #06 (AI 주도) `/moai plan "..."` 호출
+- **의도**: 확정 스택과 과제 §2·§3·§5 요구사항을 한 번에 담아 SPEC 워크플로 시작. 워크플로 사전 질문 3개에 응답 — 프로젝트 문서 인터뷰 **건너뜀**(백지 프로젝트, 안내문이 곧 제품 문서), 디자인 방향 단계 **건너뜀**(과제가 화면보다 고려사항 평가), GitHub Issue **생성**(요구사항→구현 추적을 레포에 남김).
+- **AI 작업**: 동기화 검사(origin/main 차이 0, 다른 세션 없음) 후 `manager-spec` 에이전트(Opus)에 plan.md 초안 작성 위임. 지시에 "코드 작성 금지", OWASP 파일 업로드 체크리스트 스킬 선행 로드, Vercel 본문 한도·Blob 한도는 공식 문서로 검증 후 URL 인용 포함.
+
+#### #07
+> 커밋메시지도 이번 과제 전형에서만 ko로 설정해줘
+- **의도**: 커밋 메시지를 한국어로 — 단, 이 프로젝트에 한정.
+- **결과**: 🟢 `.moai/config/sections/language.yaml:22` `git_commit_messages: "en"` → `"ko"`. 프로젝트 안 설정 파일이라 다른 레포에는 영향 없음. (곁가지 확인에서 `error_messages`도 en으로 남아 있음을 알렸고, 그건 그대로 둠.)
+
+#### #08 `/goal` (세션 목표 설정)
+> 그리고 나 저녁 먹고 있을테니까 내가 판단 필요한 부분 직전까지만 알아서 작업해줘. 컨테이너에도 단순 구현 및 RED -> GREEN TDD까지는 glm한테 위임한다가 작성되어있는데(/pillwriter 포함) 여기에도 그 규칙이 적용되어 있니?
+- **의도**: ① 자리 비운 동안 자율 진행하되 **판단 게이트에서는 멈추게** 하기(자율 vs 승인 경계 명시). ② 다른 프로젝트(컨테이너·pillwriter)에서 쓰던 "기계적 구현·RED→GREEN은 GLM(저비용 모델)에 위임" 규칙이 이 프로젝트에도 상속됐는지 확인.
+- **AI 조사 결과**: 그 규칙은 `C:\Users\sdok1\projects\CLAUDE.md` (63-64행 `fast-worker` 라우팅, 267-276행 "Mechanical work routes to GLM first")에 있고, pillwriter는 `projects/` 하위라 **부모 CLAUDE.md를 상속**해서 적용됨. flow-assignment는 `C:\Users\sdok1\code\` 아래라 부모 CLAUDE.md가 없음 → **이 프로젝트에는 적용되지 않음**. 이 프로젝트 CLAUDE.md의 GLM 언급(§12·§15)은 MoAI 표준의 CG 모드 설명일 뿐 위임 규칙이 아님. 게다가 현재 세션은 `GLM_API_KEY` 미설정·tmux 없음이라 규칙을 복사해도 즉시 효력 없음 — GLM 위임은 `moai glm`으로 **별도 세션을 띄워야** 하는 세션 단위 스위치.
+- **판단**: 🟢 사용자 결정 "ㅇㅇ 그러면 (a)로 가자" — run 단계는 Claude/Opus(manager-develop) 유지. 근거: 코드량이 작아 절약 폭이 작고, 채점 비중은 고려사항·AI 활용 판단에 있음.
+
+#### #09
+> 아 그리고 practice-for-claude-code-architecture에서 설정한 pkg-global-chain 훅하고 preToolUse, PostToolUse, 그리고 Stop 훅도 여기에 설정했는지 확인해줘. 어짜피 저 레포는 실습용이기 때문에 웬만한 히스토리 내역들을 여기에 적용해도 문제 없을꺼야
+- **의도**: 실습 레포(`C:\Users\sdok1\projects\practice-for-claude-code-architecutre`)에서 만든 보안 훅(공급망·유출 방지·.env 보호)과 편의 훅(자동 lint·변경 파일 표시)이 이 과제에도 있는지 확인하고, 없으면 옮기도록 사전 승인.
+- **AI 조사**: 실습 레포 `.claude/hooks/` 5개 스크립트 + `permissions.deny` 21개 확인. flow-assignment에는 **모두 없음**(MoAI 기본 훅만 있고 `.env` 읽기 ask만 존재). "pkg-global-chain"은 `block-npm-supply-chain-risk.js`(npm 공급망 훅) + `pkg-check`(`projects/pkg-supply-chain-check.sh`) 조합을 가리킴.
+- **AI 판단(적용 시 수정점)**: ① ESM `import` 스크립트라 package.json 없는 현 상태에선 `.mjs`로 저장 ② pnpm 사용 프로젝트라 `pnpm dlx/exec/add -g` 규칙 추가, 단 pnpm 10은 의존성 lifecycle 스크립트를 기본 차단하므로 `--ignore-scripts` 강제는 npm에만 ③ `.env.example`은 README용으로 작성해야 하므로 차단 예외 ④ settings PATH에 `C:\Program Files\nodejs` 추가(훅 실행기가 node를 찾도록).
+- **결과**: (아래 #10에서 적용 내역·검증 기록)
+
+#### #10 (AI 주도) 실습 레포 훅 이관 + 검증
+- **적용 내역**:
+  - `.claude/hooks/guards/` 신설, 5개 스크립트를 `.mjs`로 이관: `block-env-edit`(`.env.example` 예외 추가) · `block-curl-command` · `block-npm-supply-chain-risk`(pnpm dlx/exec/pnpx 검사 추가, `sv`·`svelte-kit`·`svelte-check`·`vercel` 허용) · `lint-on-edit` · `show-changed-files-on-stop`(원본 그대로).
+  - `.claude/settings.json` hooks 등록: PreToolUse(Edit/Write → env 가드, Bash → curl·공급망 가드), PostToolUse(lint-on-edit), Stop(변경 파일 표시). 모두 exec form(`node` + args).
+  - `permissions.deny` 27개 추가(curl/wget/nc, `.env`·`.env.local`·`.env.development`·`.env.production`·`.env.*.local` 읽기·편집, npm/pnpm 전역 설치, `npx -y`/`npm exec -y`). 기존 `ask`의 `Read(./.env*)` 2개는 deny로 승격돼 제거. `.env.example`은 의도적으로 열어 둠.
+  - `env.PATH`에 `C:\Program Files\nodejs` 추가.
+- **검증**: `.moai/state/verify/guards/test-guards.mjs` 17개 케이스 **ALL PASS** (출력: 같은 폴더 `test-guards.out`). settings.json JSON 파싱 OK. 훅이 살아 있다는 실증 — 검증 명령어 자체가 새 훅에 두 번 차단됨(명령 텍스트에 `curl`, `pnpm dlx some-random-pkg` 포함). 이후 테스트는 파일 스크립트로 우회.
+- **판단**: 🟡 원본 수정 후 채택 (ESM→.mjs, pnpm 대응, `.env.example` 예외, 허용 목록 확장). `lint-on-edit`는 MoAI `handle-post-tool.sh`(LSP 진단)와 일부 겹치지만 eslint 실행은 MoAI 쪽에 없어 보완 관계로 판단해 유지. Stop 훅이 MoAI 기본 7개 + 1개가 되어 매 턴 변경 파일 목록이 뜨는 소음은 감수(과제 기록 관점에서 오히려 유용).
+
+#### #11 (AI 주도) SPEC 초안 완성 → 검토 게이트
+- **에이전트 산출물**: `.moai/specs/SPEC-UPLOAD-001/plan.md` (347줄). manager-spec(Opus)이 OWASP 파일 업로드 체크리스트 스킬을 먼저 로드한 뒤 작성. 결정 8개(데이터 모델·200개 상한·11단계 검증 파이프라인·입력 정규화·API·DB 계층·운영·테스트), 고려사항 매트릭스 26항목(과제 19 + 자체 발굴 7), 마일스톤 M1~M4, 위험 6, MX 태그 계획, 검증 URL 5개·패키지 버전 8개·미검증 1개.
+- **오케스트레이터(AI) 검토에서 잡은 보완점 3개** — 초안이 놓친 것:
+  1. `jpg`/`jpeg`·`tif`/`tiff`·`htm`/`html` 별칭 미처리 → 정상 `.jpeg`가 `EXTENSION_CONTENT_MISMATCH`로 오거부.
+  2. "판별 타입 ≠ 선언 확장자면 거부"가 과도(`.txt` 이름의 PNG까지 거부). 과제 예시는 "판별 결과가 차단 목록에 있을 때 거부"만으로도 충족 — 정책 선택과 근거 필요.
+  3. prefix 스니핑(`<svg`, `<!DOCTYPE html` 등) 감지 후 동작 미정의 — 무조건 거부면 정상 `.html`이 막힘.
+- **판단**: 🟢 사용자 선택 "보완점 3개 반영시킨 뒤 SPEC 파일 생성까지 진행". 오케스트레이터 검토 메모 3건을 manager-spec에 주석으로 넘겨 plan.md 수정 → spec.md / acceptance.md / spec-compact.md 생성 → plan-auditor 감사 → GitHub Issue 순으로 진행.
+
+#### #12
+> 어? 혹시 general-moai-adk(컨테이너)의 spec-interrogator는 없니?
+- **의도**: 다른 프로젝트에서 만든 "SPEC 적대적 심문" 에이전트(사람이 결정해야 할 지점만 뽑아내고 답은 절대 하지 않음)를 이 과제 SPEC에도 적용하고 싶음. 과제 §3 "요건에 없는 위험을 스스로 발견"과 §4 "AI 결과를 비판적으로 취사선택" 둘 다에 직결.
+- **AI 확인**: 있음 — `C:\Users\sdok1\projects\.claude\agents\spec-interrogator.md`(전역 링크, Opus/high). 입력은 SPEC 디렉터리 경로만(작성 맥락은 규칙상 무시), 5개 공격 범주(내부 모순·중의적 문장·암묵 가정·검증 불가·조용한 제품 결정)를 강제로 훑고, 산출물은 `docs/review/SPEC-UPLOAD-001/question/interrogation-draft.md`(한국어 질문 초안). 설계상 plan-auditor(기계적 검증) **다음 단계**로 돌리게 돼 있음.
+- **판단**: 🟢 워크플로에 편입 — plan-auditor PASS 후 실행, 질문 초안을 다음 판단 게이트에 감사 결과와 함께 제시. 사용자가 단 답은 CONSIDERATIONS.md 근거와 §4-3 회고의 1차 재료가 됨.
+
+#### #13
+> 굿. 혹시 이 과제 전형에도 C:\Users\sdok1\projects\pillwriter\core-skills 적용이 되어있니? @../../projects/pillwriter/ 여기에서 너의 추천을 하지 않고 내 스스로 플래그를 설정하는 spec-authority도 적용이 됬는지 궁금해. 이건 단순한 과제 전형이니까 내가 판단하기에는 필요 없을 것 같아 도메인이 그렇게 복잡한 것도 아니고
+- **의도**: 다른 프로젝트(pillwriter)의 두 장치 — `core-skills/` 문서 4종과 "AI가 추천을 먼저 내지 않고 founder가 플래그를 직접 판정하는" SPEC 리뷰 권한 규칙 — 가 여기 상속됐는지 확인. 후자는 이 과제 규모엔 과하다는 본인 판단을 먼저 밝힘.
+- **AI 확인**: 둘 다 **미적용**. ① `core-skills/`는 flow-assignment에 폴더도, CLAUDE.md 참조도 없음(공급망 훅만 #10에서 별도 이관). ② 해당 규칙은 pillwriter `CLAUDE.md` §3 "SPEC Review Pipeline" + `.claude/rules/local/spec-review-authority.md`에 있고, 이 프로젝트 CLAUDE.md에는 §3 자체가 없음. 실증: 지금까지 AskUserQuestion마다 `(권장)` 라벨을 붙여 왔는데 그 규칙([HARD] "No AI recommendation reaches the founder before their independent judgment")이 살아 있었다면 위반이었을 것.
+- **판단**: 🟢 사용자 판단에 동의 — 3단계 founder 판정 파이프라인(질문→답변 파일→확정 항목만 반영)은 미적용 유지. 근거: 도메인이 작고, 과제 §4는 오히려 "AI 추천 + 사용자의 비판적 취사선택" 과정 자체를 평가함. 대신 그 규칙의 핵심 가치 하나는 이미 흡수 — spec-interrogator를 "질문만, 답 없음" 원칙 그대로 2단계로 실행(#12). AI 추천은 계속 `(권장)`으로 표시하되 근거를 같이 적고, 사용자가 뒤집은 경우를 이 로그에 남긴다.
+
+#### #14 (AI 주도) 보완점 반영 + SPEC 파일 생성 완료
+- **plan.md 반영**: NOTE 1 별칭 표 5쌍(`jpeg→jpg` 등, `file-type` README 실측 근거) + 정책 저장 시에도 대표형으로 접기(안 그러면 `jpeg` 차단이 `.jpg` 통과를 허용). NOTE 2 **(a) 채택** — 탐지 확장자가 차단 목록에 있을 때만 거부, 단순 불일치는 `mismatch: true`로 기록만(오탐 누적 → 사용자가 차단 메시지를 무시하게 되는 UX 손실을 근거로 (b) 기각, 화이트리스트 전환 시 뒤집힘 명시). NOTE 3 prefix → 합성 탐지 확장자 매핑 후 동일 정책 대조, `<script`→`js` 매핑 금지 근거(js가 고정 7개 중 하나라 HTML 전체 차단 위험). `upload_attempt.extension`은 마지막 세그먼트 1개, `varchar(20)`.
+- **생성**: spec.md 194줄(REQ 15, GEARS 5유형, Out of Scope h3 5) · acceptance.md 145줄(AC 16, 품질 게이트 Q1~Q10) · spec-compact.md 78줄 · progress.md 50줄(§E.1). 오케스트레이터 검증: 프론트매터 12필드+tier+issue_number, REQ 15, AC 라벨 17/논리 16, h3 5 — 보고와 일치.
+- **판단**: 🟢 채택. plan.md 상한(360줄) 맞추려 표→문장 압축한 5곳은 결정·근거 무손실이라 되돌리지 않음. 다음: plan-auditor 감사(iteration 1, 경로만 전달).
+
+#### #15
+> 그래 너가 아무리 코딩 영역을 자동화해준다고 해도 over planning하면 오히려 읽을 SPEC 문서가 많아지니까 이 점도 유의하면서 내가 pillwriter에서 설계했으니까 그대로 절차를 밟으면 돼
+- **의도**: (직전 문답 — plan-audit는 기계 검증이라 founder verdict 불필요, progress.md는 founder 확인용 — 을 확인한 뒤) 과잉 계획 금지 + pillwriter 절차 그대로.
+- **AI 적용**: 산출물은 Tier M 5개 파일로 고정, 추가 문서 금지. founder가 읽는 건 심문 질문 초안 + progress.md.
+
+#### #16 (AI 주도) plan-audit iteration 1 → FAIL 0.66 → 자동 수정
+- **결과**: must-pass 7개 전부 통과, 차원 점수 Clarity 0.75 · Completeness 0.70 · Testability 0.75 · **Traceability 0.50** → 조화평균 0.66. 보고서 `.moai/reports/plan-audit/SPEC-UPLOAD-001-review-1.md`.
+- **blocking 6건**: D3 과제 필수 동작(고정 토글 저장·커스텀 X 삭제) REQ 부재(엔드포인트 표에만 존재) / D1 REQ-015(policy-ui) AC 0건 / D2 REQ-012 AC 0건 / D5 AC-012 "본문 전체 읽은 흔적 없음" 이진 판정 불가 / D4 `PROMPT_LOG.md` 제출 게이트 없음 / D6 Q10 MX 태그 수가 plan §13과 불일치.
+- **AI 판단**: 절차대로 founder 판정 없이 manager-spec에 수정 위임 → 재감사 2/3. 지시에 사용자 원칙 반영 — REQ/AC 상한(16/16)은 **SPEC 분할·Tier 상향 없이 통합으로** 해결, 감사관이 보존하라고 한 성질(차단 케이스마다 통과 케이스 쌍, 한계를 숨기지 않은 판단)은 유지.
+
+#### #17 (AI 주도) 결함 수정 완료 → 재감사 2/3
+- **수정 결과**: D1~D6 blocking + D7~D12 optional 전부 반영. D3로 REQ-002(고정 토글 영속)·REQ-003(커스텀 삭제) 신설, 자리는 REQ-004/005(패턴 위반·충돌)를 "커스텀 추가 거부 계약" 1건으로 통합해 확보 → REQ 16/16. AC는 005a/005b 묶음 + 016a/016b 신설 → 16/16. D5는 "본문 흔적 없음"을 "`request.formData` 스파이 미호출 단언"으로 치환. D4로 Q11(`PROMPT_LOG.md` 완결성 게이트) 신설. 자체 검증: 고아 REQ 0 · 고아 AC 0 · Out of Scope h3 5.
+- **에이전트가 스스로 잡은 회귀**: AC-001을 REQ-002로 옮기자 REQ-001이 AC 없는 상태가 됨 → AC-001/002에 REQ-001 병기로 닫음.
+- **판단**: 🟢 채택, iteration 2 감사 요청(이전 보고서 경로 전달, 전부 새로 읽게 지시).
+
+#### #18 (AI 주도) plan-audit iteration 2 → PASS 0.86
+- **점수**: 0.66 → 0.86 (Clarity 0.85 · Completeness 0.85 · Testability 0.80 · Traceability 0.95), 회귀 없음, must-pass 7/7, D1~D12 중 11건 완전 해소·D10 부분(예산 포화로 수용). 보고서 `.moai/reports/plan-audit/SPEC-UPLOAD-001-review-2.md`. 민감도 검사에서도 0.81~0.83으로 임계값 유지.
+- **신규 지적 N1**: AC-016a(낙관적 갱신 롤백)를 실행할 컴포넌트 테스트 도구가 문서에 없음(Vitest node 환경만 선언, jsdom/testing-library 0건) → Q1 "AC 전부 통과"를 정직하게 판정 불가. N3: REQ-007 "유니코드 정규화"는 "NFC 정규화"로 — 파일명 NFC vs 입력 NFKC 구분은 보안상 의도된 차이.
+- **AI 판단**: 감사관 권고대로 **재감사 없이 선수정**(N1은 파일표·검증 방식만 건드려 REQ/AC 예산 영향 없음; 기계적 결함이라 founder 판정 대상 아님). N1은 (a)안 — jsdom + testing-library로 컴포넌트 테스트 1파일 선언, Playwright 보류는 유지. 수정 후 심문(spec-interrogator) 진행.
+
+#### #19 (AI 주도) N1~N5 반영 완료 → spec-interrogator 심문 시작
+- **반영**: N1 컴포넌트 테스트 — Vitest `jsdom` + `@testing-library/svelte` 5.4.2 + `jsdom` 30.0.1(npm 실조회), `vitest-browser-svelte`는 실제 브라우저(Playwright provider)를 띄워 "Playwright 보류"와 충돌해 기각. 테스트 파일명은 지시 예시(`PolicyPanel`) 대신 이미 선언된 컴포넌트 `FixedExtensionList.test.ts`로 — 없는 이름을 새로 만들지 않는 판단(에이전트 자체 결정, 타당하여 수용). N3 REQ-007 "NFC 정규화" + 파일명 NFC vs 입력 NFKC 비대칭을 REQ 본문에 명시. N2/N4/N5도 반영, REQ/AC 16/16·h3 5 유지, 감사 grep 0건 → 8건.
+- **판단**: 🟢 채택. plan 단계 감사 종료(2회, 최종 PASS 0.86). spec-interrogator를 SPEC 경로 + 과제 안내문(제품 의도 원본)만 넘겨 실행 — 작성 맥락 미전달.
+
+#### #20 (AI 주도) spec-interrogator 심문 결과 → founder 판단 게이트
+- **산출물**: `docs/review/SPEC-UPLOAD-001/question/interrogation-draft.md` — 판단 지점 17개(내부 모순 3 · 모호 4 · 암묵 전제 4 · 검증 불가 2 · 조용한 제품 결정 4), 기계적 결함 3건은 각주로 분리. 답·권고 없음(규칙 준수 확인).
+- **AI 정리**: 17개를 뿌리별로 묶어 founder가 읽을 양을 줄임 — A 다중 파일 여부(Q1·Q9·Q16), B 확장자 없는 파일(Q14), C 별칭 처리(Q5·Q7·Q15), D 요청 단위 거부 기록(Q2) + 나머지 9개는 제안표. 사용자가 "spec-authority(AI 추천 금지) 미적용"을 결정했으므로(#13) 각 항목에 (권장)+근거를 붙임.
+- **AI 제안 핵심**: A는 요청당 1파일로 단순화(세 질문 동시 해소, 과제가 다중 파일을 요구하지 않음) / B 거부 유지 / C 대표형 통일 + 안내 문구 / D 테이블 미기록·로그만 / Q8 `/api/uploads/recent` 스코프 제외(REQ 예산 포화) / Q17 PROMPT_LOG는 SPEC 밖 유지.
+- **판단**: ⏳ founder 선택 대기 (AskUserQuestion 2라운드).
+
+#### #21
+> 아 맞다 pillwriter에도 같은 방식을 했었는데 우리가 과제.md 파일을 PRD문서로 취급하기로 했지? 심문 초안에도 PRD 문서에 근거가 있으면 그 부분을 작성해주고, 없으면 그냥 NONE이라고 적으면 돼
+- **의도**: 판단 지점마다 "제품 문서(PRD=과제.md)가 이미 이 결정을 제약하는가"를 한눈에 보이게 — 근거 있는 질문은 PRD에 맞춰 답하고, NONE인 질문만 순수 제품 판단으로 남기려는 것.
+- **AI 적용**: 초안 17개 질문 전부에 `PRD 근거` 줄 추가(오케스트레이터 직접 편집, 에이전트 재실행 없음). 근거 있음 14개(§2-A/B 필수 동작·§3 고려사항·§5 제출물·화면 예시 인용), **NONE 3개** — Q5(파일명 별칭 정규화), Q8(`/api/uploads/recent`), Q9(다중 파일 부분 성공 규격). 이 셋은 과제가 요구하지 않은 설계 산물이라 순수 제품 판단 대상.
+- **판단**: 🟢 규칙으로 기억(다음 심문부터 에이전트 지시에 포함).
+
+#### #22 (founder 판정 1라운드) 묶음 A~D
+- **A** 요청당 파일 **1개**로 단순화 (Q1·Q9·Q16 동시 해소) / **B** 확장자 없는 파일 **거부 유지**(415 + 사유) / **C** 별칭은 판정·저장·비교 **전부 대표형** + 접힘 안내 문구 / **D** 요청 단위 거부는 테이블 미기록, **구조화 로그만**.
+- 4건 모두 AI 제안(권장)과 동일 — founder가 근거를 읽고 동의한 것으로 기록. 뒤집은 항목 없음.
+
+#### #23 (founder 판정 2라운드 + 질문)
+> 1번을 할껀데 나 이거에 대해 궁금했는데 지금같이 프로젝트 볼륨이 작은 부분에서는 SPEC 비용이 그렇게 크지 않잖아? 그럼 너가 SPEC을 제대로 파악했다고 가정했을 때 TDD 및 리팩토링까지 끝냈는데 만약에 어딘가 edge case가 터져서 다시 SPEC으로 retrogade해야 돼. 그럼에도 불구하고 fix 비용은 싸니?
+- **판정**: 나머지 9개(Q3·Q4·Q6·Q8·Q10·Q11·Q12·Q13·Q17) 제안대로 일괄 확정. 17개 전부 founder 판정 완료, 뒤집은 항목 0.
+- **질문 의도**: SPEC-first의 비용 대비 효과를 "구현 후 edge case로 SPEC 회귀" 시나리오로 검증.
+- **AI 답변 요지**: 비용은 SPEC 크기가 아니라 "edge case가 뒤집는 결정의 수"로 결정됨. ① 기존 결정 범위 안(대다수) → 엣지 표 한 줄 + 순수 함수 테스트 행 + 코드, 거의 공짜. ② 결정 자체를 뒤집음 → REQ 수정 + HISTORY + 자동 재감사 + 결합된 AC·테스트 재작성, ①의 3~5배지만 5파일·900줄 규모라 한 마일스톤 수준. 이 프로젝트는 판정 로직을 순수 함수 4개로 뽑아 ②를 ①로 바꾸도록 설계했고, 회귀 경로(manager-develop blocker → manager-spec 수정 → 재감사)가 절차로 고정돼 비용이 예측 가능. 심문 17개가 바로 ②를 코드 전에 소진하는 장치.
+- **AI 작업**: manager-spec에 Stage 3 반영 지시(v0.1.0 → 0.2.0, HISTORY 행, REQ/AC ≤16 유지). 반영 후 재감사는 생략 — `/moai run` 진입 시 Plan Audit Gate가 해시 변경을 감지해 자동 재실행. 판정 요약을 심문 초안 말미 "Founder verdicts" 표로 기록.
+
+#### #24
+> 반영 끝나면 Issue까지 만들고 /clear 메시지 준비해줘
+- **반영 결과(v0.2.0)**: 판정 13묶음 전부 file:line 단위로 반영. 사유 코드 10종 + 알림 3종 문구 상수 표(plan §4.1) 신설, `TOO_MANY_FILES`·`MAX_FILES_PER_REQUEST`·`/api/uploads/recent` 제거, 매트릭스 26 → 28(E8 고아 Blob, E9 recent 제외), 품질 게이트 Q1~Q12. 에이전트 판단: `phase`는 릴리스 타깃이라 `"v0.1.0 target"` 유지(문서 버전과 다른 축) — 타당하여 수용. N4로 남겼던 REQ-013 미검증 2건은 Q1·Q4로 자연 해소.
+- **오케스트레이터 재검증(grep)**: version 0.2.0 · REQ 16 · AC 16 · h3 5 · 제거 식별자는 이력 문장에만 잔존(실사용 0). 총 994줄(plan.md 391줄 — 처음 잡은 360줄 상한을 넘었으나 판정 반영분이라 수용).
+- **Issue**: #1 생성(`spec` 라벨 신규 생성 후), `spec.md` `issue_number: 1`, Issue에 SPEC 경로 댓글. 커밋은 환경 설정 / SPEC 산출물 2건으로 분리(되돌리기 용이).
+- **판단**: 🟢 plan 단계 종료. 감사 보고서(`.moai/reports/plan-audit/`)는 규칙상 로컬 산출물이라 커밋하지 않음 — 이 로그와 progress.md에 결과 요약이 있음.
+
+---
+
+## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
+
+| 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
+|---|---|---|
+| 코딩 에이전트 | Claude Code (Sonnet 5) + MoAI-ADK 3.1.2 (MoAI-Easy 스타일) | 전 과정. 단계마다 계획→실행→검증 흐름과 AskUserQuestion으로 의사결정을 구조화 |
+| CLI 도구 | `gh` (GitHub CLI) | 내 레포 40개의 언어·의존성·배포 설정을 일괄 조사해 스택 후보를 근거 있게 추리는 데 사용 |
+| CLI 도구 | PowerShell / Git Bash | settings.json PATH 수정이 실제로 bash를 찾는지 재현 검증 |
+| 에이전트 | `manager-spec` (Opus) | SPEC 초안(plan.md) 작성, 보완점 반영, spec/acceptance/compact/progress 생성 — 요구사항 문서화 전담 |
+| 스킬 | `moai-ref-owasp-checklist` | manager-spec이 파일 업로드 검증 파이프라인 설계 전에 OWASP 파일 업로드·경로 조작·MIME 스푸핑 기준선 로드 |
+| 도구 | WebFetch (Vercel/Neon/file-type 공식 문서) | 4.5MB 본문 한도, Blob 한도, Neon 절전, `file-type` 반환값을 원문으로 확인해 URL 인용 — 기억 대신 근거 |
+| 에이전트 | `plan-auditor` (Opus) | SPEC 기계 감사(EARS 형식·추적성·프론트매터·상한). 작성 맥락 없이 경로만 전달해 독립성 확보 |
+| 에이전트 | `spec-interrogator` (Opus, 전역) | SPEC을 적대적으로 읽어 사람이 결정해야 할 판단 지점만 질문으로 추출 — 답은 하지 않음 |
+| 훅 | `.claude/hooks/guards/*.mjs` (실습 레포에서 이관) | `.env` 편집 차단, curl/wget 차단, npm/pnpm 공급망 가드, 편집 후 lint, 턴 종료 시 변경 파일 표시 — AI 자신에게도 적용 |
+| 수동 도구 | `pkg-check` (`projects/pkg-supply-chain-check.sh`) | 새 npm 패키지 추가 전 공급망 점검 (사용 시점에 기록) |
+
+> 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
+
+---
+
+## 3. 판단 근거 회고 (본인 작성)
+
+> AI가 준 결과 중 **그대로 쓴 것 / 고쳐 쓴 것 / 버린 것**과 그 이유. AI가 놓쳤거나 틀렸는데 내가 잡아낸 부분.
+
+- (작성 예정) 
