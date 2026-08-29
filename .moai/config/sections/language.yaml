@@ -19,7 +19,7 @@ language:
   # Git commit message language
   # Options: en (English, recommended), ko, ja, zh
   # Recommended: "en" for international collaboration
-  git_commit_messages: "en"
+  git_commit_messages: "ko"
 
   # Code comment language
   # Options: en (English, recommended), ko, ja, zh

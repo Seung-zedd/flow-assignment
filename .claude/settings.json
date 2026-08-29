@@ -81,6 +81,40 @@
           }
         ],
         "matcher": "Agent|Task"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/block-env-edit.mjs"
+            ],
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/block-curl-command.mjs"
+            ],
+            "timeout": 5,
+            "type": "command"
+          },
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/block-npm-supply-chain-risk.mjs"
+            ],
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "PostToolUse": [
@@ -143,11 +177,32 @@
           }
         ],
         "matcher": "Write|Edit|MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/lint-on-edit.mjs"
+            ],
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
       }
     ],
     "Stop": [
       {
         "hooks": [
+          {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guards/show-changed-files-on-stop.mjs"
+            ],
+            "timeout": 10,
+            "type": "command"
+          },
           {
             "command": "bash",
             "args": [
@@ -482,7 +537,7 @@
     "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
     "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
-    "PATH": "C:\\Users\\sdok1\\AppData\\Roaming\\npm;C:\\Users\\sdok1\\AppData\\Local\\Programs\\moai;C:\\Users\\sdok1\\.local\\bin;C:\\Users\\sdok1\\go\\bin;/c/Program Files/nodejs;/c/Users/sdok1/AppData/Roaming/npm;/c/Users/sdok1/AppData/Local/Programs/moai;/usr/local/bin;/usr/local/sbin;/usr/bin;/bin;/usr/sbin;/sbin"
+    "PATH": "C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\bin;C:\\Program Files\\nodejs;C:\\Users\\sdok1\\AppData\\Roaming\\npm;C:\\Users\\sdok1\\AppData\\Local\\Programs\\moai;C:\\Users\\sdok1\\.local\\bin;C:\\Users\\sdok1\\go\\bin;/c/Program Files/nodejs;/c/Users/sdok1/AppData/Roaming/npm;/c/Users/sdok1/AppData/Local/Programs/moai;/usr/local/bin;/usr/local/sbin;/usr/bin;/bin;/usr/sbin;/sbin"
   },
   "permissions": {
     "allow": [
@@ -603,11 +658,36 @@
       "Bash(rm:*)",
       "Bash(sudo:*)",
       "Bash(chmod:*)",
-      "Bash(chown:*)",
-      "Read(./.env)",
-      "Read(./.env.*)"
+      "Bash(chown:*)"
     ],
     "deny": [
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.development)",
+      "Read(./.env.production)",
+      "Read(./.env.*.local)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Edit(./.env)",
+      "Edit(./.env.local)",
+      "Edit(./.env.development)",
+      "Edit(./.env.production)",
+      "Edit(./.env.*.local)",
+      "Edit(**/.env)",
+      "Edit(**/.env.local)",
+      "Bash(npm install -g:*)",
+      "Bash(npm i -g:*)",
+      "Bash(npm install --global:*)",
+      "Bash(pnpm add -g:*)",
+      "Bash(pnpm add --global:*)",
+      "Bash(pnpm install -g:*)",
+      "Bash(npx -y:*)",
+      "Bash(npx --yes:*)",
+      "Bash(npm exec -y:*)",
+      "Bash(npm exec --yes:*)",
       "Read(./secrets/**)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
