@@ -304,6 +304,9 @@
 - **push**: `git rev-list --left-right origin/main...HEAD` → `0 6` 확인 후 `git push origin main` → `97c2e2e..cc518d7`, 이후 `0 0`.
 - **M2 완료 판정**: plan §11 M2 기준(토글·추가·삭제 새로고침 후 유지 → AC-001/002/007 API+DB, 거부 사유 6종 노출 → AC-003~006 + 화면 문구는 Q12 수동) 충족. Founder 판단 대기 항목: `{input}` 정규화 후보 표시, 고정 7개 밖 `[ext]`의 404 재량.
 
+#### #52 (AskUserQuestion 응답 3건) `정규화된 값 jpeg (권장)` · `SvelteKit 기본 404/400 유지 (권장)` · `/clear 후 새 세션에서 M3 (권장)`
+- **결과**: M2 Founder digest ①의 재량 판단 2건 모두 유지(코드 변경 없음). M3는 재개 블록(메모리 `project-spec-upload-001-m2-complete.md` + `.moai/state/handoff/pending.json`)을 붙여넣어 새 세션에서 시작. 세션 3 종료 시점 상태: M2 완료·푸시, M3~M4 대기, 시크릿 미준비(의도됨 — M3 코드 후 안내), 다음 세션부터 `fable[1m]` 적용.
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
