@@ -444,6 +444,11 @@
 - **의도**: 무인 진행 범위 지정 — 여러 선택지 중 판단이 필요한 분기 **직전까지**.
 - **결과**: 진단·증거 보관·잔여 정리·PROMPT_LOG 커밋까지 수행하고 AskUserQuestion으로 정지. 선택지: (A) 대시보드에서 `flow-assignment` 프로젝트 → Settings → Environment Variables에 두 변수가 **Production** 스코프로 있는지 + Deployments → 최신 → Runtime Logs의 예외 문구를 알려주기 (B) 터미널에서 직접 `npx vercel env ls`·`npx vercel logs https://flow-assignment-opal.vercel.app`(값은 출력되지 않음) (C) 값 노출 없는 진단 엔드포인트(`/api/health`, 변수 존재 여부 boolean만) 추가 후 push (D) Chrome 확장을 연결해 AI가 대시보드를 읽기. Q7·Playwright 스모크는 200 확인 뒤 이어서.
 
+#### #72 세션 6 마무리
+> 내일하자 고생했어 알아서 마무리지어
+- **의도**: 세션 종료. Vercel 확인(#71의 A~D)은 내일 사용자가 결정.
+- **세션 6 종료 시점 상태**: origin/main = `e40e8ee`(PROMPT_LOG #70~#71) 이후 이 #72 커밋까지 push. 코드 변경 0, 스폰 0. **배포 URL 여전히 500** — 원인은 "Vercel 런타임에서 `DATABASE_URL`/`BLOB_READ_WRITE_TOKEN`이 안 보여 `handle`이 throw"로 좁혀졌고, 넷 중 무엇(프로젝트 불일치·이름·값 형식·스코프)인지는 사용자가 대시보드/CLI로 확인해야 함. Q7 미충족 · Playwright 스모크 미착수 · 모델 프로브 미실행(스폰 없었음). 재개 블록은 메모리 `project-spec-upload-001-m4-complete.md`에 저장.
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
