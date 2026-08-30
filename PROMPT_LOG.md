@@ -422,7 +422,31 @@
 > 잠깐 정지. 여전히 서브에이전트들도 Fable로 상속되서 돌고 있어 일단 잠깐 세션 마무리할꺼니까 기록해두고 세션 재시작하면 메인 세션 상속 안하고 SPEC 단계 및 REFACTOR는 opus / 단순 구현 및 RED -> GREEN은 sonnet으로 배정되는게 맞겠지?
 - **답**: 배분 자체는 #30 그대로가 맞음(SPEC·감사·REFACTOR·문서 = Opus, RED→GREEN = Sonnet, 메인 = Fable). 단 **원인 미확정** — 두 번째 에이전트는 `name` 없이 `model: "opus"`로 띄웠는데도 사용자 관찰상 Fable로 실행됨 → #68의 "named 스폰" 설명만으로 부족. 의심: `.claude/settings.local.json`의 `"teammateMode": "auto"`, 스폰 모델 인수의 실제 적용 여부. 오케스트레이터가 검증 없이 "Opus로 돌고 있다"고 말한 것은 미관측 주장(사용자가 두 번 잡아냄).
 - **조치**: `settings.local.json`에 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"`(다음 세션부터). **다음 세션 첫 작업 = 모델 프로브**: 실제 작업 전에 작은 읽기 전용 스폰 1회 → 창의 모델 표시 + `.moai/logs/agent-model-audit.jsonl` 대조 → Opus/Sonnet이 확인될 때까지 구현 스폰 금지.
-- **세션 5 종료 시점 상태**: M4 커밋 6건 중 5건 push(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬(push 대기). **배포 URL `/`·`/api/policy` 여전히 500** — push로 새 배포(`efihchig1`, Ready)는 만들어졌으나 런타임 오류 지속 → 다음 세션에서 Vercel Runtime Logs로 예외 문구 확인이 1순위(후보: 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7 미충족. 사용자가 README 에이전트를 중지(커밋은 이미 완료된 뒤). 워크트리 `.claude/worktrees/agent-a44a…` 잔존 → 정리. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 **MoAI-ADK 템플릿 기본값**(전역 `~/.claude/settings.json`에도 동일). 과제 규모엔 불필요 → 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 끄기(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트 영향이 있어 보류. / 플러그인 / MCP / 에이전트 / 도구
+- **세션 5 종료 시점 상태**: M4 커밋 6건 중 5건 push(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬(push 대기). **배포 URL `/`·`/api/policy` 여전히 500** — push로 새 배포(`efihchig1`, Ready)는 만들어졌으나 런타임 오류 지속 → 다음 세션에서 Vercel Runtime Logs로 예외 문구 확인이 1순위(후보: 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7 미충족. 사용자가 README 에이전트를 중지(커밋은 이미 완료된 뒤). 워크트리 `.claude/worktrees/agent-a44a…` 잔존 → 정리. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 **MoAI-ADK 템플릿 기본값**(전역 `~/.claude/settings.json`에도 동일). 과제 규모엔 불필요 → 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 끄기(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트 영향이 있어 보류.
+
+### 2026-08-30 — 세션 6: M4 마무리 — 배포 500 추적 (`/clear` 후 재개, 메인 세션 Fable 5)
+
+#### #70
+> ultrathink. SPEC-UPLOAD-001 run 진입 (M4 마무리 — 배포 500 해결 → Q7 → Playwright 스모크). … 전제 검증 4건 … 실행: Vercel 대시보드 → Runtime Logs에서 예외 문구 확인 → 원인 수정 → GET / 200 (Q7) → PROMPT_LOG #70 → /moai e2e … 브리핑 생략하고 바로 시작해. 이전의 서브에이전트 상속 문제를 재발하지 않도록
+- **의도**: 세션 5 재개 블록. 1순위 = 배포 500 원인 → Q7(GET / 200) → Playwright 스모크. 구현 스폰 전 모델 프로브 필수.
+- **전제 검증**: git `0 0` · `ad2d740` ✓ · spec `in-progress` ✓ · 배포 URL 500 ✓(해결 대상). 모델 프로브는 "구현 스폰이 실제로 필요해지는 시점 직전"으로 미룸 — 환경변수 문제면 스폰 없이 끝나기 때문. 이번 세션엔 스폰 0회.
+- **AI 진단(값 미열람)**:
+  - 정적 `/robots.txt`는 200인데, 존재하지 않는 `/health`·`/api/files`까지 404가 아닌 500 `{"message":"Internal Error"}` → 라우팅 **전**에 실행되는 `hooks.server.ts`의 `handle`에서 예외. 그 안엔 `getDb()`·`getBlobStore()`뿐이고 둘 다 "환경변수 없으면 throw".
+  - 로컬 재현: `pnpm build` → `DATABASE_URL= BLOB_READ_WRITE_TOKEN= pnpm preview` 에서 `/health`·`/` 모두 500 동일 JSON, 서버 로그 `Error: DATABASE_URL이 설정되지 않았습니다.` / 로컬 `.env` 로드 상태에선 `/health` 404·`/` 200. 증거: `.moai/state/verify/2b3763e1/deploy-500-diagnosis.md`.
+  - GitHub deployments(`gh api`): Production 배포 3건(95cb161 12:35Z · 4f72b84 13:43Z · ad2d740 14:00Z) 모두 success인데 전부 500. #63의 변수 등록이 이보다 앞서므로 "등록 후 재배포 누락"은 제외. 남은 후보: 변수를 등록한 프로젝트가 배포 프로젝트(`prj_KsXr…`, `flow-assignment`)와 다름 / 변수 이름 불일치 / 값 형식 오류(`neon()` 파서 거부) / 스코프 착오. 넷 중 무엇인지는 Runtime Logs 문구(`DATABASE_URL이 설정되지 않았습니다` vs `BLOB_READ_WRITE_TOKEN…` vs neon 형식 오류)로만 갈림.
+  - 빌드 산출물 `.vc-config.json`: 런타임 `nodejs24.x`(adapter-vercel) — `$env/dynamic/private`는 `process.env`를 읽으므로 코드 경로 문제 아님. 배포별 URL은 302(배포 보호), 프로덕션 도메인만 공개 — 정상.
+- **막힌 것(AI가 Vercel을 볼 통로 없음)**: Chrome 확장 미연결(취침 중) · `npx vercel`은 `block-npm-supply-chain-risk` 훅이 하드 거부(`vercel`이 `BUILTIN_NPX_ALLOWLIST`에 없음 — 세션 5의 Vercel CLI는 사용자가 직접 실행) · 토큰 없음. 원인 확정과 수정 모두 사용자 조작이 필요해 결정 지점에서 정지(#71).
+- 🟡 **AI가 잡은 AI 실수**: 세션 5의 #69 편집 때 `## 2.` 섹션 제목이 #69 마지막 줄 끝에 붙어 사라짐(`…보류. / 플러그인 / MCP …`) → §2 표가 제목 없이 #69 본문에 매달린 상태로 커밋돼 있었음. 이 세션에서 제목 줄을 HEAD~10 원문으로 복구.
+- **정리(#69 잔여)**: `.claude/worktrees/agent-a44a…` — `git worktree list`에 없고 `.git` 파일도 없는 127MB 잔여 복사본 → 삭제. 병합 완료 브랜치 `worktree-agent-a44a…` → `git branch -d`.
+
+#### #71
+> Goal set: 나 자러 갈꺼니까 내가 멀티옵션으로 판단 필요한 부분 직전까지만 작업 해주면 돼
+- **의도**: 무인 진행 범위 지정 — 여러 선택지 중 판단이 필요한 분기 **직전까지**.
+- **결과**: 진단·증거 보관·잔여 정리·PROMPT_LOG 커밋까지 수행하고 AskUserQuestion으로 정지. 선택지: (A) 대시보드에서 `flow-assignment` 프로젝트 → Settings → Environment Variables에 두 변수가 **Production** 스코프로 있는지 + Deployments → 최신 → Runtime Logs의 예외 문구를 알려주기 (B) 터미널에서 직접 `npx vercel env ls`·`npx vercel logs https://flow-assignment-opal.vercel.app`(값은 출력되지 않음) (C) 값 노출 없는 진단 엔드포인트(`/api/health`, 변수 존재 여부 boolean만) 추가 후 push (D) Chrome 확장을 연결해 AI가 대시보드를 읽기. Q7·Playwright 스모크는 200 확인 뒤 이어서.
+
+---
+
+## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
 
 | 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
 |---|---|---|
