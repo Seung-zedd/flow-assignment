@@ -379,7 +379,50 @@
 #### #62
 > 시크릿 준비 안내는 내가 수동으로 하는거니까 그냥 chatgpt 활용해서 해볼께
 - **의도**: 비밀번호 교체·Vercel 연결 등 손으로 하는 절차는 이 세션 밖에서 ChatGPT에 물어가며 진행. 이 세션은 여기서 대기.
-- **AI 메모**: ChatGPT는 서버로 올라가므로 값(접속 문자열·Blob 토큰)은 거기에도 붙여넣지 말고 절차만 묻도록 한 줄 당부. 재개 조건은 #59와 동일 — "Vercel 둘 다 Sensitive 배지 있음 · 로컬 .env 채움(교체된 새 값)" 두 줄이면 M4 진입. / 플러그인 / MCP / 에이전트 / 도구
+- **AI 메모**: ChatGPT는 서버로 올라가므로 값(접속 문자열·Blob 토큰)은 거기에도 붙여넣지 말고 절차만 묻도록 한 줄 당부. 재개 조건은 #59와 동일 — "Vercel 둘 다 Sensitive 배지 있음 · 로컬 .env 채움(교체된 새 값)" 두 줄이면 M4 진입.
+
+#### #63
+> Vercel 환경변수 설정을 완료했습니다. … Production + Preview에 BLOB_WEBHOOK_PUBLIC_KEY · BLOB_STORE_ID · BLOB_READ_WRITE_TOKEN · DATABASE_URL 등록, 뒤 둘은 Sensitive. 로컬 .env 직접 설정. 중요: 값 출력·.env 읽기·기존 변수 삭제/재등록·`--value`/pipe/`vercel env pull` 금지. 이제 기존 계획대로 M4를 진행해주세요.
+- **의도**: 시크릿 준비 완료 보고 + AI 제약 6개 명시 + M4 착수 지시. `/clear` 없이 이 세션에서 진행(컨텍스트가 작아 재개 블록은 참조만).
+- **AI 사전 확인(값 미열람)**: `.env` 존재 · git `0 3`(로컬만 앞섬) · 동시 세션 없음 · Vercel 프로젝트 `flow-assignment` 존재(17분 전 생성, Production 배포 2건 Ready) · 현재 URL `flow-assignment-opal.vercel.app` GET / → **500** (마이그레이션 전/환경변수 반영 전) · `vercel project ls` 중 CLI 로그인 흐름이 떠서 브라우저 승인으로 로그인됨 → `vercel link --yes`로 연결(.vercel/ gitignore).
+- **AskUserQuestion 2건**: 노출된 Neon 비밀번호 → **교체한 새 값** 확인 / Vercel 프로젝트는 **GitHub 연결**(push = 자동 Production 배포).
+- **사전 검증**: lint 0 · check 0/0 · **test 169/171** — 실패 2건은 `client.test.ts`·`store.test.ts`의 "환경변수 없으면 throw" 테스트. 원인: Vite가 `.env`를 자동 로드해 `$env/dynamic/private`에 값이 채워짐 → 테스트 격리 결함(코드 버그 아님). 로그에 접속 문자열 패턴 0건 확인. M4 범위에 "테스트를 .env 유무와 무관하게" 항목 추가.
+- **AI 작업**: manager-develop(Opus) 스폰 — 테스트 격리 수정 → `node --env-file=.env scripts/migrate.ts` 실측 → README(실행 방법·table schema·배포 절차) → CONSIDERATIONS 28항목(E5에 노출·즉시 교체 사고 그대로 기재) → progress.md M4 chore 커밋 → Founder digest. 이후 오케스트레이터가 push → 자동 배포 → Q7 확인.
+- 🟡 PROMPT_LOG #63 커밋이 pre-commit 게이트(테스트 2건 실패)에 막힘 — 우회(`SKIP_MOAI_PRECOMMIT`)하지 않고 에이전트의 테스트 수정 뒤로 미룸. `vercel link`가 `.gitignore` 끝에 `.vercel` 중복 줄을 추가(15행에 이미 있음) → 에이전트 종료 후 정리.
+
+#### #64
+> 아 그리고 github mcp server를 사용해서 cubrain의 README.md 레이아웃을 참고해줘. 버퍼 시간에 ui-ux-pro-skill도 끝나면 diagram-design 스킬을 사용해서 시스템 아키텍처, 데이터베이스 스키마 (ERD)도 작성할꺼야. 이건 내가 원래 프로젝트 만들면 하던거라 일관성을 유지해야돼 / 뭐 추가로 플로우차트도 만들면 베스트고
+- **의도**: 포트폴리오 README 일관성 — 기존 프로젝트(cubrain)와 같은 골격. 배포 후 버퍼 순서 확정: ui-ux-pro-max 디자인 패스 → diagram-design(시스템 아키텍처 · ERD · 업로드 판정 플로우차트) → README에 이미지 삽입.
+- **결과**: 조회 시점에 GitHub MCP가 로드돼 있지 않아 `gh api repos/Seung-zedd/cubrain/readme`(읽기 전용)로 대체해 골격 추출(직후 `plugin:github` MCP가 세션에 연결됨 — 같은 GitHub API라 결과 동일, 이후엔 MCP 사용) — H1+이모지 · 태그라인 · 서비스 링크 · shields 배지 · 프로젝트 소개 · 열람 안내(For Interviewers) · 기술 스택 · 시스템 아키텍처(이미지) · ERD(이미지) · Key Engineering Decisions(문제/해결/결과) · 로컬 실행 안내. 실행 중인 M4 에이전트에 SendMessage로 골격 전달(내용은 복사 금지, 다이어그램 자리는 `<!-- TODO(diagram-design) -->` 표시). 메모리 `feedback-readme-layout-and-diagrams` 저장.
+
+#### #65
+> @과제_파일업로드_AI개발.md 혹시 여기에서 내가 직접 배포된 사이트에 들어가서 QA해야할 부분이 있니?
+- **의도**: 과제 문서 기준으로 사람 손이 꼭 필요한 QA 항목 식별.
+- **결과(체크리스트)**: 본인 전용 4건 — (1) §5 "누구나 접속" → 로그아웃/시크릿 창에서 접속(로그인 세션은 Vercel 보호 설정을 못 걸러냄) (2) §5 "면접 당일 호출 가능" → 당일 예열(Neon 5분 유휴 절전) (3) §2-A 새로고침 유지를 눈으로 1회 (4) §3-3 차단 문구가 사람 말로 납득되는지. 나머지(§2-A 전 항목·§2-B·Q12 문구 13종·200개 상한)는 배포 후 Playwright 스모크 + 캡처로 AI가 담당.
+
+#### #66
+> 추후 프로세스 : 과제제출 → 인적성검사 → 실무인터뷰 → 컬쳐인터뷰 → 처우협의 // … 인적성검사 통과 이후에 Neon 프로젝트 예열시키면 되겠다
+- **의도**: 채용 일정에 맞춰 데모 예열 시점 결정.
+- **결과**: 🟡 시점 보정 — Neon 무료 플랜은 5분 유휴면 다시 잠들어 "며칠 전 예열"은 효과가 없음. 인적성 통과 직후 = **점검**(시크릿 창에서 정책 화면·업로드 1회), 실무 인터뷰 당일 시작 5~10분 전 = **예열**(URL 열고 새로고침), 인터뷰 중 5분 이상 안 쓰면 재접속. 메모리 `project-flow-hiring-process-warmup` 저장.
+
+#### #67
+> 스프링부트 JVM은 콜드 스타트가 굉장히 최악이라고 정평나 있잖아? 그에 비해 Neon은 ms단위 밖에 안된다고??
+- **의도**: 개념 확인 — 두 "콜드 스타트"가 같은 종류인지.
+- **결과**: 대상이 다름. Spring = 앱 프로세스 기동(JVM·클래스 로딩·빈 생성·JIT 예열 + 무료 티어 컨테이너 스케줄링 → 10~30초). Neon = 저장소(항상 켜짐)와 분리된 Postgres 컴퓨트 VM만 재활성화, C 프로세스라 수백 ms(plan §14 Neon 문서 인용). 데모 첫 요청 체감은 Vercel Function 콜드 스타트 + Neon 재활성화 + 빈 캐시가 겹쳐 1~3초 — "ms 단위"는 수백 ms로 정정. CONSIDERATIONS의 콜드 스타트 서술에 이 구분을 반영할 재료.
+
+#### #68 🟡 사용자가 잡아낸 AI 실수 — M4 에이전트 모델 불일치
+> 야 잠깐만 지금 m4-develop 확인해봤는데 Fable 5로 돌리고 있다는데? 어떻게 된거야
+- **무슨 일**: M4 manager-develop을 `model: "opus"`로 스폰했는데(감사 로그 `declared_model: opus`), 진행 중 메시지를 보내려고 `name: "m4-develop"`을 붙였더니 Agent Teams(실험 기능, 이 프로젝트에서 켜짐) 팀원 세션으로 생성돼 모델을 `.claude/settings.json`(`fable[1m]`)에서 읽음 — 팀원 창에 "Using Fable 5 (from .claude\settings.json)". CLAUDE.md §15의 "팀원은 리더 /model 상속"을 오케스트레이터가 놓침. 사용자가 팀원 창을 직접 보고 발견.
+- **영향**: 품질 무관(Fable 5 ≥ Opus). Opus 대신 Fable 세션·주간 한도 소모, §2 표의 "REFACTOR·문서 = Opus" 배분과 불일치.
+- **결정(AI, 사용자 취침 전 위임)**: 4커밋 중 2번째 진행 중이라 재스폰은 낭비 → 그대로 완료. §2 표에 "M4 manager-develop: 의도 Opus, 실제 Fable 5(named 스폰 원인)" 행 추가. 재발 방지 메모리 `feedback-named-spawn-drops-model-override` — 모델 지정이 중요하면 `name`을 붙이지 않는다.
+- **후속 질문** "왜 Agent Teams가 켜져 있지? 기본값인가?" → Claude Code 기본값은 꺼짐.
+- **M4 완료 보고(AI 주도)**: 커밋 5건 `3461a41`(테스트 격리) · `d9f0c80`(게이트 test 타임아웃 120→300초, 계획 밖) · `2cdba81`(`db:migrate` → `node --env-file-if-exists=.env`) · `4e48a4b`(README+CONSIDERATIONS 28/28) · `4f72b84`(progress.md) → 오케스트레이터 push `95cb161..4f72b84`. 테스트 173/173 · lint 0 · check 0/0 · build 0 · 서버 커버리지 97.12% · Neon 마이그레이션 실적용(`applied 001_init.sql`, 재실행 0건, 테이블 3개·시드 7행) · 로그 20개 `postgresql://` 0건. README가 cubrain 골격(#64)으로 안 나와 두 번째 에이전트(`name` 없이 Opus 지정)가 `251a074`로 재구성 + eslint ignores에 `.claude/worktrees/**` 추가.
+
+#### #69 🔴 세션 5 마무리 — 서브에이전트 모델 상속 미해결
+> 잠깐 정지. 여전히 서브에이전트들도 Fable로 상속되서 돌고 있어 일단 잠깐 세션 마무리할꺼니까 기록해두고 세션 재시작하면 메인 세션 상속 안하고 SPEC 단계 및 REFACTOR는 opus / 단순 구현 및 RED -> GREEN은 sonnet으로 배정되는게 맞겠지?
+- **답**: 배분 자체는 #30 그대로가 맞음(SPEC·감사·REFACTOR·문서 = Opus, RED→GREEN = Sonnet, 메인 = Fable). 단 **원인 미확정** — 두 번째 에이전트는 `name` 없이 `model: "opus"`로 띄웠는데도 사용자 관찰상 Fable로 실행됨 → #68의 "named 스폰" 설명만으로 부족. 의심: `.claude/settings.local.json`의 `"teammateMode": "auto"`, 스폰 모델 인수의 실제 적용 여부. 오케스트레이터가 검증 없이 "Opus로 돌고 있다"고 말한 것은 미관측 주장(사용자가 두 번 잡아냄).
+- **조치**: `settings.local.json`에 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"`(다음 세션부터). **다음 세션 첫 작업 = 모델 프로브**: 실제 작업 전에 작은 읽기 전용 스폰 1회 → 창의 모델 표시 + `.moai/logs/agent-model-audit.jsonl` 대조 → Opus/Sonnet이 확인될 때까지 구현 스폰 금지.
+- **세션 5 종료 시점 상태**: M4 커밋 6건 중 5건 push(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬(push 대기). **배포 URL `/`·`/api/policy` 여전히 500** — push로 새 배포(`efihchig1`, Ready)는 만들어졌으나 런타임 오류 지속 → 다음 세션에서 Vercel Runtime Logs로 예외 문구 확인이 1순위(후보: 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7 미충족. 사용자가 README 에이전트를 중지(커밋은 이미 완료된 뒤). 워크트리 `.claude/worktrees/agent-a44a…` 잔존 → 정리. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 **MoAI-ADK 템플릿 기본값**(전역 `~/.claude/settings.json`에도 동일). 과제 규모엔 불필요 → 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 끄기(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트 영향이 있어 보류. / 플러그인 / MCP / 에이전트 / 도구
 
 | 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
 |---|---|---|
@@ -401,6 +444,9 @@
 | 라이브러리 | `@electric-sql/pglite` · `jsdom` · `@testing-library/svelte` | PGlite: 네트워크·크리덴셜 없이 실제 SQL로 리포지토리·엔드포인트 통합 테스트 / jsdom+Testing Library: AC-016a 낙관적 갱신→롤백 과도 상태 검증(브라우저 없이) |
 | 라이브러리 | `@vercel/blob` 2.8.0 | M3 업로드 저장 — `put(access: 'private', token, contentType: application/octet-stream, addRandomSuffix: false)`. `BlobStore` 인터페이스 뒤에 숨겨 테스트는 가짜 구현, 실경로는 M4 실측 |
 | MCP | Context7 (`/vercel/storage`) | `@vercel/blob` 2.8.0 `put` 옵션(`access: 'private'` 지원 여부·`token`·`contentType`)을 기억 대신 최신 문서로 확인한 뒤 스폰 프롬프트에 명시 |
+| 에이전트 | `manager-develop` (**Fable 5** — 의도는 Opus) | M4 — 테스트 `.env` 격리 · Neon 마이그레이션 실측 · README · CONSIDERATIONS 28항목. `name`을 붙인 스폰이 Agent Teams 팀원으로 생성돼 settings.json 모델(Fable)을 상속(#68). 사용자가 팀원 창에서 발견 |
+| CLI 도구 | `gh api` (GitHub REST) | cubrain README 골격 추출(#64) — 조회 시점에 GitHub MCP 미로드. 직후 `plugin:github` MCP 연결됨 |
+| CLI 도구 | Vercel CLI 54.5 (`whoami`·`project ls/inspect`·`ls`·`link --yes`) | M4 배포 상태 파악·프로젝트 연결. `env` 계열 명령은 훅이 차단하는 형태 외엔 사용하지 않음 |
 
 > 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
 
