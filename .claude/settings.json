@@ -536,9 +536,10 @@
   "skillListingBudgetFraction": 0.02,
   "showThinkingSummaries": false,
   "cleanupPeriodDays": 30,
-  "model": "sonnet",
+  "model": "fable[1m]",
   "outputStyle": "MoAI-Easy",
   "env": {
+    "CLAUDE_CODE_EFFORT_LEVEL": "high",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "ENABLE_TOOL_SEARCH": "1",
     "MOAI_CONFIG_SOURCE": "sections",
