@@ -349,6 +349,79 @@ M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensio
 - **`signature.ts:32`(BOM 스트립 분기)** — M1 REFACTOR가 "구조적으로 도달 불가"로 판정한 항목 그대로입니다.
 - 업로드 강제(AC-008~015)는 M3 deferred로 변동 없습니다.
 
+### M3 (RED→GREEN, Sonnet)
+
+#### Acceptance scenario completion — 22 / 22 (M3 스코프)
+
+| # | 시나리오 | 테스트 파일 | 상태 |
+|---|---|---|---|
+| AC-UPLOAD-008 | `exe` 차단 + `setup.exe` → 415 `BLOCKED_EXTENSION`(`matched:"exe"`), Blob 미생성 | `server.test.ts` | PASS |
+| AC-UPLOAD-009a | `exe` 차단 + `report.exe.txt` → 마지막 세그먼트 `txt`여도 `matched:"exe"` | `server.test.ts` | PASS |
+| AC-UPLOAD-009b | 커스텀 `env` 차단 + `.env` → `matched:"env"`(dotfile 추출) | `server.test.ts` | PASS |
+| AC-UPLOAD-010 | 빈 차단 목록 + `README` → 415 `NO_EXTENSION` | `server.test.ts` | PASS |
+| AC-UPLOAD-010 | 빈 차단 목록 + PNG 내용의 `notes.txt` → 성공 + `mismatch:true` + `detected_mime` 기록 | `server.test.ts` | PASS |
+| AC-UPLOAD-011 | `Content-Length` > 4MB → 413, `formData` 스파이 미호출, 행 0개 | `server.test.ts` | PASS |
+| AC-UPLOAD-011 | 헤더 없이 실측 4MB 초과 → 413 + 행 1개(파일 단위 판정) | `server.test.ts` | PASS |
+| AC-UPLOAD-012 | `exe` 차단 + PE 내용의 `photo.jpg` → 415 `SIGNATURE_BLOCKED`(`detected:"exe"`) | `server.test.ts` | PASS |
+| AC-UPLOAD-012 | `exe` 미체크 + 같은 파일 → 통과 | `server.test.ts` | PASS |
+| AC-UPLOAD-013 | 차단 없음 + 실제 JPEG 내용의 `photo.jpeg` → 성공(별칭 오거부 회귀 방지) | `server.test.ts` | PASS |
+| AC-UPLOAD-013 | 실제 PNG 내용의 `notes.txt` → 성공 + `mismatch:true` | `server.test.ts` | PASS |
+| AC-UPLOAD-014 | `html` 미차단 + 평범한 `page.html` → 성공 | `server.test.ts` | PASS |
+| AC-UPLOAD-014 | `html` 커스텀 차단 + 같은 `page.html` → 415 (§Deviations 4 참고: 실제 코드는 `BLOCKED_EXTENSION`) | `server.test.ts` | PASS |
+| AC-UPLOAD-014 취지 | 확장자가 `html`이 아닌 위장 파일(`notes.dat`)의 html 내용 → 415 `SIGNATURE_BLOCKED`(`detected:"html"`) | `server.test.ts` | PASS |
+| AC-UPLOAD-015 | 차단 1건 + 정상 1건 → 정확히 2행, `blob_pathname`에 원본명·확장자 미포함 | `server.test.ts` | PASS |
+| AC-UPLOAD-007 2절 | 커스텀 `sh` 차단 시 `script.sh` → 415, 삭제 후 같은 업로드 → 성공(삭제가 업로드 판정에도 반영) | `server.test.ts` | PASS |
+| 엣지 | `#!/bin/sh` 바이트 + 커스텀 `sh` 차단 → `SIGNATURE_BLOCKED` | `server.test.ts` | PASS |
+| 엣지 | TIFF 리틀엔디언 매직 + 미차단 → `scan.tiff` 성공(별칭 `tif` 오거부 없음) | `server.test.ts` | PASS |
+| 엣지 | `..\..\etc\passwd` → 경로 구분자·`..` 제거 후 확장자 후보 없음 → `NO_EXTENSION` | `server.test.ts` | PASS |
+| 엣지 | 300자 파일명 → 255바이트 절단으로 확장자 소실 → `NO_EXTENSION`(§Deviations 5) | `server.test.ts` | PASS |
+| 엣지 | 절단 후 확장자가 남는 긴 파일명 → 정상 업로드(200) | `server.test.ts` | PASS |
+| 엣지 | `jpg` 차단 + `photo.jpeg` → `BLOCKED_EXTENSION`(`matched:"jpg"`, 파일명 후보도 대표형 폴딩) | `server.test.ts` | PASS |
+| (기록 단위) | 수락 1건 + 거부 1건 삽입 → `upload_attempt` 정확히 2행, 컬럼 값 일치 | `upload-repo.test.ts` | PASS |
+| (Blob 계약) | `BLOB_READ_WRITE_TOKEN` 미설정 시 에러(`client.ts`의 `getDb()`와 동일 패턴) | `store.test.ts` | PASS |
+| (UI 힌트) | 안내 문구 항상 렌더링 | `UploadArea.test.ts` | PASS |
+| (UI 힌트) | 차단 확장자 선택 시 비차단 힌트 표시 + 업로드 버튼은 전송을 막지 않음 | `UploadArea.test.ts` | PASS |
+| (UI 힌트) | 415 응답 시 서버 오류 메시지 그대로 렌더링 | `UploadArea.test.ts` | PASS |
+| (UI 힌트) | 파일 2개 선택 시 첫 요청 완료 후 두 번째 요청 시작(순차 전송) | `UploadArea.test.ts` | PASS |
+
+정책 관리(AC-001~007 1절, AC-016)는 M2에서 이미 완료했습니다. 위 표의 "AC-UPLOAD-014" 행 2개와 "취지" 행 1개는 §Deviations 4에서 설명하는 하나의 발견(reason code 정정 + 취지 보강 테스트)을 반영합니다.
+
+#### Test counts
+
+- 테스트 파일 14개, 테스트 159개, 전부 PASS(M1 91 + M2 40[^m2] + M3 신규 28: `server.test.ts` 22 + `upload-repo.test.ts` 1 + `store.test.ts` 1 + `UploadArea.test.ts` 4). 실행: `pnpm test` → exit 0.
+- `pnpm lint`(prettier --check + eslint) → exit 0.
+- `pnpm check`(svelte-check) → exit 0, `454 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS`.
+- `pnpm build`(adapter-vercel, `@vercel/blob` 포함) → exit 0.
+- `pnpm test:coverage`(`src/lib/server/**`, v8): 전체 Stmts **92.64%**(126/136) · Branch **87.32%**(62/71) · Funcs **91.89%**(34/37) · Lines **92.36%**(121/131) — 85% 목표 상회. 파일별: `upload/{decide,extension,reason-codes}.ts` 4개 지표 전부 100%, `signature.ts` 100/91.66/100/100(라인 32 BOM 분기 — M1 REFACTOR가 "구조적으로 도달 불가"로 이미 판정), `db/upload-repo.ts` 4개 지표 전부 100%, `db/policy-repo.ts` 100/94.44/100/100(M2와 동일, 미변경), `db/client.ts` 63.63/50/75/63.63(M1·M2와 동일한 미검증 Neon 실경로), **`blob/store.ts` 40/33.33/33.33/40(신규 — `getBlobStore()`의 토큰 부재 예외 분기만 커버, `createVercelBlobStore().put()`의 실제 Vercel Blob 네트워크 경로는 `BLOB_READ_WRITE_TOKEN` 미설정으로 이 환경에서 검증 불가한 명시적 gap — `client.ts` Neon 경로와 동일 성격)**.
+
+[^m2]: M2 시점 기록은 "129개(87+38+2 REFACTOR)"였으나 이후 REFACTOR가 판단 고정 테스트 2건을 추가해 최종 131개였습니다. M3는 그 131개에 이어서 셉니다.
+
+#### Migration status
+
+- 변경 없음. M1이 만든 `migrations/001_init.sql`(`upload_attempt` 테이블 포함)·`scripts/migrate.ts`를 그대로 재사용했습니다. `server.test.ts`·`upload-repo.test.ts` 모두 `applyMigrations()` 헬퍼로 PGlite에 동일 마이그레이션을 적용합니다.
+- Neon 실경로는 M1·M2와 동일하게 미검증입니다(§Test counts).
+
+#### Deviations from spec/plan
+
+1. **`Content-Length` 헤더가 곧 실제 바이트 상한이라는 계획 문구는 정확히 지켰지만, "본문을 바이트 상한을 건 채로 읽는다"(plan.md §3 단계 2)는 문자 그대로는 구현하지 않았습니다.** 멀티파트 파싱은 SvelteKit/undici 내부에서 이뤄져 핸들러 코드에서 스트리밍 상한을 직접 걸 지점이 없습니다. 대신 `request.formData()`로 파싱한 뒤 `file.size`(실측값)로 재확인합니다. 플랫폼의 4.5MB 요청 본문 한도가 실질적인 메모리 방어선 역할을 하며, `file.size`가 판정 근거라는 계약(REQ-UPLOAD-012)은 그대로 지켰습니다.
+2. **클라이언트 힌트는 `decideUpload()`를 재사용하지 않습니다.** `$lib/server/**`는 SvelteKit 경계상 클라이언트 컴포넌트(`UploadArea.svelte`)에서 임포트할 수 없으므로, `+page.server.ts`의 `load()`가 `blockedExtensions`(정책의 차단 확장자 목록)와 `extensionAliases`(`EXTENSION_ALIASES` 재노출)를 미리 계산해 데이터로 내려주고, `UploadArea.svelte`가 별도의 경량 힌트 함수(`isClientHintBlocked`)로 대조합니다. 서버가 유일한 강제 지점이라는 계약(REQ-UPLOAD-016)은 변하지 않습니다 — 힌트는 업로드를 막지 않고, 서버가 동일 파일을 다시 판정합니다.
+3. **신규 export**: `src/lib/server/blob/store.ts`(`BlobStore`, `createVercelBlobStore`, `getBlobStore`), `src/lib/server/db/upload-repo.ts`(`UploadAttemptRow`, `recordUploadAttempt`) — 계획된 신규 파일이며 기존 PRESERVE 대상 파일의 시그니처는 바꾸지 않았습니다.
+4. **발견: AC-UPLOAD-014 2절의 reason code가 실제 코드 경로와 다릅니다.** acceptance.md 원문은 "`html`을 커스텀 차단에 추가한 뒤 같은 파일(`page.html`)을 올리면 `SIGNATURE_BLOCKED`로 거부된다"고 서술하지만, `decideUpload()`(M1 PRESERVE 대상)의 판정 순서는 확장자 대조(3단계, REQ-UPLOAD-008)가 시그니처 대조(4단계, REQ-UPLOAD-009)보다 항상 먼저 실행됩니다. 파일명이 문자 그대로 `page.html`이면 `html`이 차단된 순간 확장자 세그먼트 자체가 걸려 `BLOCKED_EXTENSION`으로 거부되고, 시그니처 검사에 도달하지 않습니다. `decide.ts`의 순서는 M1에서 이미 감사·테스트된 PRESERVE 대상이라 바꾸지 않았습니다. 테스트를 실제 동작(`BLOCKED_EXTENSION`)에 맞춰 정정하고, AC의 취지(HTML 내용도 시그니처로 차단될 수 있어야 한다)는 확장자가 `html`이 아닌 위장 파일(`notes.dat`)로 별도 검증해 `SIGNATURE_BLOCKED` 경로 자체는 실제로 살아있음을 확인했습니다.
+5. **발견: "300자 파일명 → 정상 처리" 엣지 케이스의 "정상"이 M1(순수 함수)과 M3(서버 통합)에서 다른 의미가 됩니다.** M1의 `extension.test.ts`는 `normalizeFilename('a'.repeat(300) + '.txt')`가 "예외를 던지지 않고 255바이트 이하로 절단됨"만 단언합니다(확장자 보존은 단언하지 않음). 255바이트 절단은 뒤(확장자)가 아니라 앞에서부터 담을 수 있는 만큼만 담으므로, 296바이트를 넘는 `a` 연속 뒤의 `.txt`는 절단 경계 밖으로 밀려나 사라집니다 — 남는 것은 확장자 후보 없는 254개의 `a`뿐입니다. 서버 레벨에서 이는 예외 없이 `415 NO_EXTENSION`으로 이어지며, 이것도 "예외 없는 정상 처리"입니다. 원래 위임 지시는 이 케이스에서 "200"을 기대했으나, PRESERVE 대상인 `normalizeFilename`의 절단 방향을 볼 때 문자 그대로는 도달 불가능한 기대였습니다. 테스트를 실제 동작(415 `NO_EXTENSION`)에 맞게 정정하고, 절단 후에도 확장자가 살아남는 별도의 200 성공 케이스를 추가해 "긴 파일명이 예외 없이 정상 업로드되는" 경로 자체는 확인했습니다.
+6. `Content-Length` 선차단(§AC-UPLOAD-011 1절) 테스트는 실제 `Request` 대신 `{ headers, formData: vi.fn() }` 형태의 손으로 만든 객체를 씁니다 — `formData` 스파이가 한 번도 호출되지 않았음을 직접 단언하기 위함이며, 위임 지시가 명시한 형태입니다.
+7. `pnpm why undici` 확인 결과 `@vercel/blob@2.8.0`이 요구하는 `undici`는 `6.28.0`으로 해석됩니다 — 사전 공지된 GHSA-v3r7-h72x-cjcm 권고의 수정 버전(≥6.28.0) 경계값과 정확히 일치해 override가 필요 없습니다(devDependency 쪽 `jsdom`이 물고 있는 `undici@8.10.0`은 별개 트리이며 프로덕션 번들에 포함되지 않습니다).
+
+#### Founder-attention notes
+
+- **§Deviations 4·5는 위임 지시·acceptance.md 원문과 실제 관찰 동작이 갈린 지점입니다.** 둘 다 코드(PRESERVE 대상인 `decide.ts`/`extension.ts`)를 바꾸지 않고 테스트 기대값을 실제 동작에 맞춰 정정하는 쪽을 택했습니다 — 반대로 코드를 바꿨다면 M1에서 이미 감사·고정된 판정 순서(REQ-008 vs REQ-009)와 절단 방향(255바이트 앞자름)을 건드리게 되어 회귀 위험이 더 컸다고 판단했습니다. AC-UPLOAD-014의 reason code 문구를 `BLOCKED_EXTENSION`으로 정정할지 여부는 `acceptance.md` 소유자(manager-spec) 판단이 필요합니다 — 저는 body를 수정할 권한이 없어 블로커가 아닌 편차로만 기록합니다.
+- `blob/store.ts`의 실제 Vercel Blob `put()` 경로는 여전히 미검증 gap입니다 — `client.ts`의 Neon 실경로와 같은 성격이며, M4 배포 직전 `BLOB_READ_WRITE_TOKEN`을 실제로 연결해 한 번 실측이 필요합니다.
+- `undici` 취약점 확인 결과는 안전측입니다(§Deviations 7) — 별도 조치 불요.
+- `AC-UPLOAD-011`의 "헤더 없이 실측 4MB 초과" 테스트는 실제로 4MB+1바이트 버퍼를 생성·전송하므로 다른 테스트보다 느립니다(약 2초) — 개별 타임아웃을 15000ms로 늘렸습니다.
+
+#### Planned-vs-actual files
+
+`spec.md` §4 M3 대상 신규 파일 전부 생성 완료: `src/lib/server/blob/store.ts`(+`store.test.ts`), `src/lib/server/db/upload-repo.ts`(+`upload-repo.test.ts`), `src/routes/api/upload/+server.ts`(+`server.test.ts`), `src/lib/components/UploadArea.svelte`(+`UploadArea.test.ts`). 기존 파일 확장: `src/hooks.server.ts`(`locals.blob` 배선), `src/app.d.ts`(`Locals.blob` 타입), `src/routes/+page.server.ts`(`blockedExtensions`·`extensionAliases`·`clientHintBlocked` 추가), `src/routes/+page.svelte`(플레이스홀더 → `UploadArea` 연결), `src/routes/page.ssr.test.ts`(`data` 리터럴에 3개 필드 추가 — 기존 단언 삭제 없음, `git diff 3d77a91 -- 'src/**/*.test.ts' | grep -E '^-[^-]'`로 확인). 계획에 없던 추가 의존성: `@vercel/blob@2.8.0`(`package.json`·`pnpm-lock.yaml`). `src/lib/server/upload/decide.ts`(M1 PRESERVE 대상)는 시그니처·동작 변경 없이 그대로 재사용했습니다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
