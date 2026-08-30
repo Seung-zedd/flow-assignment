@@ -20,7 +20,13 @@ gate:
   timeouts:
     vet: 30
     lint: 60
-    test: 120
+    # 이 프로젝트의 테스트 스위트는 PGlite(WASM PostgreSQL) 인스턴스를 여러 파일에서
+    # 띄우고 4MB 버퍼 업로드 케이스까지 돌려 단독 실행에도 약 110초가 걸린다. 게이트는
+    # lint와 test를 동시에 돌리므로 기본값 120초를 넘겨 "타임아웃"으로 실패하는데,
+    # 정작 테스트는 173개 전부 통과한 상태다(측정: 동시 실행 시 122초, exit 0).
+    # 통과하는 스위트가 시간 때문에 커밋을 막는 상황을 피하려고 상한만 올린다 —
+    # 어떤 검사도 건너뛰지 않는다.
+    test: 300
   ast_grep_gate:
     enabled: true
     # Where this project's ast-grep rules live. This is the single source of
