@@ -229,6 +229,65 @@
 > M1 끝나면 지금 새벽 1시라서 세션을 마무리해야 돼. 끝나면 짧게 브리핑해줘
 - **AI 마무리**: 로컬 main 동기화(`5f905a4`) → 재검증 → PROMPT_LOG 커밋·push → 재개 메시지(전제 검증 4건 + `/moai run SPEC-UPLOAD-001` M2) 채팅 출력 + 메모리 저장. 세션 2 종료 시점 상태: M1 완료, M2~M4 대기, 시크릿 미준비(의도됨), stale 에이전트 워크트리 3개(`rm -rf` 승인 대기).
 
+### 2026-08-30 — 세션 3: M2 진입 (`/clear` 후 재개, 메인 세션 Fable 5)
+
+#### #35
+> 오늘 해야할 일 브리핑해줘
+- **의도**: 세션 시작 상태 점검. **AI 응답**: 메모리·`progress.md`·`git` 상태를 읽어 M1 완료(91 tests / lint 0 / origin 동기화 `0 0`), M2~M4 대기, stale 워크트리 3개, 열린 결정 1건(TIFF 픽스처 → M3 이월 권고)을 진행판으로 브리핑. 순서 제안: 전제 검증 → 워크트리 정리(승인 후) → M2 → PROMPT_LOG.
+
+#### #36
+> .claude/settings.json 모델은 Fable, effort는 high로 고정해줘. 어차피 메인 세션으로만 사용할 거니까
+- **결과**: `model: "claude-fable-5"` + `env.CLAUDE_CODE_EFFORT_LEVEL: "high"`. effort는 settings.json에 전용 키가 없어(schemastore 스키마를 WebFetch로 확인) 공식 환경변수로 고정. 서브에이전트는 스폰마다 `model:`을 넘기므로 영향 없음.
+
+#### #37 (paste-ready 재개 메시지 붙여넣기)
+> ultrathink. SPEC-UPLOAD-001 run 진입 (M2 시작). … 어제 세션 마무리하기 전에 너가 복사하라고 해서 그대로 복붙함
+- **전제 검증**: ① HEAD `97c2e2e`, origin `0 0` ② `pnpm test` 91/91 · `pnpm lint` exit 0 · `pnpm check` 0 ERRORS ③ `status: in-progress`, 가드 테스트 ALL PASS ④ 워크트리 3개 안전성 점검(등록 2개 `main` 대비 0 ahead, 미커밋 변경 0건, 1개는 이미 prune된 빈 폴더). 증거: `.moai/state/verify/f4050a0d/{test,lint,check}.log`.
+
+#### #38 (AskUserQuestion 응답) `지워 주세요 (권장)`
+- **결과**: `git worktree remove --force`는 예상대로 Windows 경로 길이로 실패 → `rm -rf` 3개 + `git worktree prune` + 브랜치 `worktree-agent-*` 2개 삭제. `git worktree list`는 main 하나. 삭제 전에 잃는 작업이 없음을 먼저 확인하고 물은 뒤 실행.
+
+#### #39 (AI 주도) `/moai run SPEC-UPLOAD-001` — M2 정책 API + 정책 화면
+- **컨텍스트 로딩**: `run.md` 라우터, `plan.md` §4~§8·§11·§13, `acceptance.md` A·B·F·품질 게이트, `spec.md` REQ-001~006·016·§4 파일표, M1 코드(`constants.ts`·`reason-codes.ts`·`schema.test.ts`·`migrate.ts`·`vite.config.ts`), 가드 훅 허용 범위(`pnpm add` 허용), 커밋 서식(`07d4602`), `llm.yaml` `agent_overrides`(manager-develop → sonnet).
+- **스폰 전 점검**: `moai session list --filter-spec` → `[]`, origin 동기화 `0 0`, `product.md` 부재는 세션 1·2와 동일하게 생략(over-planning 회피).
+- **위임 프롬프트(5-section, Tier M)에 오케스트레이터가 넣은 설계 결정**: (a) Neon/PGlite를 같은 `Db` 인터페이스로 추상화해 리포지토리는 인터페이스에만 의존 (b) `hooks.server.ts`가 `locals.db`를 주입 → 엔드포인트 테스트는 핸들러를 직접 호출(서버·네트워크 없음) (c) 200개 상한은 `INSERT … SELECT … WHERE count < 200` 단일 문장, 중복은 UNIQUE 위반(23505)을 잡아 `kind`로 `EXT_IS_FIXED`/`EXT_DUPLICATE` 분기 (d) Vitest jsdom 프로젝트에 `resolve.conditions: ['browser']` 필수 (e) 정책 사유 코드가 아닌 라우팅·형식 오류(고정 7개 밖 `[ext]`, 잘못된 body)는 SvelteKit `error(404/400)` — Deviation으로 기록 지시 (f) `UploadArea`·`/api/upload`·`upload-repo`는 M3, `CLIENT_HINT_DISCLAIMER` 문자열만 자리표시 섹션에 렌더(AC-016b).
+- **모델·커밋 계약**: `model: "sonnet"`, 커밋 2개(`feat` 코드 + `chore` bookkeeping), push 금지(오케스트레이터가 재검증 후), 스킬 주입 `moai-workflow-tdd` + `moai-ref-api-patterns`. 작업 5건을 TaskList로 등록(RED→GREEN → 검증 1차 → REFACTOR(Opus) → 검증 2차+push → digest+PROMPT_LOG).
+
+#### #40
+> ui-ux-pro-max 플러그인을 방금 활성화했는데 배포까지 성공적으로 마친 다음에 버퍼 시간이 여유로우면 PRD에 디자인 제한이 없으면 추가로 구현할 예정이야. 디자인이 밋밋하면 심심해보이거든
+- **AI 확인**: PRD를 grep — 디자인 제한 문장 없음(`기술 스택 자유`, "화면 구현 자체보다 고려사항"). 145행 참고 화면은 요소 배치(제목·설명 → 고정 체크박스 → 입력+추가 → 카운터+칩)이지 시각 스타일 제약이 아님. 결정: M2~M4는 기본 CSS로 기능 우선, 디자인 패스는 배포 후 조건부. 메모리 `feedback-uiux-design-pass-opus.md` 저장.
+
+#### #41
+> ui-ux-pro-max는 UI/UX 관련이니까 model: "opus"로 설정해줘. 단순 구현 sonnet보다는 추론 능력이 필요하다고 생각하거든
+- **반영**: 디자인 판단이 들어가는 스폰은 `model: "opus"` 고정(같은 메모리 파일에 기록). Sonnet 라우팅은 기계적 RED→GREEN에만 적용.
+
+#### #42
+> .moai/specs/…/progress.md는 founder가 읽는 게 아니라 순전히 네가 source of truth로 판단하는 기록보관용으로 생각해도 되지?
+- **AI 답**: 맞음 — 오케스트레이터의 판단 근거·sync-auditor 감사 입력·회고 자료. founder는 채팅의 Founder digest 3블록만 읽음. `feedback-founder-digest-per-milestone.md`에 확정 문구 추가.
+
+#### #43
+> PROMPT_LOG.md도 알아서 갱신 잘하고 있지?
+- **AI 답(솔직)**: 이번 세션 분은 미갱신 상태였음(M2 후 일괄 기록으로 미뤄둠) → "단계마다 기록" 원칙 위반을 인정하고 즉시 #35~#43 작성. 커밋은 M2 에이전트의 커밋과 인덱스가 겹치지 않도록 에이전트 종료 후 묶어서 진행. 🟡 사용자 지적으로 교정.
+
+#### #44
+> PROMPT_LOG.md 갱신 주기도 PRD 문서에 맞게 룰북에 추가해줘
+- **결과**: `.claude/rules/local/prompt-log-cadence.md` 신설 — 과제 §4-1/4-2/4-3과 인수 기준 Q11을 표로 대응시키고, 갱신 주기를 고정: 작업을 바꾸는 프롬프트마다 **같은 턴에** `#N` 기록(재질문·교정은 🟡로 감추지 않기), AI 주도 단계는 완료 시점에 실제 증거로 기록, §2 표는 도구를 **실제로 처음 쓴 시점**에 추가, §3 회고는 마일스톤·세션 종료마다, 커밋은 `docs(PROMPT_LOG)`로 분리(서브에이전트 실행 중엔 커밋 보류). 턴 종료 전 자체 점검 4항목 포함. 메모리 `flow-assignment-context.md`에 포인터 추가.
+
+#### #45
+> 마일스톤 개요가 잘 생각이 안나 짧게 브리핑해줘
+- **AI 응답**: plan.md §11 기준 4개 마일스톤을 "데이터 규칙(M1) → 정책 관리(M2) → 실제 차단(M3) → 배포·문서(M4)"로 표 브리핑. M2/M3를 나눈 근거(PRD "정책만 있고 못 막으면 무의미")와 현재 상태(M1 🟢, M2 🟡 진행 중) 포함.
+
+#### #46
+> context가 50% 정도 차면 책에서는 context rot 때문에 워크플로우 단위로 compact하거나 한 사이클이 끝나면 clear하라고 나와있는데 맞니?
+- **AI 답**: 책 원문은 확인 불가하나 취지는 프로젝트 룰(`context-window-management.md`·`session-handoff.md`·`cache-aware-execution.md`)과 일치. 숫자는 모델별 — Opus 1M은 50%, Fable 256K는 90%가 handoff 문턱이지만 워크플로우 경계에서 일찍 정리하는 건 권장(큰 스폰 배치 전 `/clear`). 절감 사다리: `/btw` → `/compact <지시>` → rewind 요약 → `/clear`+재개 블록. 이 세션 계획: M2 사이클(REFACTOR·푸시·digest)까지는 유지, 그 뒤 재개 블록 출력 후 `/clear` 권장 → M3는 새 세션. 상태 스냅샷 부재로 정확한 사용량은 상태줄/`/context`로 확인 요청.
+
+#### #47
+> 지금 세션은 256k 윈도우가 할당된 것 같거든? 앞으로는 메인 세션을 시작할 때 model: "fable[1m]"으로 수정해줘
+- **AI 확인**: 기억으로 답하지 않고 두 곳을 확인 — (1) claude-api 스킬 레퍼런스: Fable 5는 API 레벨에서 1M 컨텍스트가 기본값 (2) 설치된 Claude Code 바이너리(2.1.246~2.1.251)를 grep → `fable[1m]` 별칭이 `opus[1m]`·`sonnet[1m]`과 함께 존재. **결과**: `.claude/settings.json` `model: "claude-fable-5"` → `"fable[1m]"` (effort high 환경변수는 유지). 다음 세션 시작 시 적용 — `/model`로 1M 표시 여부 확인 필요. 1M이 되면 `context-window-management.md` 표 기준 handoff 문턱이 90%(256K)에서 50%(1M)로 바뀜.
+
+#### #48
+> 워커 패턴으로 spawn되는 서브에이전트(SPEC의 opus, 단순 구현의 sonnet)한테도 [1m]을 할당하는 게 효율적일까? 어차피 마일스톤 단위로 컨텍스트를 초기화하는 게 낫지 않을까?
+- **AI 답**: 서브에이전트는 스폰마다 새 컨텍스트(소멸 후 `progress.md`·커밋·스폰 프롬프트만 승계)라 마일스톤 단위 초기화는 이미 구조상 자동. `[1m]`은 한 스폰 안의 자동 압축을 미루는 여유분일 뿐이고, 비용은 할당이 아닌 실사용(200K 초과 구간)에 붙지만 컨텍스트가 클수록 rot도 커짐. 권장: 워커는 기본(`[1m]` 없음) 유지, 압축 흔적·15파일 초과 시에도 먼저 마일스톤 분할. 스폰 `model:` 파라미터는 sonnet/opus/haiku/fable만 받아 접미사 지정 불가 — 필요 시 에이전트 정의 파일에서 처리.
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
@@ -245,6 +304,8 @@
 | 에이전트 | `spec-interrogator` (Opus, 전역) | SPEC을 적대적으로 읽어 사람이 결정해야 할 판단 지점만 질문으로 추출 — 답은 하지 않음 |
 | 훅 | `.claude/hooks/guards/*.mjs` (실습 레포에서 이관) | `.env` 편집 차단, curl/wget 차단, npm/pnpm 공급망 가드, 편집 후 lint, 턴 종료 시 변경 파일 표시 — AI 자신에게도 적용 |
 | 수동 도구 | `pkg-check` (`projects/pkg-supply-chain-check.sh`) | 새 npm 패키지 추가 전 공급망 점검 (사용 시점에 기록) |
+| 플러그인 | `ui-ux-pro-max` (활성화만, 미사용) | 배포 성공 후 버퍼가 남으면 디자인 패스에 사용 예정 — 스폰 시 `model: "opus"` (사용 시점에 갱신) |
+| 도구 | WebFetch (schemastore `claude-code-settings.json`) | settings.json에 effort 키가 없음을 스키마 원문으로 확인 → `CLAUDE_CODE_EFFORT_LEVEL` 환경변수 채택 |
 
 > 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
 
