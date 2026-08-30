@@ -361,6 +361,17 @@
 
 ---
 
+### 2026-08-30 — 세션 5: 시크릿 준비 중 (메인 세션 Fable 5)
+
+#### #60
+> 지금 너가 제안해준 시크릿 준비 절차를 따르고 있거든? 근데 [Neon 프로젝트 생성 화면의 "Agent prompt"] 이게 나왔고 … / 맞다 기왕 킨거 "오늘 할일 브리핑해줘"도 추가할께
+- **의도**: Neon이 안내하는 "코딩 에이전트에 붙여넣기" 문장(`npx skills add neondatabase/agent-skills … -y` → Neon CLI·MCP 설정 → "write my env vars")을 따라도 되는지 판단 요청 + 오늘 순서 브리핑.
+- **결과**: **붙여넣지 않기로**. 근거 세 가지 — (1) "write my env vars"는 AI가 `DATABASE_URL` 값을 받아 쓰라는 뜻이라 접속 문자열이 대화 기록에 남음(`secret-management.md` §1 위배, `block-env-edit.mjs`가 어차피 차단) (2) `-y` 무확인 외부 패키지 설치는 M3의 pkg-check 습관과 반대 (3) Neon MCP는 프로젝트 전체 권한 API 키를 AI에 쥐여주는데 과제에 필요한 건 접속 문자열 하나. → "Prefer to wire it up yourself?"로 가서 세션 4 메모(founder-memo §0)의 5단계 수동 경로 유지. CONSIDERATIONS E5의 "AI가 값을 한 번도 안 봤다"는 서사와 일치.
+- 🟡 **부수 관찰**: 이 항목을 Bash 히어독으로 쓰려다 `block-npm-supply-chain-risk.mjs`에 차단됨 — 로그 본문의 `npx skills add …` 문자열을 실행 명령으로 간주. 가드가 데이터/명령을 구분 못 하는 한계지만, 정확히 막아야 할 패턴을 막았다는 증거. Edit 도구로 기록.
+- **브리핑**: 시크릿 5단계(본인) → `/clear` + 재개 블록 → M4(마이그레이션 실측·배포·README·CONSIDERATIONS) → Playwright 스모크 → sync → §3 회고 확정. 채팅에 Progress Board로 출력.
+
+---
+
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
 
 | 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
