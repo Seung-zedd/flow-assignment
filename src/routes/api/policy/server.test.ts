@@ -172,6 +172,16 @@ describe('POST /api/policy/custom', () => {
 		expect((body.notice as { code: string }).code).toBe('ALIAS_FOLDED');
 	});
 
+	test('ALIAS_FOLDED 문구의 {input}은 원문이 아니라 정규화 후보다', async () => {
+		const response = await post('  .JPEG  ');
+		const body = await readJson(response);
+		expect(body.extension).toBe('jpg');
+		const notice = body.notice as { code: string; message: string };
+		expect(notice.code).toBe('ALIAS_FOLDED');
+		// 공백·점·대문자가 섞인 원문이 아니라 정규화된 별칭(jpeg)이 문구에 들어간다.
+		expect(notice.message).toBe('jpeg는 jpg와 같은 형식이라 jpg로 저장돼요.');
+	});
+
 	test('필드 누락 시 400 EXT_EMPTY', async () => {
 		const response = await POST({
 			request: jsonRequest('http://localhost/api/policy/custom', 'POST', {}),

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+
 	interface CustomExtensionRow {
 		extension: string;
 	}
@@ -9,8 +11,11 @@
 		max = 200
 	}: { custom: CustomExtensionRow[]; customCount: number; max?: number } = $props();
 
-	let items = $state(custom.map((row) => ({ ...row })));
-	let count = $state(customCount);
+	// untrack — custom/customCount는 "초기값"으로만 읽는다. $derived로 두면 서버 값이 바뀔 때마다
+	// 낙관적 갱신·롤백 중인 로컬 목록을 덮어쓰므로 의도적으로 한 번만 읽고, 그 의도를
+	// 컴파일러에게도 명시한다(그렇지 않으면 state_referenced_locally 경고).
+	let items = $state(untrack(() => custom.map((row) => ({ ...row }))));
+	let count = $state(untrack(() => customCount));
 	let inputValue = $state('');
 	let errorMessage = $state<string | null>(null);
 	let noticeMessage = $state<string | null>(null);
@@ -98,7 +103,7 @@
 		<input type="text" bind:value={inputValue} onkeydown={onKeydown} disabled={pending} />
 	</label>
 	<button type="button" onclick={addExtension} disabled={pending}>추가</button>
-	<span class="counter">{count}/{max}</span>
+	<span class="counter" aria-label="커스텀 확장자 {count}개, 최대 {max}개">{count}/{max}</span>
 
 	<ul class="chip-list">
 		{#each items as row (row.extension)}
@@ -116,7 +121,7 @@
 	</ul>
 
 	{#if noticeMessage}
-		<p class="notice">{noticeMessage}</p>
+		<p class="notice" role="status">{noticeMessage}</p>
 	{/if}
 	{#if errorMessage}
 		<p class="error" role="alert">{errorMessage}</p>

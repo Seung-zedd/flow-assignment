@@ -18,19 +18,28 @@ export interface PolicySlice {
 }
 
 // 정책 전체 조회 — 고정은 sort_order 오름차순, 커스텀은 알파벳 오름차순(plan.md §5).
+// 한 번의 SELECT로 두 종류를 함께 읽고 코드에서 가른다. Neon HTTP 드라이버는 쿼리 1건이
+// 왕복 1회라 분리 조회는 정책 읽기마다 왕복을 2회로 만드는데, getPolicy는 조회는 물론
+// 토글·추가·삭제 응답에서도 매번 불리는 가장 잦은 읽기 경로다.
+// ORDER BY kind, sort_order, extension — kind는 'custom' < 'fixed'(사전순)이고 커스텀 행은
+// sort_order가 전부 기본값 0이라 extension이 순서를 정하며, 고정 행은 sort_order 1~7이
+// 순서를 정한다. 즉 위 §5의 두 정렬 규칙이 이 한 절에 그대로 담긴다.
 export async function getPolicy(db: Db): Promise<PolicySlice> {
-	const fixedRows = await db.query<{ extension: string; is_blocked: boolean }>(
-		"SELECT extension, is_blocked FROM blocked_extension WHERE kind = 'fixed' ORDER BY sort_order ASC"
-	);
-	const customRows = await db.query<{ extension: string }>(
-		"SELECT extension FROM blocked_extension WHERE kind = 'custom' ORDER BY extension ASC"
+	const rows = await db.query<{ extension: string; kind: string; is_blocked: boolean }>(
+		'SELECT extension, kind, is_blocked FROM blocked_extension ORDER BY kind ASC, sort_order ASC, extension ASC'
 	);
 
-	return {
-		fixed: fixedRows.map((row) => ({ extension: row.extension, blocked: row.is_blocked })),
-		custom: customRows.map((row) => ({ extension: row.extension })),
-		customCount: customRows.length
-	};
+	const fixed: FixedPolicyRow[] = [];
+	const custom: CustomPolicyRow[] = [];
+	for (const row of rows) {
+		if (row.kind === 'fixed') {
+			fixed.push({ extension: row.extension, blocked: row.is_blocked });
+		} else {
+			custom.push({ extension: row.extension });
+		}
+	}
+
+	return { fixed, custom, customCount: custom.length };
 }
 
 // 고정 확장자 토글 — 멱등(같은 값으로 여러 번 호출해도 결과가 같다).

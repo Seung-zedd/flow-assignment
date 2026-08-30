@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+
 	interface FixedExtensionRow {
 		extension: string;
 		blocked: boolean;
@@ -8,7 +10,10 @@
 
 	// 서버가 내려준 초기값의 복사본을 지역 상태로 들고, 낙관적 갱신·롤백·서버 재조정을
 	// 모두 이 상태 하나로 표현한다(REQ-UPLOAD-016).
-	let rows = $state(fixed.map((row) => ({ ...row })));
+	// untrack — fixed는 "초기값"으로만 읽는다. $derived로 두면 서버 값이 바뀔 때마다 낙관적
+	// 갱신 중인 로컬 상태를 덮어써 AC-016a의 롤백 계약이 깨진다. 이 한 번만 읽겠다는 의도를
+	// 컴파일러에게도 명시한다(그렇지 않으면 state_referenced_locally 경고).
+	let rows = $state(untrack(() => fixed.map((row) => ({ ...row }))));
 	let errorMessage = $state<string | null>(null);
 	let pendingExtension = $state<string | null>(null);
 

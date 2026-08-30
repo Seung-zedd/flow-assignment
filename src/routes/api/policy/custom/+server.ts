@@ -34,7 +34,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	// 별칭 폴딩 여부 — 폴딩 전 정규화 결과와 최종 대표형이 다르면 접힘이 일어난 것이다.
-	const folded = normalizeExtensionCandidate(rawString) !== result.extension;
+	// 안내 문구의 {input}에도 원문이 아니라 이 정규화 후보를 쓴다. 접힌 것은 원문 전체가
+	// 아니라 별칭 자체이고, 원문을 그대로 넣으면 `" .JPEG "는 jpg와…`처럼 공백·점·대문자가
+	// 문구에 섞여 나온다(plan.md §4.1 문자열 자체는 그대로 두고 대입 값만 정한다).
+	const candidate = normalizeExtensionCandidate(rawString);
+	const folded = candidate !== result.extension;
 	const policy = await getPolicy(locals.db);
 
 	return json({
@@ -46,7 +50,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					notice: {
 						code: 'ALIAS_FOLDED',
 						message: formatMessage('ALIAS_FOLDED', {
-							input: rawString,
+							input: candidate,
 							canonical: result.extension
 						})
 					}

@@ -43,6 +43,27 @@ describe('getPolicy', () => {
 		expect(policy.custom).toEqual([{ extension: 'aa' }, { extension: 'zz' }]);
 		expect(policy.customCount).toBe(2);
 	});
+
+	test('고정과 커스텀이 함께 있어도 각자의 정렬 규칙을 지킨다', async () => {
+		// 한 번의 SELECT로 두 종류를 읽어 코드에서 가르므로, 섞여 있을 때도 고정은
+		// sort_order 순, 커스텀은 알파벳 순이어야 한다(정렬이 새면 여기서 깨진다).
+		await addCustom(db, 'zzz');
+		await addCustom(db, 'aaa');
+		await setFixedBlocked(db, 'exe', true);
+		const policy = await getPolicy(db);
+		expect(policy.fixed.map((row) => row.extension)).toEqual([
+			'bat',
+			'cmd',
+			'com',
+			'cpl',
+			'exe',
+			'scr',
+			'js'
+		]);
+		expect(policy.fixed.find((row) => row.extension === 'exe')?.blocked).toBe(true);
+		expect(policy.custom).toEqual([{ extension: 'aaa' }, { extension: 'zzz' }]);
+		expect(policy.customCount).toBe(2);
+	});
 });
 
 describe('setFixedBlocked', () => {

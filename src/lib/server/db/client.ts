@@ -1,8 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import { env } from '$env/dynamic/private';
 
-// policy-repo.ts가 의존하는 최소 인터페이스. Neon HTTP 드라이버와 PGlite(테스트)는
-// 반환 모양이 다르므로(배열 vs { rows }) 각각을 이 인터페이스로 맞춰 어댑팅한다.
+// @MX:NOTE: [AUTO] 드라이버 두 종을 하나의 인터페이스로 모으는 지점 — Neon HTTP는 행 배열을
+// 그대로 돌려주고 PGlite(테스트)는 { rows }로 감싸 돌려준다. policy-repo는 이 차이를 모른 채
+// Db.query 하나만 호출하므로, 어댑팅은 반드시 이 파일 안에서 끝나야 한다.
 export interface Db {
 	query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T[]>;
 }
@@ -33,8 +34,11 @@ export function getDb(): Db {
 		}
 		const sql = neon(databaseUrl);
 		cached = {
-			query: <T>(text: string, params: unknown[] = []) =>
-				sql.query(text, params) as unknown as Promise<T[]>
+			// neon()의 기본 옵션(arrayMode:false, fullResults:false)에서 query()의 반환 타입은
+			// QueryRows<false> = Record<string, any>[] 이다. 즉 Db가 요구하는 "행 배열"과 이미
+			// 같은 모양이라 감싸지 않고, 행 원소 타입만 호출부가 지정한 T로 좁힌다
+			// (as unknown 경유 없이 한 번의 단언으로 충분하다).
+			query: <T>(text: string, params: unknown[] = []) => sql.query(text, params) as Promise<T[]>
 		};
 	}
 	return cached;
