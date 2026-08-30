@@ -417,10 +417,90 @@ M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensio
 - `blob/store.ts`의 실제 Vercel Blob `put()` 경로는 여전히 미검증 gap입니다 — `client.ts`의 Neon 실경로와 같은 성격이며, M4 배포 직전 `BLOB_READ_WRITE_TOKEN`을 실제로 연결해 한 번 실측이 필요합니다.
 - `undici` 취약점 확인 결과는 안전측입니다(§Deviations 7) — 별도 조치 불요.
 - `AC-UPLOAD-011`의 "헤더 없이 실측 4MB 초과" 테스트는 실제로 4MB+1바이트 버퍼를 생성·전송하므로 다른 테스트보다 느립니다(약 2초) — 개별 타임아웃을 15000ms로 늘렸습니다.
+- **REFACTOR가 해소한 것과 그대로 둔 것**: §Deviations 2(클라이언트 힌트가 `decideUpload()`를 재사용하지 못함)는 코드가 아니라 그 사실을 잘못 적고 있던 `decide.ts`의 `@MX:ANCHOR` 문구를 정정해 **문서상으로 해소**했고, 편차 자체(경계상 재사용 불가)는 설계 그대로입니다. §Deviations 4·5는 창업자 판정대로 **코드·테스트 모두 그대로 유지**했습니다. §Deviations 1·3·6·7과 미검증 gap(Neon·Vercel Blob 실경로)은 REFACTOR 범위 밖이라 변동 없습니다.
 
 #### Planned-vs-actual files
 
 `spec.md` §4 M3 대상 신규 파일 전부 생성 완료: `src/lib/server/blob/store.ts`(+`store.test.ts`), `src/lib/server/db/upload-repo.ts`(+`upload-repo.test.ts`), `src/routes/api/upload/+server.ts`(+`server.test.ts`), `src/lib/components/UploadArea.svelte`(+`UploadArea.test.ts`). 기존 파일 확장: `src/hooks.server.ts`(`locals.blob` 배선), `src/app.d.ts`(`Locals.blob` 타입), `src/routes/+page.server.ts`(`blockedExtensions`·`extensionAliases`·`clientHintBlocked` 추가), `src/routes/+page.svelte`(플레이스홀더 → `UploadArea` 연결), `src/routes/page.ssr.test.ts`(`data` 리터럴에 3개 필드 추가 — 기존 단언 삭제 없음, `git diff 3d77a91 -- 'src/**/*.test.ts' | grep -E '^-[^-]'`로 확인). 계획에 없던 추가 의존성: `@vercel/blob@2.8.0`(`package.json`·`pnpm-lock.yaml`). `src/lib/server/upload/decide.ts`(M1 PRESERVE 대상)는 시그니처·동작 변경 없이 그대로 재사용했습니다.
+
+#### REFACTOR (Opus)
+
+커밋 `18b1f12`. 동작 변경 없음 — RED→GREEN이 만든 159개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 이번 판단을 고정하려고 추가한 12건을 포함해 171개가 통과한다. 테스트 파일 diff는 154줄 삽입·0줄 삭제(`git diff 7121040..18b1f12 -- 'src/**/*.test.ts' --stat`), 삭제된 단언 줄 0건.
+
+##### 무엇을 왜 바꿨나
+
+1. **오류 봉투 헬퍼를 `src/lib/server/upload/http.ts` 하나로 모았다** — M2 REFACTOR가 "두 번째 호출부가 실제로 생기는 M3에서 뽑는다"며 미뤄둔 항목이고(M2 §B3), M3에서 업로드 라우트가 두 번째 호출부가 되면서 조건이 성립했다. 통합 전 두 봉투는 모양이 갈라져 있었다 — 정책 라우트는 `{ code, message }`에 `entry.message`를 그대로, 업로드 라우트는 `{ code, message, details }`에 `formatMessage(code, details)`를. 같은 API가 엔드포인트마다 다른 오류 모양을 내려주면 클라이언트가 키 유무로 분기하게 되므로, `details`가 항상 존재하는 업로드 쪽 모양으로 통일했다. **정책 라우트의 문구는 한 글자도 바뀌지 않는다** — 그 라우트가 낼 수 있는 6개 코드(`EXT_EMPTY`·`EXT_TOO_LONG`·`EXT_INVALID_CHARS`·`EXT_DUPLICATE`·`EXT_IS_FIXED`·`EXT_LIMIT_REACHED`)의 문구에는 `{대입값}` 자리가 없어 `formatMessage(code)`와 `REASON_CODES[code].message`가 같은 문자열이기 때문이며, 이 전제를 `http.test.ts`의 `test.each` 6건이 코드로 고정한다. 정책 라우트 응답에 `details: {}` 키가 새로 붙는 것이 유일한 전선(wire) 변화인데, 클라이언트 3곳(`CustomExtensionInput`·`FixedExtensionList`·`UploadArea`)은 모두 `body.error?.message`만 읽고 기존 단언도 `body.error.code`만 보므로 이 변화를 관측하는 소비자가 없다(키 추가는 비파괴 변경).
+2. **`upload_attempt` 행과 구조화 로그를 한 함수(`recordAndLogAttempt`)에서 함께 만든다** — 핸들러 3곳에서 8개 필드를 DB용·로그용으로 각각 적고 있었다(같은 값을 24번 옮겨 적는 셈이다). 행을 단일 원본으로 두고 로그를 그 투영으로 파생시키면, 한쪽 필드만 고쳐져 DB와 로그가 조용히 어긋나는 경로가 구조적으로 사라진다. 컬럼명·로그 필드명·기록 순서(INSERT → 로그)는 그대로다. `Content-Length` 선차단만 이 함수를 쓰지 않는데, 그 시점에는 파일명·실측 크기가 없어 행 자체를 만들 수 없기 때문이다 — 요청 단위 거부와 파일 단위 판정의 차이가 코드 모양으로도 드러난다. 핸들러는 210줄 → 198줄.
+3. **UTF-8 바이트 절단 루프의 중복을 `truncateUtf8(value, maxBytes)`로 합쳤다** — `normalizeFilename`(255바이트)과 `truncateForLog`(64바이트)가 코드 포인트를 쪼개지 않는 같은 루프를 각자 들고 있었다. `extension.ts`에 추가 export 1건으로 뽑고 양쪽이 쓴다. `normalizeFilename`은 PRESERVE 대상이라 **동작이 바이트 단위로 같아야 하는데**, 뽑아낸 루프가 원본과 문자 단위로 동일하고 M1의 절단 테스트가 수정 없이 통과하는 것으로 확인했다. `+server.ts`의 지역 함수 `truncateForLog`는 제거됐다.
+4. **`pnpm test:coverage`의 PGlite 훅 타임아웃을 워커 2개 고정으로 닫았다** — 전체 병렬에서 PGlite 파일 4개가 `Hook timed out in 30000ms`로 실패하던 문제다(오케스트레이터 실측 `.moai/state/verify/bb9ff997/m3-cov.log`). 원인은 커버리지 계측이 얹힌 상태에서 WASM 인스턴스가 동시에 여러 개 뜨는 자원 경합이지 테스트 로직이 아니므로, 격리 계약(`beforeEach`마다 PGlite를 새로 띄우는 것 — M2 §B6에서 유지 판정)이나 `hookTimeout` 값은 건드리지 않고 `test:coverage` 스크립트에만 `--maxWorkers=2`를 달았다. `pnpm test`는 전체 병렬에서 이미 안정적이라 그대로 뒀다. 연속 2회 실행으로 확인했다(아래 검증 절).
+5. **`decide.ts`의 `@MX:ANCHOR` 문구 정정** — "엔드포인트, 테스트, 클라이언트 힌트가 모두 이 함수 하나를 호출한다(호출부 3곳 이상)"고 적혀 있었으나 **클라이언트 힌트는 이 함수를 호출하지 않는다**(§Deviations 2 — SvelteKit 서버 경계). 태그가 사실이 아닌 호출 관계를 주장하고 있던 것이라 실제 호출부만 적도록 고쳤다. 주석 문구만 바뀌었고 `decide.ts`의 코드는 그대로다.
+6. **접근성 보강 2건** — 파일 입력에 `aria-describedby="upload-disclaimer"`(힌트가 편의용이라는 단서가 화면에만 떠 있으면 입력에 초점을 둔 스크린리더 사용자는 그 단서를 듣지 못한다), 업로드 버튼에 `aria-busy={uploading}`. 나머지 체크리스트(보이는 `<label>`, `type="button"`, 결과 줄의 `role="status"`/`role="alert"`, 힌트와 파일명이 같은 `<li>`에 놓여 읽기 순서로 연결되는 것)는 이미 충족되어 확인만 했다. 문구·구조는 바꾸지 않았고, 디자인 패스가 따로 예정되어 스타일도 손대지 않았다.
+7. **판단 고정 테스트 12건 추가 (159 → 171)** — `http.test.ts` 9건(봉투 키 집합, 대입값 없을 때 `details`가 빈 객체로 유지됨, 대입값 채움, 정책 코드 6개의 문구·상태 코드가 표와 글자 그대로 같음)과 `server.test.ts` 3건(수락·거부 각각에서 로그 줄의 필드가 기록된 행과 일치, `blob_pathname`은 로그에 없음, 로그 파일명 64바이트 절단과 행 255바이트 유지가 접두 관계). 1·2·3번에서 내린 판단이 나중에 조용히 뒤집히는 것을 막는 자물쇠다.
+
+##### 계획 대비 점검 (변경 불요로 판정한 항목)
+
+| # | 검토 후보 | 판정 | 근거 |
+|---|---|---|---|
+| B1 | 오류 봉투 헬퍼 2곳 추출 | **변경** | 위 1번. `http.ts` 신규, 두 라우트가 사용. 정책 문구 불변을 `http.test.ts` `test.each` 6건으로 증명 |
+| B2 | `logAttempt`+`recordUploadAttempt` 3회 중복 | **변경** | 위 2번. `+server.ts:56-72`, 호출 3곳 |
+| B3 | `truncateForLog` ↔ `normalizeFilename` 루프 중복 | **변경** | 위 3번. `extension.ts:69-83` 추가 export |
+| B4 | `test:coverage` 훅 타임아웃 | **변경** | 위 4번. `package.json` 스크립트만 수정, 격리 계약·`hookTimeout` 불변 |
+| B5 | MX 태그 | **1건 문구 정정 + 검증** | 위 5번 + 아래 MX 절 |
+| B6 | `UploadArea` 접근성·시맨틱 | **부분 변경** | 위 6번. 미비했던 2곳만 보강 |
+| B7 | `hooks.server.ts`의 `getBlobStore()` 매 요청 호출 | **유지** | `getDb()`와 같은 캐시 패턴(둘 다 첫 호출에만 생성)이라 요청마다 왕복이 늘지 않는다. 다만 **운영 노트**: 훅이 두 함수를 무조건 부르므로 `BLOB_READ_WRITE_TOKEN`이 없으면 업로드뿐 아니라 **정책 화면까지 500**이 된다. 이는 코드 두 줄(`hooks.server.ts:6-7`)과 `store.test.ts`의 "토큰 미설정 시 throw" 테스트를 합쳐 내린 판독이지 런타임 실측이 아니다. 결함이 아니라 배포 전 점검 항목이라 M4로 넘긴다 |
+| B8 | `decideUpload`의 `sizeBytes` 재확인 | **유지** | 핸들러가 이미 크기를 거른 뒤에도 판정 함수가 다시 보는 것은 중복이 아니라 계약이다 — `decideUpload`가 단일 진입점인 이상 자신의 입력만으로 판정이 닫혀야 하고, "호출자가 선차단했다"는 가정을 함수에 심으면 다른 호출자가 생기는 순간 구멍이 된다(M1 계약) |
+| B9 | 경계 grep | **검증만** | 아래 검증 절 |
+
+M1·M2 PRESERVE 대상은 이번에도 손대지 않았다 — `decide.ts`의 판정 순서(주석 문구만 정정), `signature.ts`, `normalizeFilename`의 255바이트 앞자름 의미론, `reason-codes.ts`의 문구 상수, `policy-repo.ts`, `client.ts`. §Deviations 4(AC-014 문구 → `BLOCKED_EXTENSION`)와 5(300자 파일명 → `NO_EXTENSION`)는 창업자 판정대로 코드를 그대로 뒀다.
+
+##### 검증 (커밋 `18b1f12` 기준)
+
+| 명령 | 종료 코드 | 결과 |
+|---|---|---|
+| `pnpm test` | 0 | Test Files **15 passed (15)** / Tests **171 passed (171)** (159 + 12) |
+| `pnpm lint` | 0 | `All matched files use Prettier code style!` + eslint 무출력 |
+| `pnpm check` | 0 | `456 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS` |
+| `pnpm build` | 0 | adapter-vercel 빌드 성공 |
+| `pnpm test:coverage` 1회차 | 0 | 171 passed, Duration 200.02s, `Hook timed out` 0건 |
+| `pnpm test:coverage` 2회차 | 0 | 171 passed, Duration 146.12s, `Hook timed out` 0건, 커버리지 수치 1회차와 동일 |
+
+커버리지(`src/lib/server/**`): Stmts **92.8**(129/139) · Branch **87.67**(64/73) · Funcs **92.3**(36/39) · Lines **92.53**(124/134). RED→GREEN 대비 92.64/87.32/91.89/92.36에서 **네 지표 모두 소폭 상승**했다. 분자·분모로 보면 회귀가 없다는 것이 분명하다 — `coverage-summary.json`을 직접 읽은 **미커버 수가 네 지표 모두 이전과 정확히 같고**(문장 10, 분기 9, 함수 3, 줄 10), 분모가 늘어난 만큼(문장 +3, 분기 +2, 함수 +2, 줄 +3) 분자도 같은 폭으로 늘었다. 즉 이번에 추가된 코드(`http.ts`의 `errorResponse`, `extension.ts`의 `truncateUtf8`)는 전부 커버된 상태로 들어왔다. `upload` 디렉터리는 `signature.ts:32`(M1이 "구조적으로 도달 불가"로 판정한 BOM 분기)를 뺀 나머지가 전 지표 100%다. 85% 목표는 전 항목에서 상회한다.
+
+경계 검증:
+
+| 항목 | 명령 | 결과 |
+|---|---|---|
+| 시크릿 직접 접근 없음 | `grep -rn "process.env" src/` | 0건 (exit 1) |
+| 서버 모듈의 클라이언트 유출 없음 | `grep -rn "lib/server" src/lib/components src/routes/+page.svelte` | 0건 (exit 1) |
+| 미해소 TODO 없음 | `grep -rn "@MX:TODO" src/ scripts/` | 0건 (exit 1) |
+| `.env*` 미접촉 | `git status --short` | `.env` 계열 변경 0건 |
+| 테스트 단언 미수정 | `git diff 7121040..18b1f12 -- 'src/**/*.test.ts'`에서 삭제 줄 추출 | 삭제 줄 0건 (exit 1), 삽입 154줄 |
+
+##### MX 태그
+
+문구 정정 1건(`decide.ts`), 나머지 7건은 추가·수정 없이 검증만 했다. 신규 파일 `http.ts`에는 태그를 달지 않았다 — 호출부가 2개 모듈로 ANCHOR 기준(fan_in ≥ 3)에 미달하고, 파일 자체가 공개 API 경계도 외부 연동 지점도 아니며, NOTE 기준(매직 상수·100줄 초과·설명 없는 업무 규칙) 어디에도 해당하지 않는다. 파일당 한도(ANCHOR 3 / WARN 5 / NOTE 10) 이내이며 모든 파일이 태그 1건씩이다.
+
+| 파일 | 태그 | 줄 | 상태 |
+|---|---|---|---|
+| `src/lib/server/upload/decide.ts` | `@MX:ANCHOR` (+ `@MX:REASON`) | 19 | **문구 정정** |
+| `src/lib/server/upload/extension.ts` | `@MX:ANCHOR` (+ `@MX:REASON`) | 3 | 유지 |
+| `src/routes/api/upload/+server.ts` | `@MX:ANCHOR` (+ `@MX:REASON`) | 74 | 유지 |
+| `src/lib/components/UploadArea.svelte` | `@MX:WARN` (+ `@MX:REASON`) | 37 | 유지(형식 검증) |
+| `src/lib/server/db/policy-repo.ts` | `@MX:WARN` (+ `@MX:REASON`) | 60 | 유지 |
+| `src/lib/server/upload/signature.ts` | `@MX:WARN` (+ `@MX:REASON`) | 71 | 유지 |
+| `src/lib/server/db/client.ts` | `@MX:NOTE` | 4 | 유지 |
+| `src/lib/constants.ts` | `@MX:NOTE` | 1 | 유지 |
+
+ANCHOR 3건의 fan_in을 실제로 세어 보면 기준선이 애매하다는 점은 기록해 둡니다. `decideUpload`를 호출하는 곳은 **모듈 기준 2개**(`api/upload/+server.ts`, `decide.test.ts`)이고 **호출 지점 기준 13곳**(테스트 12 + 엔드포인트 1)입니다. `POST` 핸들러도 라우터와 `server.test.ts` 2곳입니다. 모듈로 세면 셋 다 fan_in ≥ 3에 미달하지만, 세 태그 모두 `mx-tag-protocol.md`의 두 번째 ANCHOR 기준인 **"Public API boundary identified"**(판정의 단일 진입점, HTTP 엔드포인트, 별칭 표의 단일 원본)에 해당하므로 태그 종류를 그대로 두었습니다. 프로토콜상 NOTE 강등은 자동이 아니라 보고를 거치도록 되어 있어, 강등이 필요하다는 판단이면 이 문단이 그 보고입니다.
+
+##### 남은 gap
+
+- **`blob/store.ts`의 실제 Vercel Blob `put()` 경로는 여전히 미검증입니다**(40/33.33/33.33/40). `BLOB_READ_WRITE_TOKEN`이 없어 이 환경에서 네트워크 왕복을 실행할 수 없으며, `client.ts`의 Neon 실경로와 같은 성격입니다. M4 배포 직전 실측이 필요합니다.
+- **`client.ts`의 Neon 실경로(35~44행)** — M1·M2와 동일하게 미검증입니다.
+- **B7의 운영 노트는 코드 판독이지 런타임 실측이 아닙니다.** `BLOB_READ_WRITE_TOKEN` 부재 시 정책 화면까지 500이 되는지는 M4에서 토큰을 실제로 붙이고 한 번 확인하는 것이 맞습니다.
+- **`UploadArea`의 `{#each ... (item.file.name)}` 키 중복 위험** — 같은 이름의 파일 2개가 한 번에 선택되면 Svelte가 키 중복으로 예외를 던집니다. 단일 `<input type="file" multiple>` 한 번의 선택으로는 같은 디렉터리 안이라 같은 이름이 나올 수 없어 실질 도달 불가로 보고 이번에 바꾸지 않았습니다(키를 바꾸면 재조정 동작이 달라져 동작 보존 범위를 벗어납니다). 드래그앤드롭 등 다중 소스 선택을 붙인다면 그때 함께 봐야 합니다.
+- **정렬·질의 검증은 여전히 PGlite에서만 관측했습니다**(M2와 동일). Neon 실측은 M4 항목입니다.
+- `policy-repo.ts:95`(경합 분기), `signature.ts:32`(BOM 분기)는 이전 판정 그대로 손대지 않았습니다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
