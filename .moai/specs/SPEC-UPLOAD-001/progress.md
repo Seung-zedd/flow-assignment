@@ -266,10 +266,87 @@ iter1 결함별 조치 요약:
 - `db/client.ts`의 Neon 실경로(라인 34-40)는 여전히 미검증 gap입니다 — M1의 `scripts/migrate.ts`와 같은 성격이며, M4 배포 직전 `DATABASE_URL`을 실제로 연결해 한 번 실측이 필요합니다.
 - svelte-check 경고 3건(Deviations 3)은 의도된 패턴이지만 REFACTOR(Opus 2차 스폰)에서 억제 여부를 판단해 주세요 — 현재는 동작에 영향 없는 컴파일러 안내로 그대로 두었습니다.
 - `PATCH .../fixed/[ext]`의 404/400 처리(Deviations 2)는 REASON_CODES 표 밖의 재량 판단입니다 — REQ/AC에 명문 규정이 없어 라우팅 오류로 분류했는데, 이견이 있으면 알려주세요.
+- **REFACTOR 처리 결과**: Deviations 3(svelte-check 경고 3건)은 `untrack()`으로 **해소**했고, Deviations 1·2·4·5는 근거를 확인한 뒤 **유지**했습니다(아래 REFACTOR 절 검토 표).
 
 #### Planned-vs-actual files
 
 `spec.md` §4 M2 대상 행(`src/lib/server/db/{client,policy-repo}.ts`, `src/hooks.server.ts`, `src/routes/api/policy/**`, `src/routes/+page.server.ts`, `+page.svelte`, `src/lib/components/{FixedExtensionList,CustomExtensionInput}.svelte`, `FixedExtensionList.test.ts`, `src/routes/api/policy/server.test.ts`) 전부 생성·수정 완료. 계획에 없던 추가: `src/lib/server/db/client.test.ts`(Deviations 5), `src/routes/page.ssr.test.ts`(spec.md §4가 이미 "AC-016b 관련 SSR 검증"을 §6 통합 항목으로 예정했으나 파일명은 계획서에 명시되지 않아 신규로 표기), `src/lib/server/db/policy-repo.test.ts`(spec.md §4의 "정책 조회·토글·추가·삭제 SQL" 대상 파일에 대한 짝 테스트, 표에는 암묵 포함).
+
+#### REFACTOR (Opus)
+
+커밋 `86baa60`. 동작 변경 없음 — RED→GREEN이 만든 129개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 판단을 고정하려고 추가한 2건을 포함해 131개가 통과한다. 테스트 파일 diff는 31줄 삽입·0줄 삭제(`git diff 9ffcfff..86baa60 -- 'src/**/*.test.ts' --stat`).
+
+##### 무엇을 왜 바꿨나
+
+1. **`state_referenced_locally` 경고 3건 해소 (`untrack`)** — `FixedExtensionList`·`CustomExtensionInput`이 `$state(prop 복사)`로 서버 초기값만 받아 지역 상태로 삼는 것은 AC-016a의 낙관적 갱신·롤백 계약이 요구하는 **의도된** 패턴이다(§Deviations 3). 그래서 선택지는 "경고를 끄는 것"과 "의도를 코드로 밝히는 것" 둘이었고, `svelte-ignore` 주석 대신 `svelte`의 `untrack()`을 골랐다 — 주석은 경고만 지우지만 `untrack(() => fixed)`는 "이 값은 초기값으로 한 번만 읽는다"를 코드가 스스로 말한다. `pnpm check` 3 WARNINGS → **0 WARNINGS**, AC-016a jsdom 테스트는 수정 없이 통과.
+2. **`getPolicy` 왕복 2회 → 1회** — 고정·커스텀을 각각 `SELECT`하던 것을 한 번의 `SELECT`로 읽고 코드에서 갈랐다. Neon HTTP 드라이버는 쿼리 1건이 왕복 1회인데, `getPolicy`는 조회뿐 아니라 **토글·추가·삭제 응답에서도 매번** 불리는 가장 잦은 읽기 경로라 화면 조작 한 번마다 왕복이 2회씩 붙고 있었다. `ORDER BY kind, sort_order, extension` 한 절이 `plan.md` §5의 두 정렬 규칙을 함께 담는다 — `kind`는 `custom` < `fixed`(사전순), 커스텀 행은 `sort_order`가 전부 스키마 기본값 `0`이라 `extension`이, 고정 행은 `sort_order` 1~7이 순서를 정한다.
+3. **`ALIAS_FOLDED` 안내 문구의 `{input}` 정정** — 원문 문자열을 그대로 대입하고 있어 `" .JPEG "`처럼 공백·점·대문자가 섞인 입력이면 안내가 `" .JPEG "는 jpg와 같은 형식이라…`로 나왔다. 접힌 것은 원문 전체가 아니라 **별칭 자체**이므로 정규화 후보(`jpeg`)를 대입한다. `plan.md` §4.1 문자열 표 자체는 한 글자도 건드리지 않았고, 대입 값만 정했다.
+4. **Neon 어댑터 이중 단언 제거** — `as unknown as Promise<T[]>`를 `as Promise<T[]>` 하나로 줄였다. `node_modules/@neondatabase/serverless/index.d.ts`를 읽어 확인한 실제 시그니처는 기본 옵션(`arrayMode:false`, `fullResults:false`)에서 `QueryRows<false> = Record<string, any>[]`(1118행)이라, `Db`가 요구하는 행 배열과 이미 같은 모양이고 `unknown` 경유가 필요 없다. `Db` 인터페이스에 "드라이버 두 종을 모으는 지점"이라는 `@MX:NOTE`를 달았다. `getDb()`는 여전히 네트워크 드라이버를 만드는 유일한 자리다.
+5. **접근성 소소 보강** — `CustomExtensionInput`의 안내 줄에 `role="status"`(오류 줄은 이미 `role="alert"`), 카운터 `{count}/{max}`에 `aria-label="커스텀 확장자 N개, 최대 M개"`. 나머지 항목(모든 `input`에 보이는 `<label>`, 추가 버튼 `type="button"`, 칩 삭제 버튼 `aria-label`)은 이미 갖춰져 있어 확인만 했다. 디자인 패스는 별도 예정이라 스타일은 손대지 않았다.
+6. **판단 고정 테스트 2건 추가 (129 → 131)** — 원문 `"  .JPEG  "` 입력 시 문구가 `jpeg는 jpg와 같은 형식이라 jpg로 저장돼요.`인지(3번), 고정과 커스텀이 **섞여 있을 때** 각자의 정렬 규칙이 유지되는지(2번). 둘 다 이번에 내린 판단이 나중에 조용히 뒤집히는 것을 막는 자물쇠다.
+
+##### 계획 대비 점검 (변경 불요로 판정한 항목)
+
+| # | 검토 후보 | 판정 | 근거 |
+|---|---|---|---|
+| B1 | svelte-check 경고 3건 | **변경** | 위 1번. `untrack()`, `pnpm check` 0 WARNINGS |
+| B2 | `client.ts` Neon 이중 캐스트 | **변경** | 위 4번. `client.ts:35-40` |
+| B3 | 오류 봉투 헬퍼 중복 추출 | **유지** | 추출 조건(2곳 이상 반복)이 성립하지 않는다. `grep -rn "ok: false\|errorResponse" src/routes --include=*.ts` 결과 `errorResponse`는 `custom/+server.ts:7` **한 곳뿐**이고, `fixed/[ext]`는 설계상 다른 모양(SvelteKit `error()`, §Deviations 2)을 쓴다. 호출부가 하나뿐인 추출은 M3의 `details` 모양을 추측하는 선반영이 되므로, 두 번째 호출부가 실제로 생기는 M3에서 그때의 AC를 보고 뽑는다 |
+| B4 | `ALIAS_FOLDED`의 `{input}` | **변경** | 위 3번. `custom/+server.ts:40-54` |
+| B5 | `getPolicy` 왕복 2회 | **변경** | 위 2번. `policy-repo.ts:20-43` |
+| B6 | `vite.config.ts` `hookTimeout: 30000` | **유지** | 제거 조건이 성립하지 않는다. `policy-repo.test.ts`·`server.test.ts`는 테스트 격리를 위해 `beforeEach`마다 PGlite를 새로 띄우므로(파일당 1개가 아니다) 공용 헬퍼로 묶어도 인스턴스 수는 그대로여서 타임아웃 필요가 사라지지 않는다. `beforeAll`+테이블 비우기로 바꾸면 격리 계약이 달라지는데 이는 동작 보존 범위 밖이고, 헬퍼 파일을 `src/lib/server/` 아래 두면 커버리지 분모(`src/lib/server/**`, 단일 원본 glob)에 테스트 도구가 섞인다. 테스트 코드에서는 DRY보다 의도가 드러나는 중복이 낫다는 판단으로 유지 |
+| B7 | 접근성·시맨틱 | **부분 변경** | 위 5번. 미비했던 2곳만 보강, 나머지는 이미 충족 |
+| B8 | MX 태그 | **검증 + 1건 추가** | 아래 MX 절 |
+| B9 | 경계 grep | **검증만** | 아래 검증 절 |
+
+M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensionInput`의 정규화 순서·`reason-codes.ts` 13개 문구는 계획과 일치해 손대지 않았다. `normalizeExtensionCandidate()`(§Deviations 1)도 유지했다 — 이번에 `{input}` 대입 값으로도 쓰이면서 추출의 값이 오히려 커졌다.
+
+##### 검증 (커밋 `86baa60` 기준)
+
+| 명령 | 종료 코드 | 결과 |
+|---|---|---|
+| `pnpm test` | 0 | Test Files 10 passed (10) / Tests **131 passed (131)** (129 + 2) |
+| `pnpm lint` | 0 | `All matched files use Prettier code style!` + eslint 무출력 |
+| `pnpm check` | 0 | `405 FILES 0 ERRORS **0 WARNINGS** 0 FILES_WITH_PROBLEMS` (직전 3 WARNINGS) |
+| `pnpm build` | 0 | — |
+| `pnpm test:coverage` | 0 | `src/lib/server/**` Stmts **96.8**(121/125) · Branch **92.3**(60/65) · Funcs **96.96**(32/33) · Lines **96.66**(116/120) |
+
+커버리지 변화(RED→GREEN 대비): Stmts 96.72 → 96.8, Branch 92.06 → 92.3, Lines 96.58 → 96.66으로 올랐고 **Funcs만 97.14 → 96.96으로 0.18%p 내렸다**. 이는 회귀가 아니라 분모가 준 결과다 — `coverage-summary.json`을 직접 읽어 확인한 미커버 **함수 개수는 1개로 이전과 같고**(`client.ts`의 Neon `query` 어댑터), `getPolicy`를 한 번의 조회로 바꾸며 커버되던 `.map()` 콜백 2개가 사라져 전체 함수 수가 35 → 33이 됐다. 85% 목표는 전 항목에서 크게 상회한다.
+
+작업 도중 한 번 실측치가 떨어졌던 기록도 남긴다: Neon 어댑터를 2문장 `async` 함수로 다시 쓰자 검증 불가 구간의 문장 수가 늘어 Stmts가 96.03까지 내려갔다. 타입을 좁히는 목적은 단일 표현식으로도 그대로 달성되므로 한 문장 형태로 되돌렸고, 위 수치가 되돌린 뒤의 값이다.
+
+경계 검증:
+
+| 항목 | 명령 | 결과 |
+|---|---|---|
+| 시크릿 직접 접근 없음 | `grep -rn "process.env" src/` | 0건 (exit 1) |
+| 미해소 TODO 없음 | `grep -rn "@MX:TODO" src/ scripts/` | 0건 (exit 1) |
+| `getDb()` 호출 경계 | `grep -rn "getDb" src/` | `hooks.server.ts:5` + `client.ts` 정의 + `client.test.ts` — 프로덕션 호출부는 훅 하나 |
+| `.env*` 미접촉 | `git status --short` | `.env` 계열 변경 0건 |
+| 테스트 단언 미수정 | `git diff -U0 -- 'src/**/*.test.ts' \| grep -E "^-[^-]"` | 삭제 줄 0건 (exit 1) |
+
+##### MX 태그
+
+`client.ts`의 `Db` 인터페이스에 `@MX:NOTE` 1건을 **추가**했다(`[AUTO]` 접두 보유, NOTE는 `@MX:REASON` 필수 아님). 기존 5건은 추가·수정 없이 검증만 했다. 파일당 한도(ANCHOR 3 / WARN 5 / NOTE 10) 이내이며, 모든 파일이 태그 1건씩이다.
+
+| 파일 | 태그 | 줄 | 상태 |
+|---|---|---|---|
+| `src/lib/server/db/client.ts` | `@MX:NOTE` | 4 | **신규** |
+| `src/lib/server/db/policy-repo.ts` | `@MX:WARN` (+ `@MX:REASON`) | 60 | 유지 |
+| `src/lib/server/upload/decide.ts` | `@MX:ANCHOR` (+ `@MX:REASON`) | 19 | 유지 |
+| `src/lib/server/upload/extension.ts` | `@MX:ANCHOR` (+ `@MX:REASON`) | 3 | 유지 |
+| `src/lib/server/upload/signature.ts` | `@MX:WARN` (+ `@MX:REASON`) | 71 | 유지 |
+| `src/lib/constants.ts` | `@MX:NOTE` | 1 | 유지 |
+
+클라이언트 힌트 `@MX:WARN`은 M3 스코프라 이번에 다루지 않았다.
+
+##### 남은 gap
+
+- **`client.ts`의 Neon 실경로(35~44행)는 여전히 미검증**입니다. 이번에 타입을 좁히면서 `unknown` 경유를 없앴지만, 이는 `index.d.ts`가 선언한 계약을 읽고 맞춘 것이지 **실제 Neon 응답을 관측한 것이 아닙니다**. `DATABASE_URL`이 없어 `sql.query()`를 이 환경에서 실행할 수 없으며, 미커버 함수 1건이 정확히 이 지점입니다. M1의 `scripts/migrate.ts`와 같은 성격이고 M4 배포 직전 실측이 필요합니다.
+- **2번(단일 조회)의 정렬은 PGlite에서만 관측했습니다.** 추가한 혼재 정렬 테스트가 통과하지만 실행 엔진은 PGlite이고, Neon(실제 Postgres)에서 같은 `ORDER BY`가 같은 순서를 준다는 것은 표준 동작에 근거한 추론입니다. 위 미검증 gap과 함께 M4에서 한 번에 확인하는 것이 합리적입니다.
+- **`policy-repo.ts:95`(미커버 1줄)** — UNIQUE 위반인데 뒤이은 `SELECT kind`가 빈 배열인 극단적 경합 분기로, RED→GREEN에서 이미 "실질 도달 불가에 가깝다"고 기록된 항목이며 이번에 손대지 않았습니다.
+- **`signature.ts:32`(BOM 스트립 분기)** — M1 REFACTOR가 "구조적으로 도달 불가"로 판정한 항목 그대로입니다.
+- 업로드 강제(AC-008~015)는 M3 deferred로 변동 없습니다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
