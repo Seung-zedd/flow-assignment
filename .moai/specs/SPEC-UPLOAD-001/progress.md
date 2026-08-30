@@ -267,6 +267,7 @@ iter1 결함별 조치 요약:
 - svelte-check 경고 3건(Deviations 3)은 의도된 패턴이지만 REFACTOR(Opus 2차 스폰)에서 억제 여부를 판단해 주세요 — 현재는 동작에 영향 없는 컴파일러 안내로 그대로 두었습니다.
 - `PATCH .../fixed/[ext]`의 404/400 처리(Deviations 2)는 REASON_CODES 표 밖의 재량 판단입니다 — REQ/AC에 명문 규정이 없어 라우팅 오류로 분류했는데, 이견이 있으면 알려주세요.
 - **REFACTOR 처리 결과**: Deviations 3(svelte-check 경고 3건)은 `untrack()`으로 **해소**했고, Deviations 1·2·4·5는 근거를 확인한 뒤 **유지**했습니다(아래 REFACTOR 절 검토 표).
+- **Founder 판정(2026-08-30, PROMPT_LOG #52)**: `ALIAS_FOLDED` `{input}`=정규화 후보 **유지**, 고정 7개 밖 `[ext]`·malformed body의 SvelteKit `error(404/400)` **유지**. M2 열린 판단 0건.
 
 #### Planned-vs-actual files
 
