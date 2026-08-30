@@ -569,14 +569,32 @@ M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 제출 �
 | `2cdba81` | `feat(SPEC-UPLOAD-001): M4 — db:migrate가 .env를 직접 읽도록 변경` | `package.json` |
 | `4e48a4b` | `docs(SPEC-UPLOAD-001): M4 — README(실행 방법·table schema·배포) + CONSIDERATIONS 28항목` | `README.md`, `CONSIDERATIONS.md` |
 
-네 커밋 모두 pre-commit 게이트(`moai gate`)를 통과했습니다. 아직 push하지 않았습니다 — push는 오케스트레이터가 수행합니다.
+| `251a074` | `docs(SPEC-UPLOAD-001): M4 — README를 포트폴리오 레이아웃으로 재구성` | `README.md`, `eslint.config.js` |
+
+다섯 커밋 모두 pre-commit 게이트(`moai gate`)를 통과했습니다. 아직 push하지 않았습니다 — push는 오케스트레이터가 수행합니다.
+
+#### M4 추가 작업 — README 레이아웃 재구성 (사용자 지시)
+
+작성자의 기존 포트폴리오 README(cubrain)와 섹션 순서·시각적 스타일을 맞춰 달라는 지시를 받아 `README.md`를 재구성했습니다. **내용은 그대로 두고 배치와 표현만 바꿨습니다** — table schema(컬럼·타입·제약·인덱스), 실행 방법, 환경변수 표, 배포 절차는 새 섹션 구조 안으로 옮겼을 뿐 사실관계가 바뀐 곳은 없습니다. Q8 충족 상태는 유지됩니다.
+
+10개 섹션 순서: 타이틀 + 태그라인 + 서비스 링크 + 배지 5종 → 프로젝트 소개 → 열람 안내(For Interviewers) → 기술 스택 → 시스템 아키텍처 → DB 스키마(ERD) → 업로드 판정 흐름 → 핵심 트러블슈팅 4건 → 로컬 실행 및 테스트 안내 → 문서.
+
+- 다이어그램 3곳(아키텍처 · ERD · 업로드 판정 플로우차트)은 `<!-- TODO(diagram-design): ... -->` 자리만 두고 그리지 않았습니다 — 지시대로입니다.
+- 새로 쓴 "업로드 판정 흐름 8단계"는 `api/upload/+server.ts`의 `POST`와 `decide.ts`의 `decideUpload()`를 읽고 실제 실행 순서를 옮긴 것입니다(추측 아님): Content-Length 선차단 → formData 파싱 → 크기 실측 → 파일명 정규화 → 확장자 후보 추출 → 정책 대조 → 시그니처 대조 → 저장·기록.
+- 트러블슈팅 4건은 문제/해결/결과 형태이며 깊은 근거는 `CONSIDERATIONS.md`로 넘깁니다.
+
+**함께 고친 것 — eslint ignores에 `.claude/worktrees/**` 추가.** README 수정 후 `pnpm lint`가 109개 파싱 오류로 실패했는데, 원인은 제 변경이 아니라 22:43에 Claude Code 런타임이 만든 worktree(`.claude/worktrees/agent-a44a196754cecbb30/`)였습니다. 그 안에 프로젝트 사본이 통째로 들어 있어 `tsconfig.json`이 하나 더 생기고, typescript-eslint가 루트 후보를 둘로 보고 "No tsconfigRootDir was set"를 전 파일에 뿌렸습니다. 해당 디렉터리는 `.gitignore` 대상이자 런타임 소유라 애초에 검사 대상이 아니므로 무시 목록에 넣었습니다(`.svelte-kit/**`·`build/**`와 같은 성격). worktree 자체는 locked 상태라 손대지 않았습니다.
+
+재검증: `pnpm test` 173/173 · `pnpm lint` exit 0 · `pnpm check` `456 FILES 0 ERRORS 0 WARNINGS` · `pnpm build` exit 0. 로그 5개 전부 `postgresql://` 0건.
+
+**앞선 Founder-attention 항목 1건 해소**: `.gitignore`의 `.vercel` 미커밋 변경을 우려 사항으로 적었으나, 확인 결과 `.vercel`은 M1 스캐폴드 때부터 `.gitignore:15`에 이미 있었습니다(`git check-ignore -v .vercel/` → `.gitignore:15:.vercel`). 작업 트리에 있던 추가 줄은 중복이었고 지금은 되돌려졌습니다. `.vercel/`은 안전하게 무시됩니다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
 ```yaml
 spec_id: SPEC-UPLOAD-001
 run_complete_at: 2026-08-30
-run_commit_sha: 4e48a4b
+run_commit_sha: 251a074
 run_status: complete
 ac_pass_count: 55        # M1 21 + M2 12 + M3 22 (M4는 새 AC를 추가하지 않음)
 ac_fail_count: 0
@@ -588,7 +606,7 @@ cross_platform_build:
   target: vercel-node
   command: pnpm build
   exit_code: 0
-total_run_phase_files: 6   # README.md, CONSIDERATIONS.md, package.json, gate.yaml, client.test.ts, store.test.ts
+total_run_phase_files: 7   # README.md, CONSIDERATIONS.md, package.json, gate.yaml, eslint.config.js, client.test.ts, store.test.ts
 m1_to_mN_commit_strategy: per-milestone-multiple-commits
 migration_applied:
   - 001_init.sql
