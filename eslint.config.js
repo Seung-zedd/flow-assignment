@@ -10,7 +10,18 @@ import ts from 'typescript-eslint';
 export default ts.config(
 	{
 		// 빌드 산출물·의존성·커버리지 리포트는 검사하지 않는다.
-		ignores: ['.svelte-kit/**', 'build/**', '.vercel/**', 'coverage/**', 'node_modules/**']
+		// .claude/worktrees/ 는 Claude Code 런타임이 만드는 git worktree 자리다(.gitignore 대상).
+		// 그 안에 프로젝트 사본이 통째로 들어 있어 tsconfig.json이 하나 더 생기는데,
+		// typescript-eslint 가 루트 후보를 두 개로 보고 "No tsconfigRootDir was set" 파싱
+		// 오류를 전 파일에 뿌린다. 애초에 검사 대상이 아니므로 무시 목록에 넣는다.
+		ignores: [
+			'.svelte-kit/**',
+			'build/**',
+			'.vercel/**',
+			'coverage/**',
+			'node_modules/**',
+			'.claude/worktrees/**'
+		]
 	},
 	js.configs.recommended,
 	...ts.configs.recommended,
