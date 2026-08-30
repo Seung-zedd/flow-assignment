@@ -219,6 +219,58 @@ iter1 결함별 조치 요약:
 - **`signature.ts:32` BOM 스트립 분기(유일한 미커버 분기)는 구조적으로 도달 불가**입니다. `TextDecoder('utf-8')`가 `ignoreBOM` 기본값(false)으로 BOM을 먼저 제거하므로 `text.startsWith(BOM)`이 참이 되는 경로가 없습니다. 방어적으로 남겨 두되, BOM 관용 **동작 자체**는 위 5번의 BOM 테스트가 종단 간으로 고정합니다. 선행 공백 뒤에 오는 BOM(`" ﻿<?php"`)은 현재도 처리하지 못하며, 실사용 시나리오가 아니라 판단해 확장하지 않았습니다.
 - M2~M4 스코프의 엔드포인트·화면 AC는 여전히 deferred입니다(변동 없음).
 
+### M2 (RED→GREEN, Sonnet)
+
+#### Acceptance scenario completion — 12 / 12 (M2 스코프)
+
+| # | 시나리오 | 테스트 파일 | 상태 |
+|---|---|---|---|
+| AC-UPLOAD-001 | exe 체크 → 새로고침 후 유지, 다시 uncheck → false로 복귀 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| AC-UPLOAD-002 | SH 추가 → 소문자 `sh`로 저장, 카운터 1/200 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| AC-UPLOAD-003 | 이미 있는 sh 재추가 → 409 EXT_DUPLICATE, 행 수 불변 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| AC-UPLOAD-004 | 고정 exe 추가 시도 → 409 EXT_IS_FIXED, 커스텀 목록 불변 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| AC-UPLOAD-005a | 21자 입력 → 400 EXT_TOO_LONG | `server.test.ts` | PASS |
+| AC-UPLOAD-005b | `ex e`/`ех`/`a.b` → 400 EXT_INVALID_CHARS, 전각 `ｅｘｅ` → NFKC 후 409 EXT_IS_FIXED, `""`/`"   "`/`"."` → 400 EXT_EMPTY | `server.test.ts` | PASS |
+| AC-UPLOAD-006 | 커스텀 정확히 200개 상태에서 201번째 추가 → 409 EXT_LIMIT_REACHED, 카운트 200 유지 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| AC-UPLOAD-007 | sh 삭제 → 목록에서 제거, 카운터 1 감소, DB 행 삭제 | `policy-repo.test.ts`, `server.test.ts` | PASS(DB까지) / 재업로드 성공 절은 M3 deferred |
+| AC-UPLOAD-016a | exe 체크 클릭 → 낙관적 즉시 체크 → 500 응답 후 unCheck로 롤백 + 오류 표시 | `FixedExtensionList.test.ts`(jsdom) | PASS |
+| AC-UPLOAD-016b | exe가 DB에 체크 상태일 때 HTTP GET 응답 HTML에 이미 체크 상태로 포함, `CLIENT_HINT_DISCLAIMER` 문자열 그대로 포함 | `page.ssr.test.ts` | PASS |
+| 엣지 | 커스텀 `jpeg` 추가 → `jpg`로 저장·응답 `canonical:"jpg"` + `ALIAS_FOLDED` 알림 | `policy-repo.test.ts`, `server.test.ts` | PASS |
+| 계약 | `PATCH .../fixed/[ext]`가 7개 밖 확장자·malformed body를 각각 404/400으로 거부(REASON_CODES 표 밖 — SvelteKit `error()`) | `server.test.ts` | PASS |
+
+엔드포인트 레벨 AC 중 업로드 강제(AC-008~015)는 업로드 라우트가 아직 없으므로 M3로 deferred입니다(변동 없음).
+
+#### Test counts
+
+- 테스트 파일 10개, 테스트 129개, 전부 PASS(M1 91 + M2 신규 38: policy-repo 15 + client 2 + 엔드포인트 20 + 컴포넌트 2 + SSR 1 — 상세 합은 서술과 vitest 리포트가 일치). 실행: `pnpm test` → exit 0. 2회 연속 재실행으로 안정성 확인(플래키 없음).
+- `pnpm lint`(prettier --check + eslint) → exit 0.
+- `pnpm check`(svelte-check) → exit 0, `0 ERRORS 3 WARNINGS`(§Deviations 3 참고 — 동작에 영향 없는 컴파일러 안내).
+- `pnpm build` → exit 0.
+- `pnpm test:coverage`(`src/lib/server/**`, v8): 전체 Stmts 96.72% · Branch 92.06% · Funcs 97.14% · Lines 96.58%(85% 목표 상회). 파일별: `upload/*` 100/97.56/100/100(M1과 동일, 미변경), `db/policy-repo.ts` 100/93.75/100/100(라인 86 — UNIQUE 위반인데 SELECT kind가 빈 배열인 극단적 경합 분기, 실질 도달 불가에 가까움), `db/client.ts` 63.63/50/75/63.63(라인 34-40 — `getDb()`의 Neon 실경로, `DATABASE_URL` 미설정으로 이 환경에서 검증 불가한 명시적 gap, M1 `scripts/migrate.ts`와 동일 성격).
+
+#### Migration status
+
+- 변경 없음. M1이 만든 `migrations/001_init.sql`·`scripts/migrate.ts`를 그대로 재사용했다. `policy-repo.test.ts`·`server.test.ts` 모두 `applyMigrations()` 헬퍼로 PGlite에 동일 마이그레이션을 적용한다.
+- Neon 실경로는 M1과 동일하게 미검증(§Test counts).
+
+#### Deviations from spec/plan
+
+1. `src/lib/server/upload/extension.ts`에 `normalizeExtensionCandidate()`를 새로 export했습니다(M1 PRESERVE 범위) — `normalizeExtensionInput()`의 별칭 폴딩 이전 단계 정규화 결과만 돌려주는 순수 리팩터입니다. 기존 `normalizeExtensionInput` 시그니처·반환값·동작은 전혀 바뀌지 않았고 M1 테스트도 그대로 통과합니다. 정책 API가 `ALIAS_FOLDED` 알림 여부(입력이 별칭이라 접혔는지)를 판단할 때 정규화 로직을 재구현하지 않기 위해 최소 추출했습니다.
+2. `PATCH /api/policy/fixed/[ext]`가 7개 고정 확장자 밖의 값이나 malformed body를 받으면 `plan.md` §4.1 REASON_CODES 표가 아니라 SvelteKit의 `error(404)`/`error(400)`을 직접 던집니다 — 라우팅·형식 오류이지 정책 판정 오류가 아니라는 판단입니다(B-i 지시와 일치, `spec.md`에 명시적 REQ는 없어 계획 대비 재량 해석입니다).
+3. `svelte-check`가 경고 3건(`state_referenced_locally`, `FixedExtensionList.svelte`/`CustomExtensionInput.svelte`)을 냅니다 — `$state(prop.map(...))`으로 서버가 내려준 초기값만 복사해 지역 가변 상태로 삼는 의도된 패턴이라 Svelte 컴파일러가 "derived를 쓸 생각이었냐"고 안내하는 것입니다. `$derived`로 바꾸면 서버 값이 바뀔 때마다 낙관적 갱신 중인 로컬 상태가 덮여써져 AC-016a의 낙관적 갱신·롤백 계약이 깨지므로 의도적으로 그대로 두었고, 에러가 아니라 경고이며 동작에는 영향이 없습니다. REFACTOR 단계에서 억제 방법(예: 초기값을 `$props()` 구조분해 시점에 얕은 복사)을 검토할 후보로 남겨둡니다.
+4. `vite.config.ts`에 `test.hookTimeout: 30000`을 추가했습니다 — 여러 PGlite(WASM) 인스턴스가 동시에 기동하는 테스트 파일이 많아지면서 기본 10초 훅 타임아웃을 간헐적으로 넘겼습니다(정책 검증 로직 자체는 느리지 않음, 순수 리소스 경합). 늘린 뒤 `pnpm test` 3회 연속 재실행으로 안정성을 확인했습니다.
+5. 계획된 M2 산출물(§4 표) 중 `src/lib/server/db/client.test.ts`는 계획 문서에 명시되지 않았던 신규 테스트 파일입니다 — `Db`/`RowsQueryable` 어댑터와 `getDb()`의 `DATABASE_URL` 부재 예외 분기를 커버리지 목표(85%)를 안정적으로 상회하기 위해 추가했습니다.
+
+#### Founder-attention notes
+
+- `db/client.ts`의 Neon 실경로(라인 34-40)는 여전히 미검증 gap입니다 — M1의 `scripts/migrate.ts`와 같은 성격이며, M4 배포 직전 `DATABASE_URL`을 실제로 연결해 한 번 실측이 필요합니다.
+- svelte-check 경고 3건(Deviations 3)은 의도된 패턴이지만 REFACTOR(Opus 2차 스폰)에서 억제 여부를 판단해 주세요 — 현재는 동작에 영향 없는 컴파일러 안내로 그대로 두었습니다.
+- `PATCH .../fixed/[ext]`의 404/400 처리(Deviations 2)는 REASON_CODES 표 밖의 재량 판단입니다 — REQ/AC에 명문 규정이 없어 라우팅 오류로 분류했는데, 이견이 있으면 알려주세요.
+
+#### Planned-vs-actual files
+
+`spec.md` §4 M2 대상 행(`src/lib/server/db/{client,policy-repo}.ts`, `src/hooks.server.ts`, `src/routes/api/policy/**`, `src/routes/+page.server.ts`, `+page.svelte`, `src/lib/components/{FixedExtensionList,CustomExtensionInput}.svelte`, `FixedExtensionList.test.ts`, `src/routes/api/policy/server.test.ts`) 전부 생성·수정 완료. 계획에 없던 추가: `src/lib/server/db/client.test.ts`(Deviations 5), `src/routes/page.ssr.test.ts`(spec.md §4가 이미 "AC-016b 관련 SSR 검증"을 §6 통합 항목으로 예정했으나 파일명은 계획서에 명시되지 않아 신규로 표기), `src/lib/server/db/policy-repo.test.ts`(spec.md §4의 "정책 조회·토글·추가·삭제 SQL" 대상 파일에 대한 짝 테스트, 표에는 암묵 포함).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
