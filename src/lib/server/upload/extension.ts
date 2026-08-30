@@ -27,16 +27,23 @@ export interface NormalizeExtensionError {
 
 const EXTENSION_PATTERN = /^[a-z0-9]{1,20}$/;
 
+// M2에서 추출: 별칭 폴딩(canonicalizeExtension) 이전 단계의 정규화 결과만 돌려준다.
+// 정책 API가 "입력이 별칭이라 대표형으로 접혔는지"(ALIAS_FOLDED 알림)를 판단할 때
+// 정규화 로직을 재구현하지 않고 이 함수 하나로 비교할 수 있게 한다.
+export function normalizeExtensionCandidate(raw: string): string {
+	return raw
+		.normalize('NFKC')
+		.trim()
+		.replace(/^\.+|\.+$/g, '')
+		.toLowerCase();
+}
+
 // 정규화 순서(plan.md §4): NFKC → trim → 선행·후행 점 제거 → 소문자화 → 별칭 대표형 변환.
 // 후행 점도 제거한다 — acceptance.md 엣지 케이스 `exe.`(후행 점) → 정규화 후 `exe`.
 export function normalizeExtensionInput(
 	raw: string
 ): NormalizeExtensionOk | NormalizeExtensionError {
-	const normalized = raw
-		.normalize('NFKC')
-		.trim()
-		.replace(/^\.+|\.+$/g, '')
-		.toLowerCase();
+	const normalized = normalizeExtensionCandidate(raw);
 
 	if (normalized.length === 0) {
 		return { ok: false, code: 'EXT_EMPTY' };

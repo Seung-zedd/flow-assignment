@@ -17,6 +17,9 @@ export default defineConfig({
 	],
 	test: {
 		expect: { requireAssertions: true },
+		// PGlite(WASM)를 쓰는 테스트 파일이 여러 개 동시에 뜰 때 기본 10초 훅 타임아웃을
+		// 넘기는 경우가 있어 넉넉히 늘린다(정책 검증 로직 자체가 느린 것은 아니다).
+		hookTimeout: 30000,
 		coverage: {
 			provider: 'v8',
 			// acceptance.md Q2 / spec.md §6과 동일한 glob — 커버리지 측정 분모의 단일 원본
@@ -30,10 +33,21 @@ export default defineConfig({
 					name: 'node',
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/lib/components/**/*.{test,spec}.{js,ts}']
+				}
+			},
+			{
+				extends: './vite.config.ts',
+				// Svelte 5 클라이언트 컴포넌트를 jsdom에서 렌더링하려면 'browser' 조건이 필요하다
+				// (없으면 서버 렌더링 경로로 해석되어 lifecycle_function_unavailable 오류가 난다).
+				// resolve는 Vite 최상위 옵션이라 test 블록이 아니라 프로젝트 객체의 형제로 둔다.
+				resolve: { conditions: ['browser'] },
+				test: {
+					name: 'jsdom',
+					environment: 'jsdom',
+					include: ['src/lib/components/**/*.{test,spec}.{js,ts}']
 				}
 			}
-			// M2에서 jsdom 프로젝트를 추가한다 (plan.md §8 — AC-016a 컴포넌트 테스트 전용).
 		]
 	}
 });
