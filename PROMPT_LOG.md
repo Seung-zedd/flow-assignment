@@ -335,6 +335,14 @@
 
 ---
 
+#### #56 (AI 주도) M3 REFACTOR (manager-develop, Opus) → 재검증 → push → M3 완료
+- **결과**: 커밋 `18b1f12`(refactor, 11 files +355/-107) + `cb7953d`(bookkeeping). 검토 후보 B1~B9 판정 — **변경 6**: ① 오류 봉투 헬퍼를 `src/lib/server/upload/http.ts` 하나로(M2가 "호출부 2곳일 때"로 미뤄둔 항목, 정책 라우트 응답에 `details: {}` 키가 붙는 것이 유일한 전선 변화 — 문구 불변을 `test.each` 6건으로 고정, 화면 소비자 4곳은 `error?.message`만 읽음) ② `upload_attempt` 행을 단일 원본으로 두고 로그를 그 투영으로(`recordAndLogAttempt`, 핸들러 3곳의 필드 중복 24회 제거) ③ UTF-8 바이트 절단 루프를 `extension.ts`의 `truncateUtf8` 하나로(255B·64B 공용, `normalizeFilename` 동작 동일) ④ `test:coverage`에만 `--maxWorkers=2`(격리 계약·`hookTimeout` 불변, 2회 연속 exit 0·타임아웃 0건) ⑤ `decide.ts` ANCHOR 주석의 허위 호출 관계("클라이언트 힌트가 호출") 정정 ⑥ 접근성 2곳(`aria-describedby`, `aria-busy`). **유지 3**: `getBlobStore()` 매 요청 호출(`getDb()`와 같은 캐시 패턴), `decideUpload`의 크기 재확인(단일 진입점 계약), §Deviations 4·5(Founder 판정 대기). 판단 고정 테스트 12건 추가(159 → **171**), 기존 단언 수정 0줄.
+- **오케스트레이터 재검증(`cb7953d`)**: `pnpm test` 15 files / 171 passed · `pnpm lint` 0 · `pnpm check` 456 FILES 0 ERRORS 0 WARNINGS · `pnpm build` 0 · `pnpm test:coverage` exit 0, `Hook timed out` 0건, `src/lib/server/**` **92.8 / 87.67 / 92.3 / 92.53**(RED→GREEN 대비 네 지표 상승 — 미커버 수 동일, 분모만 증가) · 경계 grep 3종 0건 · `git diff 7121040 -- 'src/**/*.test.ts' | grep '^-[^-]'` 무출력. MX 태그 8건(신규 2: 업로드 핸들러 ANCHOR, UploadArea WARN). 증거 `.moai/state/verify/bb9ff997/m3r-*.log`. 🟢 채택.
+- **push**: `origin/main...HEAD` → `0 5` 확인 후 `git push origin main` → `3d77a91..cb7953d`, 이후 `0 0`.
+- **M3 완료 판정**: plan §11 M3 기준(차단 파일이 사유와 함께 거부 → AC-008/009/012/014, 정상 파일 Blob 저장 → AC-013/015(가짜 저장소), 두 경우 모두 `upload_attempt` 1행 → AC-014/015) 충족. 실제 Vercel Blob 경로와 Neon 경로는 토큰·URL 부재로 M4 실측 대상. Founder 판단 대기: AC-014 2절 문구, 300자 파일명 처리.
+
+---
+
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
 
 | 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
@@ -348,7 +356,7 @@
 | 에이전트 | `plan-auditor` (Opus) | SPEC 기계 감사(EARS 형식·추적성·프론트매터·상한). 작성 맥락 없이 경로만 전달해 독립성 확보 |
 | 에이전트 | `spec-interrogator` (Opus, 전역) | SPEC을 적대적으로 읽어 사람이 결정해야 할 판단 지점만 질문으로 추출 — 답은 하지 않음 |
 | 훅 | `.claude/hooks/guards/*.mjs` (실습 레포에서 이관) | `.env` 편집 차단, curl/wget 차단, npm/pnpm 공급망 가드, 편집 후 lint, 턴 종료 시 변경 파일 표시 — AI 자신에게도 적용 |
-| 수동 도구 | `pkg-check` (`projects/pkg-supply-chain-check.sh`) | 새 npm 패키지 추가 전 공급망 점검 (사용 시점에 기록) |
+| 수동 도구 | `pkg-check` (`projects/pkg-supply-chain-check.sh`) | M3에서 `@vercel/blob` 추가 전 실행(#55) — tarball의 lifecycle 스크립트·감사 결과를 설치 전에 확인, 하위 `undici` 권고는 해석 버전(6.28.0)으로 소거 |
 | 플러그인 | `ui-ux-pro-max` (활성화만, 미사용) | 배포 성공 후 버퍼가 남으면 디자인 패스에 사용 예정 — 스폰 시 `model: "opus"` (사용 시점에 갱신) |
 | 도구 | WebFetch (schemastore `claude-code-settings.json`) | settings.json에 effort 키가 없음을 스키마 원문으로 확인 → `CLAUDE_CODE_EFFORT_LEVEL` 환경변수 채택 |
 | 에이전트 | `manager-develop` (Sonnet, RED→GREEN) | M1·M2 구현 — 실패 테스트 작성 → 최소 구현. 기계적 구현은 Sonnet으로 비용·세션 한도 절감 (#30 결정) |
