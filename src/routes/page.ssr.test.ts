@@ -21,7 +21,13 @@ describe('AC-UPLOAD-016b: 정책 화면 SSR', () => {
 				custom: [],
 				customCount: 0
 			},
-			clientHintDisclaimer: NOTICE_CODES.CLIENT_HINT_DISCLAIMER.message
+			clientHintDisclaimer: NOTICE_CODES.CLIENT_HINT_DISCLAIMER.message,
+			// M3: 업로드 영역의 클라이언트 힌트가 참조하는 값들(REQ-UPLOAD-016 ②③).
+			// $lib/server/**는 클라이언트 컴포넌트에서 임포트할 수 없으므로 load()가
+			// 미리 계산해 내려준다.
+			blockedExtensions: ['exe'],
+			extensionAliases: { jpeg: 'jpg', tiff: 'tif', htm: 'html', mpeg: 'mpg', yml: 'yaml' },
+			clientHintBlocked: NOTICE_CODES.CLIENT_HINT_BLOCKED.message
 		};
 
 		const { body } = render(Page, { props: { data } });

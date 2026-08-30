@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import FixedExtensionList from '$lib/components/FixedExtensionList.svelte';
 	import CustomExtensionInput from '$lib/components/CustomExtensionInput.svelte';
+	import UploadArea from '$lib/components/UploadArea.svelte';
 
 	let { data }: { data: PageData } = $props();
 </script>
@@ -20,13 +21,10 @@
 
 <section>
 	<h2>업로드</h2>
-	<p class="disclaimer">{data.clientHintDisclaimer}</p>
-	<p>업로드 기능은 다음 마일스톤에서 추가됩니다.</p>
+	<UploadArea
+		blockedExtensions={data.blockedExtensions}
+		extensionAliases={data.extensionAliases}
+		clientHintBlocked={data.clientHintBlocked}
+		disclaimer={data.clientHintDisclaimer}
+	/>
 </section>
-
-<style>
-	.disclaimer {
-		color: #555;
-		font-size: 0.9rem;
-	}
-</style>
