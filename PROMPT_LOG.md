@@ -288,6 +288,22 @@
 > 워커 패턴으로 spawn되는 서브에이전트(SPEC의 opus, 단순 구현의 sonnet)한테도 [1m]을 할당하는 게 효율적일까? 어차피 마일스톤 단위로 컨텍스트를 초기화하는 게 낫지 않을까?
 - **AI 답**: 서브에이전트는 스폰마다 새 컨텍스트(소멸 후 `progress.md`·커밋·스폰 프롬프트만 승계)라 마일스톤 단위 초기화는 이미 구조상 자동. `[1m]`은 한 스폰 안의 자동 압축을 미루는 여유분일 뿐이고, 비용은 할당이 아닌 실사용(200K 초과 구간)에 붙지만 컨텍스트가 클수록 rot도 커짐. 권장: 워커는 기본(`[1m]` 없음) 유지, 압축 흔적·15파일 초과 시에도 먼저 마일스톤 분할. 스폰 `model:` 파라미터는 sonnet/opus/haiku/fable만 받아 접미사 지정 불가 — 필요 시 에이전트 정의 파일에서 처리.
 
+#### #49 (AI 주도) M2 RED→GREEN (manager-develop, Sonnet) → 오케스트레이터 재검증
+- **결과**: 커밋 `898ce43`(feat, 21 files, +1520) + `fb95916`(bookkeeping). 테스트 91 → **129**(정책 리포지토리 15 · 클라이언트 2 · 엔드포인트 20 · 컴포넌트 jsdom 2 · SSR 1 = 신규 38), M2 스코프 AC 12/12 PASS(AC-001~007 API/DB, 016a 낙관적 갱신→500→롤백, 016b SSR HTML에 체크 상태 + 면책 문구). 커버리지 `src/lib/server/**` Stmts 96.72 / Branch 92.06 / Lines 96.58.
+- **오케스트레이터 재검증(main, `fb95916`)**: `pnpm test` 10 files / 129 passed · `pnpm lint` exit 0 · `pnpm check` 0 ERRORS 3 WARNINGS · `pnpm build` exit 0 · 커버리지 수치 보고와 일치. 증거 `.moai/state/verify/f4050a0d/m2-*.log`. 스폰 프롬프트에 넣은 설계 결정(Db 인터페이스·locals.db 주입·단일 SQL 상한·23505 분기·jsdom browser 조건) 전부 구현에 반영됨을 코드 열람으로 확인.
+- **에이전트 재량 판단(수용, REFACTOR에서 재검토)**: ① `normalizeExtensionCandidate()` 최소 추출(M1 시그니처 불변) ② 고정 7개 밖 `[ext]`·잘못된 body는 SvelteKit `error(404/400)` ③ svelte-check 경고 3건(`state_referenced_locally`)은 낙관적 갱신용 로컬 복사 패턴이라 의도됨 ④ PGlite 다중 기동 경합으로 `hookTimeout: 30000` ⑤ `client.test.ts` 신규(계획 외, 커버리지 보강). 🟢 채택.
+- **남은 gap**: `client.ts` Neon 실경로(라인 34-40) — `DATABASE_URL` 없어 미검증, M4 배포 직전 실측(M1 `migrate.ts`와 동일 성격).
+
+#### #50
+> 나 커피냅 30분 정도 때리고 다시 복귀할 거니까 내가 멀티옵션으로 판단하는 부분 직전까지만 알아서 작업해 놔
+- **의도**: 자율 진행 범위 위임. **AI 계획**: REFACTOR(Opus) 결과 수신 → 검증 배치 2차 → 푸시 → Founder digest 3블록 준비 → PROMPT_LOG 커밋까지 무인 진행. 정지 지점: digest ① 판단 필요 항목(404 재량·TIFF 이월), M3 진입·시크릿 시점, `/clear` 여부 — 전부 AskUserQuestion으로 대기.
+
+#### #51 (AI 주도) M2 REFACTOR (manager-develop, Opus) → 재검증 → push → M2 완료
+- **결과**: 커밋 `86baa60`(refactor, 7 files +79/-21) + `cc518d7`(bookkeeping). 검토 후보 9건 판정 — **변경 5**: ① svelte-check 경고 3건을 `untrack()`으로 해소(주석 억제 대신 "초기값 한 번만 읽는다"를 코드가 말하게) ② `getPolicy` DB 왕복 2회→1회(`ORDER BY kind, sort_order, extension` 한 절로 두 정렬 규칙) ③ `ALIAS_FOLDED` 문구의 `{input}`을 원문→정규화 후보로(`" .JPEG "` 누출 정정) ④ Neon 어댑터 이중 단언 제거(`index.d.ts:1118` 실측) + `Db`에 `@MX:NOTE` ⑤ 접근성 2곳(`role="status"`, 카운터 `aria-label`). **유지 2**: 오류 봉투 헬퍼 추출(호출부 1곳뿐 — M3에서 두 번째가 생길 때), `hookTimeout`(테스트가 `beforeEach`마다 PGlite 기동 — 격리 계약 유지). 판단 고정 테스트 2건 추가(129→**131**), 기존 단언 수정 0줄(`git diff -U0 … | grep -c "^-[^-]"` → 0).
+- **오케스트레이터 재검증(`cc518d7`)**: `pnpm test` 131/131 · `pnpm lint` 0 · `pnpm check` **0 ERRORS 0 WARNINGS** · `pnpm build` 0 · 커버리지 96.8/92.3/96.96/96.66(Funcs -0.18%p는 `.map` 콜백 2개가 사라진 분모 감소, 미커버 함수 1개 동일) · `process.env` 0 · `@MX:TODO` 0. 증거 `.moai/state/verify/f4050a0d/m2r-*.log`. 🟢 채택.
+- **push**: `git rev-list --left-right origin/main...HEAD` → `0 6` 확인 후 `git push origin main` → `97c2e2e..cc518d7`, 이후 `0 0`.
+- **M2 완료 판정**: plan §11 M2 기준(토글·추가·삭제 새로고침 후 유지 → AC-001/002/007 API+DB, 거부 사유 6종 노출 → AC-003~006 + 화면 문구는 Q12 수동) 충족. Founder 판단 대기 항목: `{input}` 정규화 후보 표시, 고정 7개 밖 `[ext]`의 404 재량.
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
@@ -306,6 +322,10 @@
 | 수동 도구 | `pkg-check` (`projects/pkg-supply-chain-check.sh`) | 새 npm 패키지 추가 전 공급망 점검 (사용 시점에 기록) |
 | 플러그인 | `ui-ux-pro-max` (활성화만, 미사용) | 배포 성공 후 버퍼가 남으면 디자인 패스에 사용 예정 — 스폰 시 `model: "opus"` (사용 시점에 갱신) |
 | 도구 | WebFetch (schemastore `claude-code-settings.json`) | settings.json에 effort 키가 없음을 스키마 원문으로 확인 → `CLAUDE_CODE_EFFORT_LEVEL` 환경변수 채택 |
+| 에이전트 | `manager-develop` (Sonnet, RED→GREEN) | M1·M2 구현 — 실패 테스트 작성 → 최소 구현. 기계적 구현은 Sonnet으로 비용·세션 한도 절감 (#30 결정) |
+| 에이전트 | `manager-develop` (Opus, REFACTOR) | M1·M2 리팩터 — 동작 보존 검증(기존 단언 0줄 수정)·경고 해소·왕복 절감·MX 태그. 판단이 필요한 단계만 Opus |
+| 스킬 | `moai-workflow-tdd` · `moai-ref-api-patterns` | manager-develop 스폰 시 주입 — RED-GREEN-REFACTOR 규율, JSON 오류 봉투·검증 관례 |
+| 라이브러리 | `@electric-sql/pglite` · `jsdom` · `@testing-library/svelte` | PGlite: 네트워크·크리덴셜 없이 실제 SQL로 리포지토리·엔드포인트 통합 테스트 / jsdom+Testing Library: AC-016a 낙관적 갱신→롤백 과도 상태 검증(브라우저 없이) |
 
 > 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
 
