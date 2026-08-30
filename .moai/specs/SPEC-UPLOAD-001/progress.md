@@ -504,9 +504,98 @@ ANCHOR 3건의 fan_in을 실제로 세어 보면 기준선이 애매하다는 �
 - **정렬·질의 검증은 여전히 PGlite에서만 관측했습니다**(M2와 동일). Neon 실측은 M4 항목입니다.
 - `policy-repo.ts:95`(경합 분기), `signature.ts:32`(BOM 분기)는 이전 판정 그대로 손대지 않았습니다.
 
+### M4 (배포 준비 + 문서, Opus)
+
+#### Acceptance scenario completion — 품질 게이트 Q8·Q9 충족, Q7은 오케스트레이터 확인 대기
+
+M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 제출 문서를 만드는 마일스톤입니다. `acceptance.md` 품질 게이트 기준으로 판정합니다.
+
+| 게이트 | 판정 | 근거 |
+|---|---|---|
+| Q2 `src/lib/server/**` 커버리지 ≥ 85% | PASS | Stmts 97.12% (M3 92.64%에서 상승) |
+| Q4 타입 오류 0 | PASS | `pnpm check` → `456 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS` |
+| Q5 린트 오류 0 | PASS | `pnpm lint` → exit 0 |
+| Q6 전체 테스트 통과 | PASS | `pnpm test` → 15 파일 173개 전부 통과 |
+| Q7 배포 URL `/` HTTP 200 | **미판정** | 마이그레이션은 적용됐으나 배포 후 실호출은 오케스트레이터 몫입니다 |
+| Q8 README에 실행 방법 + table schema | PASS | `README.md` — 로컬 실행 4단계, 세 테이블(`blocked_extension`·`upload_attempt`·`_migration`)의 컬럼·타입·제약·인덱스 표 |
+| Q9 CONSIDERATIONS 28항목 | PASS | `CONSIDERATIONS.md` — 3-1-a…3-4-c 19항목 + E1~E9, 말미 항목 수 대조 28/28 |
+| Q10 MX 태그 6곳 | 변동 없음 | M3 REFACTOR 판정 그대로. M4는 태그를 추가·삭제·수정하지 않았습니다 |
+| Q11 PROMPT_LOG 3절 | 미판정 | 오케스트레이터 소유 — run 단계에서 읽기 전용입니다 |
+| Q12 화면 문구 대조 | 미판정 | 배포 URL 수동 확인 항목 |
+
+#### Test counts
+
+- 테스트 파일 15개, 테스트 **173개** 전부 PASS(M3 171 + M4 신규 2). 실행: `pnpm test` → exit 0.
+- `pnpm lint`(prettier --check + eslint) → exit 0. 새로 만든 `README.md`·`CONSIDERATIONS.md`도 prettier 검사를 통과합니다.
+- `pnpm check`(svelte-check) → exit 0, `456 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS`.
+- `pnpm build`(adapter-vercel) → exit 0.
+- `pnpm test:coverage`(`src/lib/server/**`, v8): Stmts **97.12%** · Branch **93.15%** · Funcs **94.87%** · Lines **97.01%**. M3 대비 상승 폭은 전부 M4의 테스트 격리 작업에서 나왔습니다 — `db/client.ts` 63.63 → **90.9**, `blob/store.ts` 40 → **70**. 나머지 파일은 M3와 동일합니다.
+- 신규 테스트 2건은 그동안 "이 환경에서 검증 불가"로 기록해 온 gap의 일부입니다. `$env/dynamic/private`를 모킹으로 통제할 수 있게 되면서 "값이 있을 때 클라이언트를 만들고 캐시한다" 분기를 네트워크 없이 덮었습니다(`neon()`·`createVercelBlobStore()`는 생성 시점에 왕복하지 않습니다). 실제 질의·업로드 왕복은 **여전히 미검증**입니다.
+
+#### Migration status
+
+- **Neon 실경로에 처음으로 적용했습니다.** `pnpm db:migrate` → exit 0, 출력 `applied 001_init.sql`.
+- 재실행 → exit 0, 적용 대상 0건(`applied` 줄 없음). `_migration` 테이블이 이미 적용된 파일을 걸러내므로 멱등합니다.
+- 적용 후 읽기 전용 확인: `TABLES=_migration,blocked_extension,upload_attempt` · `MIGRATIONS=001_init.sql` · `BLOCKED_EXTENSION_ROWS=7`(고정 확장자 시드).
+- 적용 목록: `001_init.sql` 1건. M1~M3이 PGlite에 적용해 온 것과 같은 파일이며, DDL은 바뀌지 않았습니다.
+- `package.json`의 `db:migrate`를 `node --env-file-if-exists=.env scripts/migrate.ts`로 바꿨습니다. `--env-file`이 아니라 `--env-file-if-exists`인 이유는 `.env`가 없는 셸·CI에서도 기존처럼 환경변수를 그대로 쓰게 하기 위해서입니다.
+
+#### Deviations from spec/plan
+
+1. **테스트 2건이 `.env` 생성 직후 깨져 있었고, 원인은 Vite의 `.env` 자동 적재였습니다.** `client.test.ts`·`store.test.ts`의 "환경변수가 없으면 에러를 던진다"가 실패했습니다. Vite가 프로젝트 루트의 `.env`를 읽어 `$env/dynamic/private`에 주입하므로 `getDb()`/`getBlobStore()`가 더 이상 던지지 않았기 때문입니다. 키 이름만 노출하는 일회용 프로브 테스트로 원인을 기계적으로 확인했습니다(`DATABASE_URL`·`BLOB_READ_WRITE_TOKEN` 둘 다 vitest에 보임, 값은 출력하지 않음). 이는 단순한 테스트 실패가 아니라 **테스트가 실제 운영 시크릿을 보고 있었다**는 뜻이라, `$env/dynamic/private` 모듈 자체를 모킹해 테스트가 보는 환경을 테스트 파일이 통제하도록 고쳤습니다. 단언은 약화하지 않았습니다. `getDb(`·`getBlobStore(`·`createVercelBlobStore(` 호출부를 전부 확인한 결과 프로덕션 호출부는 `hooks.server.ts` 하나뿐이고 이를 임포트하는 테스트는 없습니다 — 실제 Neon/Blob 엔드포인트로 나가는 테스트 경로는 없습니다.
+2. **계획에 없던 커밋 1건을 추가했습니다 — pre-commit 게이트의 test 타임아웃 상향.** 테스트가 173개로 늘면서 `moai gate`가 `npm test exceeded 2m0s`로 연속 실패했습니다. 품질 실패가 아니라 타임아웃입니다: 게이트와 같은 방식(lint 동시 실행)으로 재현하면 122초에 **exit 0, 173/173 통과**합니다. `.moai/config/sections/gate.yaml`의 `gate.timeouts.test`를 120 → 300으로 올렸습니다. `skip_tests`·`disabled_steps`는 건드리지 않았고 `SKIP_MOAI_PRECOMMIT`도 쓰지 않았습니다 — 검사는 전부 그대로 돕니다. 느린 이유는 구조적입니다(PGlite WASM 인스턴스 다수 + AC-UPLOAD-011의 실제 4MB 버퍼 전송). 단독 실행만으로도 약 110초입니다.
+3. **커밋 순서 사고 1건과 그 정정.** 위 2번의 타임아웃으로 실패한 커밋이 `package.json`을 인덱스에 남겼고, 재시도한 다음 커밋이 그것을 함께 가져갔습니다. 푸시 전이라 `git reset --soft HEAD~1`로 되돌려 `gate.yaml`과 `package.json`을 각각의 커밋으로 분리했습니다. 최종 4개 커밋은 전부 의도한 파일만 담고 있습니다.
+4. **긴 파일명 fail-closed와 AC-UPLOAD-014 문구 정정은 코드 변경 없이 문서에만 반영했습니다.** 창업자 판정(PROMPT_LOG #57)대로 `CONSIDERATIONS.md` 3-1-c(긴 파일명 → `NO_EXTENSION`이 의도된 결과)와 3-1-a(AC-UPLOAD-014 2절을 `BLOCKED_EXTENSION`으로 정정 예정)에 근거를 적었습니다. `acceptance.md` 본문 정정은 sync 단계에서 manager-spec이 수행합니다 — run 단계에서 제가 고칠 권한이 없습니다.
+5. **README의 배포 절차는 GitHub 연결 자동 배포를 전제로 썼습니다.** 시크릿 등록은 대화형 `vercel env add`로만 안내했고, 어떤 값도 읽거나 적지 않았습니다. Vercel 환경변수는 이번 마일스톤에서 조회·수정하지 않았습니다.
+
+#### Founder-attention notes
+
+- **Q7(배포 URL 200)은 아직 미판정입니다.** 마이그레이션이 적용됐으므로 500의 원인 중 "테이블 없음"은 해소됐지만, 배포 시점에 환경변수가 실려 있었는지는 제가 확인할 수 없습니다. 푸시 → 재배포 → `/` 호출이 남았습니다.
+- **`.gitignore`에 `.vercel` 추가 변경이 작업 트리에 남아 있습니다.** 오케스트레이터가 만든 변경이라 손대지 않았고 커밋하지도 않았습니다. `.vercel/`은 시크릿 규칙상 절대 커밋하면 안 되므로, 이 변경은 커밋되는 편이 안전합니다 — 판단은 오케스트레이터 몫입니다.
+- **게이트 타임아웃 상향(§Deviations 2)은 되돌릴 수 있는 설정 변경입니다.** 300초가 과하다고 보시면 값만 낮추면 됩니다. 다만 120초로 되돌리면 커밋이 다시 산발적으로 막힙니다. 근본 해법은 테스트를 빠르게 만드는 것(PGlite 인스턴스 공유, 4MB 케이스 축소)인데, 둘 다 이미 감사가 끝난 테스트를 건드려야 해서 M4 범위 밖으로 뒀습니다.
+- **실제 업로드 왕복은 여전히 한 번도 실행되지 않았습니다.** `blob/store.ts`의 `put()` 네트워크 경로와 `client.ts`의 Neon 질의 경로 모두 배포 후 수동 확인이 필요합니다. 이것이 M3에서 넘어온 gap 중 유일하게 남은 항목입니다.
+- M4에서 열린 창업자 판단은 **1건**입니다 — 게이트 타임아웃 300초를 유지할지 여부(위 3번째 항목).
+
+#### Planned-vs-actual files
+
+`spec.md` §4의 M4 대상 신규 파일 2개 생성 완료: `README.md`, `CONSIDERATIONS.md`. 계획에 없던 변경 3건: `package.json`(`db:migrate` 스크립트), `.moai/config/sections/gate.yaml`(타임아웃), 그리고 테스트 격리를 위한 `src/lib/server/db/client.test.ts`·`src/lib/server/blob/store.test.ts` 수정. 프로덕션 소스 파일(`src/lib/server/**`, `src/routes/**`, `src/lib/components/**`)은 **한 줄도 바꾸지 않았습니다** — M4는 문서·설정·테스트만 건드렸습니다. `PROMPT_LOG.md`는 읽기 전용 원칙대로 손대지 않았고 스테이징하지도 않았습니다.
+
+#### 커밋
+
+| SHA | 제목 | 담긴 파일 |
+|---|---|---|
+| `3461a41` | `test(SPEC-UPLOAD-001): M4 — 환경변수 부재 테스트를 .env 유무와 격리` | `client.test.ts`, `store.test.ts` |
+| `d9f0c80` | `chore(SPEC-UPLOAD-001): M4 — pre-commit 게이트의 test 타임아웃을 300초로 상향` | `.moai/config/sections/gate.yaml` |
+| `2cdba81` | `feat(SPEC-UPLOAD-001): M4 — db:migrate가 .env를 직접 읽도록 변경` | `package.json` |
+| `4e48a4b` | `docs(SPEC-UPLOAD-001): M4 — README(실행 방법·table schema·배포) + CONSIDERATIONS 28항목` | `README.md`, `CONSIDERATIONS.md` |
+
+네 커밋 모두 pre-commit 게이트(`moai gate`)를 통과했습니다. 아직 push하지 않았습니다 — push는 오케스트레이터가 수행합니다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
-_<pending run-phase>_
+```yaml
+spec_id: SPEC-UPLOAD-001
+run_complete_at: 2026-08-30
+run_commit_sha: 4e48a4b
+run_status: complete
+ac_pass_count: 55        # M1 21 + M2 12 + M3 22 (M4는 새 AC를 추가하지 않음)
+ac_fail_count: 0
+preserve_list_post_run_count: 0   # M4는 프로덕션 소스를 변경하지 않음
+l44_pre_commit_fetch: not-performed   # 단일 세션 단독 작업, 병렬 세션 없음
+l44_post_push_fetch: pending          # push는 오케스트레이터 소유
+new_warnings_or_lints_introduced: 0
+cross_platform_build:
+  target: vercel-node
+  command: pnpm build
+  exit_code: 0
+total_run_phase_files: 6   # README.md, CONSIDERATIONS.md, package.json, gate.yaml, client.test.ts, store.test.ts
+m1_to_mN_commit_strategy: per-milestone-multiple-commits
+migration_applied:
+  - 001_init.sql
+migration_rerun_pending: 0
+test_count: 173
+coverage_stmts_pct: 97.12
+```
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
