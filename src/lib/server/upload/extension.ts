@@ -65,6 +65,23 @@ const CONTROL_CHAR_PATTERN = new RegExp(
 	'g'
 );
 
+// UTF-8 바이트 상한으로 절단한다 — 코드 포인트를 쪼개지 않으려고 문자 단위로 담고,
+// 상한을 넘기는 순간 멈춘다(뒤에서 자르는 것이 아니라 앞에서 담을 수 있는 만큼만 담는다).
+// 파일명 정규화(255바이트)와 구조화 로그의 파일명 절단(64바이트)이 같은 규칙을 쓴다.
+export function truncateUtf8(value: string, maxBytes: number): string {
+	let result = '';
+	let byteLength = 0;
+	for (const char of value) {
+		const charBytes = Buffer.byteLength(char, 'utf8');
+		if (byteLength + charBytes > maxBytes) {
+			break;
+		}
+		result += char;
+		byteLength += charBytes;
+	}
+	return result;
+}
+
 // 파일명 정규화(plan.md §3 단계 3): NFC → 제어문자 제거 → 경로 구분자 제거 →
 // 모든 ".." 시퀀스 제거 → trim → 255바이트로 절단(코드 포인트를 쪼개지 않음).
 export function normalizeFilename(raw: string): string {
@@ -80,17 +97,7 @@ export function normalizeFilename(raw: string): string {
 
 	const trimmed = withoutTraversal.trim();
 
-	let result = '';
-	let byteLength = 0;
-	for (const char of trimmed) {
-		const charBytes = Buffer.byteLength(char, 'utf8');
-		if (byteLength + charBytes > MAX_FILENAME_BYTES) {
-			break;
-		}
-		result += char;
-		byteLength += charBytes;
-	}
-	return result;
+	return truncateUtf8(trimmed, MAX_FILENAME_BYTES);
 }
 
 // 확장자 후보 추출(plan.md §3 단계 4): 소문자화 → '.'로 분해 →

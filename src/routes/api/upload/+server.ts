@@ -1,30 +1,21 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { extractExtensionSegments, normalizeFilename } from '$lib/server/upload/extension';
+import {
+	extractExtensionSegments,
+	normalizeFilename,
+	truncateUtf8
+} from '$lib/server/upload/extension';
 import { sniffSignature } from '$lib/server/upload/signature';
 import { decideUpload } from '$lib/server/upload/decide';
-import { formatMessage, REASON_CODES, type ReasonCode } from '$lib/server/upload/reason-codes';
+import { errorResponse } from '$lib/server/upload/http';
 import { getPolicy } from '$lib/server/db/policy-repo';
-import { recordUploadAttempt } from '$lib/server/db/upload-repo';
+import { recordUploadAttempt, type UploadAttemptRow } from '$lib/server/db/upload-repo';
+import type { Db } from '$lib/server/db/client';
 import { MAX_UPLOAD_BYTES, SNIFF_BYTES } from '$lib/constants';
 
 // upload_attempt.original_name(255바이트)과는 별개로, 구조화 로그의 파일명은 64자로
 // 절단한다(REQ-UPLOAD-014). 사용자 제어 문자열을 로그에 그대로 남기지 않기 위함이다.
 const MAX_LOGGED_NAME_BYTES = 64;
-
-function truncateForLog(name: string): string {
-	let result = '';
-	let byteLength = 0;
-	for (const char of name) {
-		const charBytes = Buffer.byteLength(char, 'utf8');
-		if (byteLength + charBytes > MAX_LOGGED_NAME_BYTES) {
-			break;
-		}
-		result += char;
-		byteLength += charBytes;
-	}
-	return result;
-}
 
 interface LogAttemptFields {
 	outcome: 'accepted' | 'rejected';
@@ -51,17 +42,33 @@ function logAttempt(fields: LogAttemptFields): void {
 			size_bytes: fields.sizeBytes,
 			declared_mime: fields.declaredMime,
 			detected_mime: fields.detectedMime,
-			original_name: fields.originalName ? truncateForLog(fields.originalName) : null
+			original_name: fields.originalName
+				? truncateUtf8(fields.originalName, MAX_LOGGED_NAME_BYTES)
+				: null
 		})
 	);
 }
 
-function errorResponse(code: ReasonCode, details?: Record<string, string>): Response {
-	const entry = REASON_CODES[code];
-	return json(
-		{ ok: false, error: { code, message: formatMessage(code, details), details: details ?? {} } },
-		{ status: entry.http }
-	);
+// upload_attempt 1행과 구조화 로그 1줄은 같은 판정의 두 표현이다. 행을 단일 원본으로
+// 두고 로그를 그 투영으로 파생시킨다 — 두 곳에 필드를 따로 적으면 한쪽만 고쳐지는
+// 순간 DB와 로그가 조용히 어긋난다. blob_pathname만 로그에 남기지 않는다(저장 키는
+// 판정 근거가 아니다).
+async function recordAndLogAttempt(
+	db: Db,
+	row: UploadAttemptRow,
+	requestId: string
+): Promise<void> {
+	await recordUploadAttempt(db, row);
+	logAttempt({
+		outcome: row.outcome,
+		reasonCode: row.reasonCode,
+		ext: row.extension,
+		sizeBytes: row.sizeBytes,
+		declaredMime: row.declaredMime,
+		detectedMime: row.detectedMime,
+		originalName: row.originalName,
+		requestId
+	});
 }
 
 // @MX:ANCHOR: [AUTO] 요청당 파일 1개를 받는 유일한 업로드 진입점. decideUpload()의
@@ -102,26 +109,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const declaredMime = file.type || null;
 
 	if (file.size > MAX_UPLOAD_BYTES) {
-		await recordUploadAttempt(locals.db, {
-			originalName: normalizedName,
-			extension: null,
-			declaredMime,
-			detectedMime: null,
-			sizeBytes: file.size,
-			outcome: 'rejected',
-			reasonCode: 'FILE_TOO_LARGE',
-			blobPathname: null
-		});
-		logAttempt({
-			outcome: 'rejected',
-			reasonCode: 'FILE_TOO_LARGE',
-			ext: null,
-			sizeBytes: file.size,
-			declaredMime,
-			detectedMime: null,
-			originalName: normalizedName,
+		await recordAndLogAttempt(
+			locals.db,
+			{
+				originalName: normalizedName,
+				extension: null,
+				declaredMime,
+				detectedMime: null,
+				sizeBytes: file.size,
+				outcome: 'rejected',
+				reasonCode: 'FILE_TOO_LARGE',
+				blobPathname: null
+			},
 			requestId
-		});
+		);
 		return errorResponse('FILE_TOO_LARGE');
 	}
 
@@ -142,26 +143,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!decision.ok) {
 		const details = 'details' in decision ? decision.details : undefined;
 
-		await recordUploadAttempt(locals.db, {
-			originalName: normalizedName,
-			extension: lastSegment,
-			declaredMime,
-			detectedMime: detected.detectedMime ?? null,
-			sizeBytes: file.size,
-			outcome: 'rejected',
-			reasonCode: decision.code,
-			blobPathname: null
-		});
-		logAttempt({
-			outcome: 'rejected',
-			reasonCode: decision.code,
-			ext: lastSegment,
-			sizeBytes: file.size,
-			declaredMime,
-			detectedMime: detected.detectedMime ?? null,
-			originalName: normalizedName,
+		await recordAndLogAttempt(
+			locals.db,
+			{
+				originalName: normalizedName,
+				extension: lastSegment,
+				declaredMime,
+				detectedMime: detected.detectedMime ?? null,
+				sizeBytes: file.size,
+				outcome: 'rejected',
+				reasonCode: decision.code,
+				blobPathname: null
+			},
 			requestId
-		});
+		);
 		return errorResponse(decision.code, details);
 	}
 
@@ -172,16 +167,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	await locals.blob.put(pathname, file, 'application/octet-stream');
 
 	try {
-		await recordUploadAttempt(locals.db, {
-			originalName: normalizedName,
-			extension: lastSegment,
-			declaredMime,
-			detectedMime: decision.detectedMime ?? null,
-			sizeBytes: file.size,
-			outcome: 'accepted',
-			reasonCode: null,
-			blobPathname: pathname
-		});
+		await recordAndLogAttempt(
+			locals.db,
+			{
+				originalName: normalizedName,
+				extension: lastSegment,
+				declaredMime,
+				detectedMime: decision.detectedMime ?? null,
+				sizeBytes: file.size,
+				outcome: 'accepted',
+				reasonCode: null,
+				blobPathname: pathname
+			},
+			requestId
+		);
 	} catch (err) {
 		// Blob put은 성공했는데 DB 기록이 실패하면 고아 객체가 생긴다. 보상 삭제는 그
 		// 삭제도 실패할 수 있어 문제를 미룰 뿐이므로 이벤트를 로그로 남기는 것으로
@@ -189,17 +188,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		console.log(JSON.stringify({ event: 'orphan_blob', blob_pathname: pathname }));
 		throw err;
 	}
-
-	logAttempt({
-		outcome: 'accepted',
-		reasonCode: null,
-		ext: lastSegment,
-		sizeBytes: file.size,
-		declaredMime,
-		detectedMime: decision.detectedMime ?? null,
-		originalName: normalizedName,
-		requestId
-	});
 
 	return json({
 		ok: true,

@@ -16,8 +16,10 @@ export type DecideUploadResult =
 	| { ok: false; code: 'BLOCKED_EXTENSION'; http: 415; details: { matched: string } }
 	| { ok: false; code: 'SIGNATURE_BLOCKED'; http: 415; details: { detected: string } };
 
-// @MX:ANCHOR: [AUTO] 업로드 판정의 단일 진입점 — 엔드포인트, 테스트, 클라이언트 힌트가
-// 모두 이 함수 하나를 호출한다(호출부 3곳 이상).
+// @MX:ANCHOR: [AUTO] 업로드 판정의 단일 진입점이자 공개 API 경계 — 이 함수를 실제로
+// 호출하는 곳은 업로드 엔드포인트(api/upload/+server.ts) 하나와 decide.test.ts뿐이다.
+// 클라이언트 힌트는 SvelteKit 서버 경계 때문에 이 함수를 호출하지 못하고 별도의 경량
+// 함수(UploadArea.svelte의 isClientHintBlocked)로 대조한다(progress.md §Deviations 2).
 // @MX:REASON: 판정 로직이 갈라지면 서버·클라이언트 힌트·테스트 사이에 조용한 불일치가
 // 생긴다(plan.md §13 MX 태그 계획).
 export function decideUpload(input: DecideUploadInput): DecideUploadResult {

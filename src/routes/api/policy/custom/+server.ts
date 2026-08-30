@@ -2,12 +2,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { normalizeExtensionCandidate, normalizeExtensionInput } from '$lib/server/upload/extension';
 import { addCustom, getPolicy } from '$lib/server/db/policy-repo';
-import { formatMessage, REASON_CODES, type ReasonCode } from '$lib/server/upload/reason-codes';
-
-function errorResponse(code: ReasonCode): Response {
-	const entry = REASON_CODES[code];
-	return json({ ok: false, error: { code, message: entry.message } }, { status: entry.http });
-}
+import { formatMessage } from '$lib/server/upload/reason-codes';
+import { errorResponse } from '$lib/server/upload/http';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	let body: unknown;

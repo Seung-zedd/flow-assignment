@@ -442,3 +442,96 @@ describe('POST /api/upload', () => {
 		expect(body.error?.details).toEqual({ matched: 'jpg' });
 	});
 });
+// M3 REFACTOR: upload_attempt 행과 구조화 로그 줄을 한 함수에서 함께 만들도록 묶었다.
+// 아래 두 테스트가 "로그는 행의 투영"이라는 그 계약을 고정한다 — 한쪽 필드만 바뀌면 깨진다.
+describe('구조화 로그는 upload_attempt 행의 투영이다', () => {
+	interface UploadLogLine {
+		event: string;
+		outcome: string;
+		reason_code: string | null;
+		ext: string | null;
+		size_bytes: number | null;
+		declared_mime: string | null;
+		detected_mime: string | null;
+		original_name: string | null;
+		request_id: string;
+	}
+
+	function captureUploadLogs(): { lines: UploadLogLine[]; restore: () => void } {
+		const lines: UploadLogLine[] = [];
+		const spy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+			const parsed = JSON.parse(String(args[0])) as UploadLogLine;
+			if (parsed.event === 'upload_attempt') {
+				lines.push(parsed);
+			}
+		});
+		return { lines, restore: () => spy.mockRestore() };
+	}
+
+	test('수락된 업로드: 로그 1줄의 필드가 기록된 행과 일치한다', async () => {
+		const { store } = fakeBlobStore();
+		const { lines, restore } = captureUploadLogs();
+		try {
+			const response = await POST({
+				request: uploadRequest(makeFile(pngBytes(), 'shot.png', 'image/png')),
+				locals: { db, blob: store }
+			} as never);
+			expect(response.status).toBe(200);
+		} finally {
+			restore();
+		}
+
+		const row = await lastUploadRow();
+		expect(lines).toHaveLength(1);
+		expect(lines[0].outcome).toBe(row.outcome);
+		expect(lines[0].reason_code).toBe(row.reason_code);
+		expect(lines[0].ext).toBe(row.extension);
+		expect(lines[0].detected_mime).toBe(row.detected_mime);
+		expect(lines[0].original_name).toBe(row.original_name);
+		// blob_pathname만 로그에 남기지 않는다 — 저장 키는 판정 근거가 아니다.
+		expect(lines[0]).not.toHaveProperty('blob_pathname');
+		expect(row.blob_pathname).not.toBeNull();
+	});
+
+	test('거부된 업로드: 로그 1줄의 필드가 기록된 행과 일치한다', async () => {
+		await setFixedBlocked(db, 'exe', true);
+		const { store } = fakeBlobStore();
+		const { lines, restore } = captureUploadLogs();
+		try {
+			const response = await POST({
+				request: uploadRequest(makeFile(padded([0x00]), 'setup.exe')),
+				locals: { db, blob: store }
+			} as never);
+			expect(response.status).toBe(415);
+		} finally {
+			restore();
+		}
+
+		const row = await lastUploadRow();
+		expect(lines).toHaveLength(1);
+		expect(lines[0].outcome).toBe(row.outcome);
+		expect(lines[0].reason_code).toBe(row.reason_code);
+		expect(lines[0].ext).toBe(row.extension);
+		expect(lines[0].original_name).toBe(row.original_name);
+	});
+
+	test('로그의 파일명은 64바이트로 절단되지만 upload_attempt 행은 255바이트를 유지한다', async () => {
+		const longName = '가'.repeat(60) + '.txt';
+		const { store } = fakeBlobStore();
+		const { lines, restore } = captureUploadLogs();
+		try {
+			await POST({
+				request: uploadRequest(makeFile(padded([0x00]), longName)),
+				locals: { db, blob: store }
+			} as never);
+		} finally {
+			restore();
+		}
+
+		const row = await lastUploadRow();
+		expect(lines).toHaveLength(1);
+		expect(Buffer.byteLength(lines[0].original_name ?? '', 'utf8')).toBeLessThanOrEqual(64);
+		expect(Buffer.byteLength(row.original_name, 'utf8')).toBeGreaterThan(64);
+		expect(row.original_name.startsWith(lines[0].original_name ?? '')).toBe(true);
+	});
+});

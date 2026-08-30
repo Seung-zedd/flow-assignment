@@ -99,11 +99,19 @@
 </script>
 
 <div class="upload-area">
-	<p class="disclaimer">{disclaimer}</p>
+	<p class="disclaimer" id="upload-disclaimer">{disclaimer}</p>
 
+	<!-- 힌트가 편의용이라는 단서를 파일 입력 자체에 붙인다 — 화면에만 떠 있으면
+	     스크린리더 사용자가 입력에 초점을 둔 순간에는 그 단서를 듣지 못한다. -->
 	<label>
 		업로드할 파일
-		<input type="file" multiple onchange={onFileChange} disabled={uploading} />
+		<input
+			type="file"
+			multiple
+			onchange={onFileChange}
+			disabled={uploading}
+			aria-describedby="upload-disclaimer"
+		/>
 	</label>
 
 	{#if selected.length > 0}
@@ -117,7 +125,9 @@
 				</li>
 			{/each}
 		</ul>
-		<button type="button" onclick={uploadAll} disabled={uploading}>업로드</button>
+		<button type="button" onclick={uploadAll} disabled={uploading} aria-busy={uploading}>
+			업로드
+		</button>
 	{/if}
 
 	{#if results.length > 0}
