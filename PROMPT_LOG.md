@@ -309,6 +309,32 @@
 
 ---
 
+### 2026-08-30 — 세션 4: M3 진입 (`/clear` 후 재개, 메인 세션 Fable 5 `[1m]`)
+
+#### #53
+> (세션 3이 남긴 재개 블록 붙여넣기) `ultrathink. SPEC-UPLOAD-001 run 진입 (M3 시작). … 전제 검증 1)~4) … 실행: /moai run SPEC-UPLOAD-001 — M3(업로드 엔드포인트 + Blob 저장 + upload_attempt 기록 + UploadArea 클라이언트 힌트): manager-develop RED→GREEN sonnet → REFACTOR opus, Blob put은 테스트에서 스텁 … ㄱㄱ`
+- **의도**: 새 세션에서 M3 시작. 재개 블록의 전제 4건을 먼저 기계 검증하고 통과하면 `/moai run`으로 진입.
+- **전제 검증 결과(전부 통과)**: ① `git merge-base --is-ancestor cc518d7 HEAD` exit 0 · `origin/main...HEAD` → `0 0`(HEAD `3d77a91`) ② `pnpm test` 10 files / **131 passed** · `pnpm lint` exit 0 · `pnpm check` `0 ERRORS 0 WARNINGS` ③ `status: in-progress` · `~/.claude/settings.json`·`.claude/settings.json` 모두 `fable[1m]` ④ `.claude/worktrees/` 비어 있음, `git worktree list` main 하나. `moai session list --filter-spec` → `[]`(동시 세션 없음).
+- **스폰 전 준비**: M3는 `@vercel/blob`이 처음 필요한 마일스톤 — 프로젝트 규칙(`block-npm-supply-chain-risk.mjs` 주석)대로 `pkg-check @vercel/blob`을 오케스트레이터가 먼저 실행(결과는 #55). `rtk`는 Git Bash PATH에 없어 `pnpm`을 직접 호출.
+
+---
+
+#### #54
+> https://adk.mo.ai.kr/ko/utility-commands/moai-e2e ← 아 그리고 기능 구현이 완료되면 E2E 테스트를 할껀데 현재 윈도우용 Aside는 개발중이라 그냥 playwright를 사용하면 될까?
+- **의도**: 구현 완료 후 E2E 도구 선택. **AI 응답**: 문서(WebFetch)와 로컬 `e2e.md` 워크플로 확인 — 웹 백엔드는 Playwright CLI가 주(primary), `agent-browser`는 AI 탐색형 대안이라 없어도 무방(`--tool playwright`로 강제 가능, Windows 제약 없음). 단 `spec.md` §5.5가 E2E를 Out of Scope로 둔 상태라 **범위 변경**임을 짚음 → sync에서 한 줄 정정 필요.
+- **결정(권고, 사용자 확정 대기)**: M4 배포 뒤 배포 URL 상대로 `/moai e2e --tool playwright --url <URL> --record` 스모크 1회 — 로컬 dev 서버는 시크릿이 필요해 AI가 띄울 수 없고, 인수 기준 Q12(화면 문구 수동 확인)의 캡처 증거를 Playwright 스크린샷으로 채우는 용도. CI 미연결(§5.5의 "CI 배선 비용" 회피).
+
+---
+
+#### #55 (AI 주도) M3 RED→GREEN (manager-develop, Sonnet) → 오케스트레이터 재검증
+- **스폰 전 준비**: `pkg-check @vercel/blob` exit 0 — lifecycle 스크립트 없음(`scripts`는 build/test뿐), 감사 결과는 하위 의존성 `undici <6.28.0` moderate 1건(GHSA-v3r7-h72x-cjcm)이나 요구 범위 `^6.23.0`이라 설치 시 6.28.0으로 해석. `@vercel/blob` 2.8.0의 `put` 옵션(`access: 'private'`·`token`·`contentType`·`addRandomSuffix`)은 Context7(`/vercel/storage`)로 원문 확인. 스폰 프롬프트에 오케스트레이터 설계 결정 2건 주입: ① Blob 저장소를 `Db`와 같은 패턴으로 `locals.blob`에 주입(테스트는 가짜 구현) ② 클라이언트 힌트는 `$lib/server` import 불가(SvelteKit 경계)라 `load()`가 차단 집합·별칭 표를 내려주고 컴포넌트가 경량 대조.
+- **결과**: 커밋 `436eb73`(feat, 15 files +1396/-11) + `eca8119`(bookkeeping). 테스트 131 → **159**(신규 28: 업로드 엔드포인트 22 · upload-repo 1 · blob store 1 · UploadArea jsdom 4). M3 스코프 AC 22/22 PASS(AC-007 2절·008·009a·009b·010·011·012·013·014·015 + 엣지 6). 신규: `src/lib/server/blob/{store,store.test}.ts`, `src/lib/server/db/{upload-repo,upload-repo.test}.ts`, `src/routes/api/upload/{+server,server.test}.ts`, `src/lib/components/{UploadArea.svelte,UploadArea.test.ts}`. `@vercel/blob ^2.8.0` 추가.
+- **오케스트레이터 재검증(main, `eca8119`)**: `pnpm test` 14 files / 159 passed · `pnpm lint` 0 · `pnpm check` 454 FILES 0 ERRORS 0 WARNINGS · `pnpm build` 0 · `pnpm test:coverage` **1차 실패**(훅 타임아웃 4건 — 커버리지 계측 + PGlite 14개 동시 기동 경합, `Duration 179s`) → `--maxWorkers=2` 재시도 159/159, `src/lib/server/**` 92.64 / 87.32 / 91.89 / 92.36(보고값과 일치). 경계 grep 3종 0건, `pnpm why undici` → 6.28.0. 기존 테스트 단언 삭제 0줄(`page.ssr.test.ts`는 `load` 데이터 리터럴 확장만). 증거 `.moai/state/verify/bb9ff997/m3-*.log`. 코드 열람으로 설계 결정 2건·put→INSERT 순서·`orphan_blob` 로그·64자 로그 절단 반영 확인.
+- **에이전트 재량 판단(수용, digest ①로 이월)**: 🟡 AC-UPLOAD-014 2절 — 원문은 `html` 차단 후 `page.html` → `SIGNATURE_BLOCKED`이나 `decideUpload` 순서상(확장자 대조 먼저) `BLOCKED_EXTENSION`이 정답. 코드 유지·테스트를 실제 동작에 맞춤 + 위장 파일(`notes.dat`)로 시그니처 경로 별도 검증. **acceptance.md 문구 오류** → sync에서 정정 대상. 🟡 300자 파일명 — 255바이트 앞자름으로 확장자가 잘려 `415 NO_EXTENSION`(fail-closed). 위임 지시의 "200 기대"가 틀렸던 것 — 실제 파일시스템(NTFS/ext4/APFS)은 255바이트 초과 파일명을 만들 수 없어 조작된 요청에서만 도달.
+- **REFACTOR 후보(Opus에 전달)**: (a) 오류 봉투 헬퍼가 정책·업로드 라우트 2곳 — M2 유보 조건 성립 (b) `logAttempt`/`recordUploadAttempt` 3회 반복 호출의 인자 중복 (c) `truncateForLog`가 `normalizeFilename`의 바이트 절단 루프 복제 (d) 커버리지 실행의 PGlite 경합 — `test:coverage` 워커 고정 (e) `decide.ts` ANCHOR 주석의 "클라이언트 힌트 호출부" 문구 부정확, 업로드 핸들러의 `@MX:ANCHOR` 적정성(호출부 1곳).
+
+---
+
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
 
 | 종류 | 이름 | 어디에(어떤 작업에) 왜 썼는지 |
@@ -329,6 +355,8 @@
 | 에이전트 | `manager-develop` (Opus, REFACTOR) | M1·M2 리팩터 — 동작 보존 검증(기존 단언 0줄 수정)·경고 해소·왕복 절감·MX 태그. 판단이 필요한 단계만 Opus |
 | 스킬 | `moai-workflow-tdd` · `moai-ref-api-patterns` | manager-develop 스폰 시 주입 — RED-GREEN-REFACTOR 규율, JSON 오류 봉투·검증 관례 |
 | 라이브러리 | `@electric-sql/pglite` · `jsdom` · `@testing-library/svelte` | PGlite: 네트워크·크리덴셜 없이 실제 SQL로 리포지토리·엔드포인트 통합 테스트 / jsdom+Testing Library: AC-016a 낙관적 갱신→롤백 과도 상태 검증(브라우저 없이) |
+| 라이브러리 | `@vercel/blob` 2.8.0 | M3 업로드 저장 — `put(access: 'private', token, contentType: application/octet-stream, addRandomSuffix: false)`. `BlobStore` 인터페이스 뒤에 숨겨 테스트는 가짜 구현, 실경로는 M4 실측 |
+| MCP | Context7 (`/vercel/storage`) | `@vercel/blob` 2.8.0 `put` 옵션(`access: 'private'` 지원 여부·`token`·`contentType`)을 기억 대신 최신 문서로 확인한 뒤 스폰 프롬프트에 명시 |
 
 > 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
 
