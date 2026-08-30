@@ -419,6 +419,8 @@ M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensio
 - `AC-UPLOAD-011`의 "헤더 없이 실측 4MB 초과" 테스트는 실제로 4MB+1바이트 버퍼를 생성·전송하므로 다른 테스트보다 느립니다(약 2초) — 개별 타임아웃을 15000ms로 늘렸습니다.
 - **REFACTOR가 해소한 것과 그대로 둔 것**: §Deviations 2(클라이언트 힌트가 `decideUpload()`를 재사용하지 못함)는 코드가 아니라 그 사실을 잘못 적고 있던 `decide.ts`의 `@MX:ANCHOR` 문구를 정정해 **문서상으로 해소**했고, 편차 자체(경계상 재사용 불가)는 설계 그대로입니다. §Deviations 4·5는 창업자 판정대로 **코드·테스트 모두 그대로 유지**했습니다. §Deviations 1·3·6·7과 미검증 gap(Neon·Vercel Blob 실경로)은 REFACTOR 범위 밖이라 변동 없습니다.
 
+- **Founder 판정(2026-08-30, PROMPT_LOG #57)**: §Deviations 4(AC-UPLOAD-014 2절)는 **코드 유지·acceptance.md 문구를 `BLOCKED_EXTENSION`으로 정정**(sync 단계, manager-spec 소유). §Deviations 5(300자 파일명 → `NO_EXTENSION`)는 **유지 + M4 `CONSIDERATIONS.md` "매우 긴 파일명" 항목에 fail-closed 근거 명시**. 오케스트레이터 재량 2건(`file.size` 실측·힌트의 서버 모듈 미참조)도 유지. M3 열린 판단 0건.
+
 #### Planned-vs-actual files
 
 `spec.md` §4 M3 대상 신규 파일 전부 생성 완료: `src/lib/server/blob/store.ts`(+`store.test.ts`), `src/lib/server/db/upload-repo.ts`(+`upload-repo.test.ts`), `src/routes/api/upload/+server.ts`(+`server.test.ts`), `src/lib/components/UploadArea.svelte`(+`UploadArea.test.ts`). 기존 파일 확장: `src/hooks.server.ts`(`locals.blob` 배선), `src/app.d.ts`(`Locals.blob` 타입), `src/routes/+page.server.ts`(`blockedExtensions`·`extensionAliases`·`clientHintBlocked` 추가), `src/routes/+page.svelte`(플레이스홀더 → `UploadArea` 연결), `src/routes/page.ssr.test.ts`(`data` 리터럴에 3개 필드 추가 — 기존 단언 삭제 없음, `git diff 3d77a91 -- 'src/**/*.test.ts' | grep -E '^-[^-]'`로 확인). 계획에 없던 추가 의존성: `@vercel/blob@2.8.0`(`package.json`·`pnpm-lock.yaml`). `src/lib/server/upload/decide.ts`(M1 PRESERVE 대상)는 시그니처·동작 변경 없이 그대로 재사용했습니다.
