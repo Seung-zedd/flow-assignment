@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시스템 아키텍처 — flow-assignment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f8fafc;
+      --color-ink:    #1e293b;
+      --color-muted:  #475569;
+      --color-accent: #2563eb;
+      --font-sans: 'Geist', 'Pretendard Variable', Pretendard, sans-serif;
+      --font-serif: 'Instrument Serif', 'Pretendard Variable', Pretendard, serif;
+      --font-mono: 'Geist Mono', 'Pretendard Variable', Pretendard, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400; letter-spacing: -0.02em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · flow-assignment</p>
+    <h1>시스템 아키텍처</h1>
+
+    <svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fa-arch-title fa-arch-desc">
+      <title id="fa-arch-title">flow-assignment 시스템 아키텍처</title>
+      <desc id="fa-arch-desc">브라우저의 요청이 서울 엣지를 거쳐 싱가포르의 SvelteKit 함수에서 판정되고, 같은 리전의 Neon PostgreSQL과 Vercel Blob에 기록·저장되는 구조. GitHub main 푸시가 배포를 자동 트리거한다.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#475569"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563eb"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f8fafc"/>
+
+      <!-- zone: Vercel serverless (bg → zones → arrows → nodes) -->
+      <rect x="256" y="152" width="472" height="168" rx="8" fill="rgba(30,41,59,0.02)" stroke="rgba(30,41,59,0.10)" stroke-width="0.8"/>
+      <rect x="272" y="156" width="120" height="12" rx="2" fill="#f8fafc"/>
+      <text x="332" y="165" fill="rgba(30,41,59,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">VERCEL · SERVERLESS</text>
+
+      <!-- arrows (before nodes) -->
+      <line x1="184" y1="236" x2="280" y2="236" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="212" y="216" width="40" height="12" rx="2" fill="#f8fafc"/>
+      <text x="232" y="225" fill="#64748b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTPS</text>
+
+      <line x1="440" y1="236" x2="496" y2="236" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <path d="M696,216 H732 Q740,216 740,208 V164 Q740,156 748,156 H784" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="748" y="180" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="762" y="189" fill="#64748b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SQL</text>
+
+      <path d="M696,256 H732 Q740,256 740,264 V304 Q740,312 748,312 H784" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="748" y="272" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="762" y="281" fill="#64748b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PUT</text>
+
+      <path d="M216,416 H588 Q596,416 596,408 V288" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="336" y="396" width="96" height="12" rx="2" fill="#f8fafc"/>
+      <text x="384" y="405" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle" letter-spacing="0.06em">PUSH → 자동 배포</text>
+
+      <!-- node: user -->
+      <rect x="48" y="200" width="136" height="72" rx="6" fill="#f8fafc"/>
+      <rect x="48" y="200" width="136" height="72" rx="6" fill="rgba(71,85,105,0.10)" stroke="#64748b" stroke-width="1"/>
+      <rect x="56" y="206" width="32" height="12" rx="2" fill="transparent" stroke="rgba(100,116,139,0.40)" stroke-width="0.8"/>
+      <text x="72" y="215" fill="rgba(71,85,105,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+      <text x="116" y="240" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">브라우저</text>
+      <text x="116" y="256" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">정책 화면 · 업로드</text>
+
+      <!-- node: edge -->
+      <rect x="280" y="200" width="160" height="72" rx="6" fill="#f8fafc"/>
+      <rect x="280" y="200" width="160" height="72" rx="6" fill="rgba(30,41,59,0.03)" stroke="rgba(30,41,59,0.30)" stroke-width="1"/>
+      <rect x="288" y="206" width="32" height="12" rx="2" fill="transparent" stroke="rgba(30,41,59,0.30)" stroke-width="0.8"/>
+      <text x="304" y="215" fill="rgba(30,41,59,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text>
+      <text x="360" y="240" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Vercel Edge</text>
+      <text x="360" y="256" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">icn1 · 서울</text>
+
+      <!-- node: sveltekit function (focal) -->
+      <rect x="496" y="184" width="200" height="104" rx="6" fill="#f8fafc"/>
+      <rect x="496" y="184" width="200" height="104" rx="6" fill="rgba(37,99,235,0.08)" stroke="#2563eb" stroke-width="1.2"/>
+      <rect x="504" y="190" width="24" height="12" rx="2" fill="transparent" stroke="rgba(37,99,235,0.40)" stroke-width="0.8"/>
+      <text x="516" y="199" fill="rgba(37,99,235,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FN</text>
+      <text x="596" y="228" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SvelteKit Functions</text>
+      <text x="596" y="248" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">sin1 · nodejs24.x</text>
+      <text x="596" y="264" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">decideUpload() 판정 파이프라인</text>
+
+      <!-- node: neon -->
+      <rect x="784" y="112" width="176" height="88" rx="6" fill="#f8fafc"/>
+      <rect x="784" y="112" width="176" height="88" rx="6" fill="rgba(30,41,59,0.05)" stroke="#475569" stroke-width="1"/>
+      <rect x="792" y="118" width="24" height="12" rx="2" fill="transparent" stroke="rgba(71,85,105,0.40)" stroke-width="0.8"/>
+      <text x="804" y="127" fill="rgba(71,85,105,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+      <text x="872" y="148" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Neon PostgreSQL</text>
+      <text x="872" y="164" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">ap-southeast-1 · 싱가포르</text>
+      <text x="872" y="180" fill="#475569" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">blocked_extension · upload_attempt</text>
+
+      <!-- node: blob -->
+      <rect x="784" y="272" width="176" height="80" rx="6" fill="#f8fafc"/>
+      <rect x="784" y="272" width="176" height="80" rx="6" fill="rgba(30,41,59,0.05)" stroke="#475569" stroke-width="1"/>
+      <rect x="792" y="278" width="40" height="12" rx="2" fill="transparent" stroke="rgba(71,85,105,0.40)" stroke-width="0.8"/>
+      <text x="812" y="287" fill="rgba(71,85,105,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+      <text x="872" y="312" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Vercel Blob</text>
+      <text x="872" y="328" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">private · 통과한 파일만</text>
+
+      <!-- node: github -->
+      <rect x="48" y="384" width="168" height="64" rx="6" fill="#f8fafc"/>
+      <rect x="48" y="384" width="168" height="64" rx="6" fill="rgba(30,41,59,0.03)" stroke="rgba(30,41,59,0.30)" stroke-width="1"/>
+      <rect x="56" y="390" width="24" height="12" rx="2" fill="transparent" stroke="rgba(30,41,59,0.30)" stroke-width="0.8"/>
+      <text x="68" y="399" fill="rgba(30,41,59,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GIT</text>
+      <text x="132" y="420" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">GitHub main</text>
+      <text x="132" y="436" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">푸시 = 프로덕션 배포</text>
+
+      <!-- legend -->
+      <line x1="32" y1="480" x2="968" y2="480" stroke="rgba(30,41,59,0.10)" stroke-width="0.8"/>
+      <text x="32" y="500" fill="#475569" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="104" y="492" width="12" height="12" rx="2" fill="rgba(37,99,235,0.08)" stroke="#2563eb" stroke-width="1"/>
+      <text x="124" y="501" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">판정 지점(단일 진입점)</text>
+      <rect x="280" y="492" width="12" height="12" rx="2" fill="rgba(30,41,59,0.05)" stroke="#475569" stroke-width="1"/>
+      <text x="300" y="501" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">저장소</text>
+      <line x1="392" y1="498" x2="424" y2="498" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="432" y="501" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">배포 흐름</text>
+      <text x="968" y="501" fill="rgba(30,41,59,0.35)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">flow-assignment · 2026-08</text>
+    </svg>
+  </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>데이터 모델 (ERD) — flow-assignment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f8fafc;
+      --color-ink:    #1e293b;
+      --color-muted:  #475569;
+      --color-accent: #2563eb;
+      --font-sans: 'Geist', 'Pretendard Variable', Pretendard, sans-serif;
+      --font-serif: 'Instrument Serif', 'Pretendard Variable', Pretendard, serif;
+      --font-mono: 'Geist Mono', 'Pretendard Variable', Pretendard, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400; letter-spacing: -0.02em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">ER · flow-assignment</p>
+    <h1>데이터 모델</h1>
+
+    <svg viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fa-erd-title fa-erd-desc">
+      <title id="fa-erd-title">flow-assignment 데이터 모델</title>
+      <desc id="fa-erd-desc">정책 테이블 blocked_extension과 감사 테이블 upload_attempt 두 개로 구성되며, 둘 사이에 외래 키 없이 판정 시점의 값을 복사해 기록하는 논리적 참조만 있다.</desc>
+      <defs></defs>
+
+      <rect width="100%" height="100%" fill="#f8fafc"/>
+
+      <!-- relation (dashed logical reference) -->
+      <line x1="416" y1="192" x2="584" y2="192" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="424" y="172" width="152" height="12" rx="2" fill="#f8fafc"/>
+      <text x="500" y="181" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle" letter-spacing="0.04em">판정 시 참조 · FK 없음</text>
+
+      <!-- entity: blocked_extension (focal) -->
+      <rect x="112" y="96" width="304" height="216" rx="6" fill="#f8fafc"/>
+      <rect x="112" y="96" width="304" height="216" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.2"/>
+      <rect x="112" y="96" width="304" height="40" rx="6" fill="rgba(37,99,235,0.08)"/>
+      <rect x="112" y="126" width="304" height="10" fill="#ffffff"/>
+      <line x1="112" y1="136" x2="416" y2="136" stroke="rgba(30,41,59,0.12)" stroke-width="0.8"/>
+      <rect x="124" y="108" width="44" height="12" rx="2" fill="transparent" stroke="rgba(37,99,235,0.40)" stroke-width="0.8"/>
+      <text x="146" y="117" fill="rgba(37,99,235,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ENTITY</text>
+      <text x="180" y="120" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif">blocked_extension</text>
+
+      <text x="128" y="156" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="400" y="156" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">integer identity</text>
+      <text x="128" y="176" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">extension</text>
+      <text x="400" y="176" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(20) UNIQUE</text>
+      <text x="128" y="196" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">kind</text>
+      <text x="400" y="196" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">'fixed' | 'custom'</text>
+      <text x="128" y="216" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">is_blocked</text>
+      <text x="400" y="216" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">boolean</text>
+      <text x="128" y="236" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">sort_order</text>
+      <text x="400" y="236" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">smallint</text>
+      <text x="128" y="256" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">created_at</text>
+      <text x="400" y="256" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">timestamptz</text>
+      <text x="128" y="276" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">updated_at</text>
+      <text x="400" y="276" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">timestamptz</text>
+      <text x="128" y="296" fill="#64748b" font-size="9" font-family="'Geist Mono', monospace">CHECK extension ~ ^[a-z0-9]{1,20}$</text>
+
+      <!-- entity: upload_attempt -->
+      <rect x="584" y="64" width="304" height="256" rx="6" fill="#f8fafc"/>
+      <rect x="584" y="64" width="304" height="256" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1"/>
+      <rect x="584" y="64" width="304" height="40" rx="6" fill="rgba(30,41,59,0.05)"/>
+      <rect x="584" y="94" width="304" height="10" fill="#ffffff"/>
+      <line x1="584" y1="104" x2="888" y2="104" stroke="rgba(30,41,59,0.12)" stroke-width="0.8"/>
+      <rect x="596" y="76" width="44" height="12" rx="2" fill="transparent" stroke="rgba(71,85,105,0.40)" stroke-width="0.8"/>
+      <text x="618" y="85" fill="rgba(71,85,105,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ENTITY</text>
+      <text x="652" y="88" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist', sans-serif">upload_attempt</text>
+
+      <text x="600" y="124" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="872" y="124" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">bigint identity</text>
+      <text x="600" y="144" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">original_name</text>
+      <text x="872" y="144" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(255) · NFC</text>
+      <text x="600" y="164" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">extension</text>
+      <text x="872" y="164" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(20) · null</text>
+      <text x="600" y="184" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">declared_mime</text>
+      <text x="872" y="184" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(128)</text>
+      <text x="600" y="204" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">detected_mime</text>
+      <text x="872" y="204" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(128)</text>
+      <text x="600" y="224" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">size_bytes</text>
+      <text x="872" y="224" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">integer</text>
+      <text x="600" y="244" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">outcome</text>
+      <text x="872" y="244" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">'accepted'|'rejected'</text>
+      <text x="600" y="264" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">reason_code</text>
+      <text x="872" y="264" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">varchar(48)</text>
+      <text x="600" y="284" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">blob_pathname</text>
+      <text x="872" y="284" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">text · null</text>
+      <text x="600" y="304" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">created_at</text>
+      <text x="872" y="304" fill="#475569" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">timestamptz · idx</text>
+
+      <!-- editorial aside -->
+      <text x="112" y="368" fill="#475569" font-size="14" font-family="'Instrument Serif','Pretendard Variable',Pretendard,serif" font-style="italic">의도된 비정규화 — 정책이 나중에 바뀌어도 각 시도의 판정 근거가 그 시점 그대로 남도록 FK를 두지 않았다.</text>
+
+      <!-- legend -->
+      <line x1="32" y1="416" x2="968" y2="416" stroke="rgba(30,41,59,0.10)" stroke-width="0.8"/>
+      <text x="32" y="436" fill="#475569" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <text x="104" y="436" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace"># = 기본 키</text>
+      <line x1="216" y1="432" x2="248" y2="432" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="256" y="436" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">FK 없는 논리적 참조</text>
+      <rect x="424" y="428" width="12" height="12" rx="2" fill="rgba(37,99,235,0.08)" stroke="#2563eb" stroke-width="1"/>
+      <text x="444" y="436" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">정책의 단일 원본</text>
+      <text x="968" y="436" fill="rgba(30,41,59,0.35)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">migrations/001_init.sql · 2026-08</text>
+    </svg>
+  </div>
+</body>
+</html>

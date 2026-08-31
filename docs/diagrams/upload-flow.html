@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>업로드 판정 플로우 — flow-assignment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f8fafc;
+      --color-ink:    #1e293b;
+      --color-muted:  #475569;
+      --color-accent: #2563eb;
+      --font-sans: 'Geist', 'Pretendard Variable', Pretendard, sans-serif;
+      --font-serif: 'Instrument Serif', 'Pretendard Variable', Pretendard, serif;
+      --font-mono: 'Geist Mono', 'Pretendard Variable', Pretendard, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1100px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400; letter-spacing: -0.02em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 860px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · flow-assignment</p>
+    <h1>업로드 판정 플로우</h1>
+
+    <svg viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fa-flow-title fa-flow-desc">
+      <title id="fa-flow-title">flow-assignment 업로드 판정 플로우</title>
+      <desc id="fa-flow-desc">업로드 파일이 정규화를 거친 뒤 크기·확장자 부재·차단 목록·시그니처 네 관문을 차례로 통과해야 저장되며, 어느 관문에서 걸리든 사유 코드와 함께 거부되고 모든 시도가 기록된다.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#475569"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f8fafc"/>
+
+      <!-- chain arrows (before nodes) -->
+      <line x1="336" y1="96" x2="336" y2="128" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="336" y1="192" x2="336" y2="224" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="336" y1="304" x2="336" y2="340" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="344" y="316" width="44" height="12" rx="2" fill="#f8fafc"/>
+      <text x="366" y="325" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">아니오</text>
+      <line x1="336" y1="420" x2="336" y2="456" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="344" y="432" width="44" height="12" rx="2" fill="#f8fafc"/>
+      <text x="366" y="441" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">아니오</text>
+      <line x1="336" y1="536" x2="336" y2="572" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="344" y="548" width="44" height="12" rx="2" fill="#f8fafc"/>
+      <text x="366" y="557" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">아니오</text>
+      <line x1="336" y1="652" x2="336" y2="688" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="344" y="664" width="44" height="12" rx="2" fill="#f8fafc"/>
+      <text x="366" y="673" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">아니오</text>
+
+      <!-- yes branches to reject collector -->
+      <path d="M432,264 H560 Q568,264 568,272 V380 Q568,388 576,388 H640" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="480" y="244" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="494" y="253" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">예</text>
+      <path d="M432,380 H528 Q536,380 536,388 V424 Q536,432 544,432 H640" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="464" y="360" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="478" y="369" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">예</text>
+      <path d="M432,496 H536 Q544,496 544,488 Q544,480 552,480 H640" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="468" y="476" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="482" y="485" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">예</text>
+      <path d="M432,612 H568 Q576,612 576,604 V532 Q576,524 584,524 H640" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="484" y="592" width="28" height="12" rx="2" fill="#f8fafc"/>
+      <text x="498" y="601" fill="#64748b" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">예</text>
+
+      <!-- start -->
+      <rect x="224" y="40" width="224" height="56" rx="28" fill="#f8fafc"/>
+      <rect x="224" y="40" width="224" height="56" rx="28" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="64" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">파일 수신</text>
+      <text x="336" y="80" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">POST /api/upload · 파일 1개</text>
+
+      <!-- normalize -->
+      <rect x="224" y="128" width="224" height="64" rx="6" fill="#f8fafc"/>
+      <rect x="224" y="128" width="224" height="64" rx="6" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="148" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">파일명 정규화</text>
+      <text x="336" y="164" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">NFC · 소문자 · 255B 절단</text>
+      <text x="336" y="180" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">별칭 접기 (jpeg→jpg)</text>
+
+      <!-- D1 -->
+      <polygon points="336,224 432,264 336,304 240,264" fill="#f8fafc"/>
+      <polygon points="336,224 432,264 336,304 240,264" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="268" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">4MB 초과?</text>
+
+      <!-- D2 -->
+      <polygon points="336,340 432,380 336,420 240,380" fill="#f8fafc"/>
+      <polygon points="336,340 432,380 336,420 240,380" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="384" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">확장자 없음?</text>
+
+      <!-- D3 -->
+      <polygon points="336,456 432,496 336,536 240,496" fill="#f8fafc"/>
+      <polygon points="336,456 432,496 336,536 240,496" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="492" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">확장자 세그먼트</text>
+      <text x="336" y="508" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">차단 목록 일치?</text>
+
+      <!-- D4 -->
+      <polygon points="336,572 432,612 336,652 240,612" fill="#f8fafc"/>
+      <polygon points="336,572 432,612 336,652 240,612" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="608" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">시그니처 탐지</text>
+      <text x="336" y="624" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">차단 목록 일치?</text>
+
+      <!-- success -->
+      <rect x="224" y="688" width="224" height="56" rx="28" fill="#f8fafc"/>
+      <rect x="224" y="688" width="224" height="56" rx="28" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="336" y="712" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">업로드 성공</text>
+      <text x="336" y="728" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">Blob put(private) → upload_attempt 기록</text>
+
+      <!-- reject collector (focal) -->
+      <rect x="640" y="344" width="272" height="224" rx="6" fill="#f8fafc"/>
+      <rect x="640" y="344" width="272" height="224" rx="6" fill="rgba(37,99,235,0.08)" stroke="#2563eb" stroke-width="1.2"/>
+      <rect x="652" y="352" width="52" height="12" rx="2" fill="transparent" stroke="rgba(37,99,235,0.40)" stroke-width="0.8"/>
+      <text x="678" y="361" fill="rgba(37,99,235,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HTTP 4XX</text>
+      <text x="776" y="376" fill="#1e293b" font-size="12" font-weight="600" font-family="'Geist','Pretendard Variable',Pretendard,sans-serif" text-anchor="middle">업로드 거부</text>
+      <text x="664" y="396" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">413 FILE_TOO_LARGE</text>
+      <text x="664" y="440" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">415 NO_EXTENSION</text>
+      <text x="664" y="484" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">415 BLOCKED_EXTENSION</text>
+      <text x="664" y="528" fill="#1e293b" font-size="10" font-family="'Geist Mono', monospace">415 SIGNATURE_BLOCKED</text>
+      <text x="776" y="552" fill="#475569" font-size="9" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace" text-anchor="middle">사유 문구 응답 · upload_attempt 기록</text>
+
+      <!-- legend -->
+      <line x1="32" y1="760" x2="968" y2="760" stroke="rgba(30,41,59,0.10)" stroke-width="0.8"/>
+      <text x="32" y="780" fill="#475569" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <polygon points="112,774 124,780 112,786 100,780" fill="#ffffff" stroke="#1e293b" stroke-width="1"/>
+      <text x="132" y="783" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">분기(위→아래 순서로 검사)</text>
+      <rect x="304" y="772" width="12" height="12" rx="2" fill="rgba(37,99,235,0.08)" stroke="#2563eb" stroke-width="1"/>
+      <text x="324" y="783" fill="#475569" font-size="8" font-family="'Geist Mono','Pretendard Variable',Pretendard,monospace">거부 수집 — 모든 시도는 기록됨</text>
+      <text x="968" y="783" fill="rgba(30,41,59,0.35)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">decideUpload() · src/lib/server/upload/decide.ts</text>
+    </svg>
+  </div>
+</body>
+</html>

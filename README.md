@@ -54,7 +54,9 @@
 
 브라우저가 파일을 `POST /api/upload`로 보내면, Vercel Functions 위에서 도는 SvelteKit 서버 라우트가 요청을 받습니다. 요청마다 `hooks.server.ts`가 Neon HTTP 클라이언트와 Vercel Blob 스토어를 `locals`에 주입하고, 엔드포인트는 Neon에서 현재 차단 정책을 읽어 판정한 뒤, 통과한 파일만 Vercel Blob(private)에 `uploads/{UUID}` 키로 저장하고 판정 결과 1행을 Neon의 `upload_attempt`에 기록합니다. Neon HTTP 드라이버를 쓰는 이유는 서버리스 함수마다 커넥션 풀을 새로 여는 비용을 피하기 위해서입니다. Blob은 private이라 URL만으로는 열리지 않으며, 업로드된 파일을 다시 내려주는 엔드포인트는 의도적으로 만들지 않았습니다.
 
-<!-- TODO(diagram-design): 시스템 아키텍처 다이어그램 이미지 — assets/flow-assignment/architecture -->
+<p align="center">
+  <img src="./docs/diagrams/architecture.png" alt="시스템 아키텍처 — 브라우저 → Vercel Edge(icn1) → SvelteKit Functions(sin1) → Neon PostgreSQL·Vercel Blob, GitHub main 푸시 = 자동 배포" width="900"/>
+</p>
 
 <br/>
 
@@ -62,7 +64,9 @@
 
 DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)입니다. 아래 표는 그 파일을 읽기 쉽게 옮긴 것이며, 둘이 어긋나면 SQL 파일이 맞습니다.
 
-<!-- TODO(diagram-design): ERD 이미지 — assets/flow-assignment/erd -->
+<p align="center">
+  <img src="./docs/diagrams/erd.png" alt="ERD — blocked_extension과 upload_attempt 두 테이블, FK 없는 논리적 참조(판정 시점 값 복사)" width="900"/>
+</p>
 
 ### `blocked_extension` — 확장자 차단 정책
 
@@ -125,7 +129,9 @@ DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)�
 7. **시그니처 대조** — 앞 4100바이트를 읽어 매직 넘버와 선행 텍스트를 판별합니다(`sniffSignature`). 판별된 확장자가 차단 목록에 있을 때만 `SIGNATURE_BLOCKED`(415)로 거부합니다. **단순 불일치는 거부하지 않습니다** — `mismatch` 플래그로 기록만 합니다.
 8. **저장과 기록** — 통과하면 `uploads/{UUID}` 키로 Blob에 저장(원본 파일명·확장자를 키에 쓰지 않음)한 뒤 `upload_attempt`에 1행을 남깁니다.
 
-<!-- TODO(diagram-design): 업로드 판정 플로우차트 — assets/flow-assignment/upload-flow -->
+<p align="center">
+  <img src="./docs/diagrams/upload-flow.png" alt="업로드 판정 플로우차트 — 정규화 후 크기·확장자 부재·차단 목록·시그니처 4개 관문, 거부 시 사유 코드와 함께 upload_attempt 기록" width="720"/>
+</p>
 
 <br/>
 
