@@ -133,7 +133,7 @@
 	{#if results.length > 0}
 		<ul class="result-list">
 			{#each results as result (result.name)}
-				<li>
+				<li class={result.status}>
 					{result.name}:
 					{#if result.status === 'success'}
 						<span role="status">업로드 성공</span>
@@ -150,11 +150,126 @@
 </div>
 
 <style>
+	.disclaimer {
+		color: var(--color-muted-fg);
+		font-size: 0.875rem;
+		margin: 0 0 14px;
+	}
+
+	.upload-area > label {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		font-weight: 500;
+	}
+
+	input[type='file'] {
+		width: 100%;
+		padding: 18px;
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg);
+		cursor: pointer;
+		transition: border-color 150ms;
+	}
+
+	input[type='file']:hover {
+		border-color: var(--color-primary);
+	}
+
+	input[type='file']::file-selector-button {
+		margin-right: 12px;
+		padding: 8px 14px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-card);
+		font: inherit;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			border-color 150ms,
+			color 150ms;
+	}
+
+	input[type='file']:hover::file-selector-button {
+		border-color: var(--color-primary);
+		color: var(--color-primary);
+	}
+
+	.selected-list {
+		list-style: none;
+		display: grid;
+		gap: 6px;
+		padding: 0;
+		margin: 14px 0;
+	}
+
+	.upload-area > button {
+		padding: 10px 20px;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: var(--color-primary);
+		color: #fff;
+		font-weight: 600;
+		transition: background-color 150ms;
+	}
+
+	.upload-area > button:hover {
+		background: var(--color-primary-hover);
+	}
+
+	.upload-area > button:disabled {
+		opacity: 0.6;
+		cursor: progress;
+	}
+
+	.result-list {
+		list-style: none;
+		display: grid;
+		gap: 8px;
+		padding: 0;
+		margin: 16px 0 0;
+	}
+
+	.result-list li {
+		padding: 10px 14px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg);
+		font-size: 0.95rem;
+	}
+
+	/* 성공/실패는 색만이 아니라 왼쪽 굵은 선으로도 구분한다(색약 대응). */
+	.result-list li.success {
+		border-left: 3px solid var(--color-success);
+	}
+
+	.result-list li.error {
+		border-left: 3px solid var(--color-destructive);
+	}
+
+	.result-list li.success > span[role='status']:not(.badge) {
+		color: var(--color-success);
+		font-weight: 500;
+	}
+
+	.result-list li.error span[role='alert'] {
+		color: var(--color-destructive);
+		font-weight: 500;
+	}
+
 	.hint {
-		color: #b8860b;
+		color: var(--color-warn);
+		font-size: 0.875rem;
 	}
 
 	.badge {
-		color: #555;
+		display: inline-block;
+		margin-left: 6px;
+		padding: 2px 10px;
+		border-radius: 999px;
+		background: var(--color-border);
+		color: var(--color-muted-fg);
+		font-size: 0.8rem;
 	}
 </style>

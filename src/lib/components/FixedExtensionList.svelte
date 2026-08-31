@@ -85,12 +85,53 @@
 		list-style: none;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.75rem;
+		gap: 8px;
 		padding: 0;
 		margin: 0;
 	}
 
+	label {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 40px;
+		padding: 6px 14px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-card);
+		font-weight: 500;
+		cursor: pointer;
+		user-select: none;
+		transition:
+			border-color 150ms,
+			background-color 150ms;
+	}
+
+	label:hover {
+		border-color: var(--color-primary);
+	}
+
+	/* 체크된 토글은 배경·테두리로도 구분한다 — 체크박스 하나에만 의존하지 않기. */
+	label:has(input:checked) {
+		background: var(--color-primary-soft);
+		border-color: var(--color-primary);
+	}
+
+	label:has(input:disabled) {
+		opacity: 0.6;
+		cursor: progress;
+	}
+
+	input[type='checkbox'] {
+		width: 16px;
+		height: 16px;
+		margin: 0;
+		accent-color: var(--color-primary);
+	}
+
 	.error {
-		color: #b00020;
+		color: var(--color-destructive);
+		font-size: 0.875rem;
+		margin: 12px 0 0;
 	}
 </style>

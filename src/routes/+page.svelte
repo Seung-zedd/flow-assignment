@@ -7,6 +7,10 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
+<svelte:head>
+	<title>확장자 차단 정책</title>
+</svelte:head>
+
 <h1>확장자 차단 정책</h1>
 
 <section>
@@ -28,3 +32,27 @@
 		disclaimer={data.clientHintDisclaimer}
 	/>
 </section>
+
+<style>
+	h1 {
+		font-size: 1.75rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		margin: 0 0 24px;
+	}
+
+	section {
+		background: var(--color-card);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-card);
+		padding: 24px;
+		margin-bottom: 16px;
+	}
+
+	h2 {
+		font-size: 1.05rem;
+		font-weight: 600;
+		margin: 0 0 16px;
+	}
+</style>

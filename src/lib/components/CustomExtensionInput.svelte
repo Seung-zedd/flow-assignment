@@ -98,12 +98,14 @@
 </script>
 
 <div class="custom-extension-input">
-	<label>
-		커스텀 확장자
-		<input type="text" bind:value={inputValue} onkeydown={onKeydown} disabled={pending} />
-	</label>
-	<button type="button" onclick={addExtension} disabled={pending}>추가</button>
-	<span class="counter" aria-label="커스텀 확장자 {count}개, 최대 {max}개">{count}/{max}</span>
+	<div class="input-row">
+		<label>
+			커스텀 확장자
+			<input type="text" bind:value={inputValue} onkeydown={onKeydown} disabled={pending} />
+		</label>
+		<button type="button" onclick={addExtension} disabled={pending}>추가</button>
+		<span class="counter" aria-label="커스텀 확장자 {count}개, 최대 {max}개">{count}/{max}</span>
+	</div>
 
 	<ul class="chip-list">
 		{#each items as row (row.extension)}
@@ -129,26 +131,111 @@
 </div>
 
 <style>
+	.input-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.input-row label {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-weight: 500;
+	}
+
+	input[type='text'] {
+		min-width: 240px;
+		padding: 9px 12px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-card);
+		transition: border-color 150ms;
+	}
+
+	input[type='text']:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgb(37 99 235 / 0.15);
+	}
+
+	.input-row > button {
+		padding: 9px 16px;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: var(--color-primary);
+		color: #fff;
+		font-weight: 600;
+		transition: background-color 150ms;
+	}
+
+	.input-row > button:hover {
+		background: var(--color-primary-hover);
+	}
+
+	.input-row > button:disabled {
+		opacity: 0.6;
+		cursor: progress;
+	}
+
+	.counter {
+		color: var(--color-muted-fg);
+		font-size: 0.9rem;
+		font-variant-numeric: tabular-nums;
+	}
+
 	.chip-list {
 		list-style: none;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 8px;
 		padding: 0;
-		margin: 0.5rem 0 0;
+		margin: 14px 0 0;
 	}
 
 	.chip {
-		border: 1px solid #ccc;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 6px 5px 12px;
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
-		padding: 0.25rem 0.75rem;
+		background: var(--color-bg);
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.chip button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		border: none;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--color-muted-fg);
+		line-height: 1;
+		transition:
+			background-color 150ms,
+			color 150ms;
+	}
+
+	.chip button:hover {
+		background: var(--color-destructive-soft);
+		color: var(--color-destructive);
 	}
 
 	.error {
-		color: #b00020;
+		color: var(--color-destructive);
+		font-size: 0.875rem;
+		margin: 12px 0 0;
 	}
 
 	.notice {
-		color: #555;
+		color: var(--color-muted-fg);
+		font-size: 0.875rem;
+		margin: 12px 0 0;
 	}
 </style>
