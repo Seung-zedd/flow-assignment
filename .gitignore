@@ -37,3 +37,9 @@ vite.config.ts.timestamp-*
 
 # Claude Code agent worktrees (runtime-managed)
 .claude/worktrees/
+
+# Playwright E2E runtime artifacts (screenshots under e2e/screenshots/ are kept as Q12 evidence)
+e2e/traces/
+e2e/.runs/
+test-results/
+playwright-report/
