@@ -449,6 +449,48 @@
 - **의도**: 세션 종료. Vercel 확인(#71의 A~D)은 내일 사용자가 결정.
 - **세션 6 종료 시점 상태**: origin/main = `e40e8ee`(PROMPT_LOG #70~#71) 이후 이 #72 커밋까지 push. 코드 변경 0, 스폰 0. **배포 URL 여전히 500** — 원인은 "Vercel 런타임에서 `DATABASE_URL`/`BLOB_READ_WRITE_TOKEN`이 안 보여 `handle`이 throw"로 좁혀졌고, 넷 중 무엇(프로젝트 불일치·이름·값 형식·스코프)인지는 사용자가 대시보드/CLI로 확인해야 함. Q7 미충족 · Playwright 스모크 미착수 · 모델 프로브 미실행(스폰 없었음). 재개 블록은 메모리 `project-spec-upload-001-m4-complete.md`에 저장.
 
+### 2026-08-31 — 세션 7: 배포 500 해결 → Q7 → 마무리
+
+#### #73
+> 오늘 해야할일 브리핑해줘 / A로 하지
+- **의도**: 세션 재개 브리핑 요청 후, #71의 배포 500 확인 방법 4택에서 **A(사용자가 Vercel 대시보드 직접 확인)** 선택.
+- **결과**: 재개 시점 재검증 — origin/main = `fdddf33`(`0 0`), 배포 URL `GET /` **여전히 500**. A 절차 안내: ① 대시보드에서 프로젝트가 `flow-assignment`(prj_KsXr…)인지 확인 ② Settings → Environment Variables에 `DATABASE_URL`·`BLOB_READ_WRITE_TOKEN`이 **Production** 스코프로 존재하는지(Sensitive 배지 포함) ③ Deployments → 최신 배포 → Runtime Logs의 예외 문구 확인. 값 자체는 AI에게 전달하지 않음(secret-management 룰).
+
+#### #74
+> (Runtime Logs 원문 붙여넣기) `Error: DATABASE_URL이 설정되지 않았습니다. at getDb (…hooks.server.js:9:27)` 로그 확인했어
+- **의도**: A 절차 ③ 수행 — 대시보드 Runtime Logs의 실제 예외 문구 전달.
+- **결과**: 세션 6 진단 확정. 예외가 **우리 코드의 가드 메시지**이므로 "런타임에 변수가 존재하지 않음"이 확인됨 → 용의자 ③(값 형식, `neon()` 거부)은 소거. 코드 재확인: `client.ts:2`·`store.ts:2` 모두 `$env/dynamic/private`(런타임 주입)로 읽음 — 빌드 시점 고정(`$env/static/private`) 문제 아님. 남은 용의자: ①변수를 다른 Vercel 프로젝트에 등록 ②이름 오타 ④Production 스코프 누락. 다음: 사용자가 대시보드 Settings → Environment Variables에서 프로젝트·이름·스코프 확인.
+
+#### #75
+> (Environment Variables 스크린샷 첨부) 원인을 알겠음 … value를 설정 안 한 것 같음. vercel cli --sensitive로 값을 지금 설정하자
+- **의도**: A 절차 ② 수행 결과 공유 — 근본 원인을 사용자가 직접 발견.
+- **결과**: **근본 원인 확정 — 변수는 등록됐지만 값이 비어 있음.** 스크린샷에서 `BLOB_WEBHOOK…_PUBLIC_KEY`·`BLOB_STORE_ID`는 값 미리보기(●●●●)가 있는데 `DATABASE_URL`·`BLOB_READ_WRITE_TOKEN`(Sensitive, 자물쇠)만 값 표시가 없음. 이름·스코프(Production and Preview)·프로젝트는 모두 정상 → 용의자 ①②④ 전부 소거, 진짜 원인은 "빈 값". 세션 6의 넷 용의자 밖에 있던 다섯 번째 경우. 해결: 사용자가 본인 터미널에서 대화형 `vercel env add`(값은 프롬프트에 붙여넣기 — secret-management 룰: 명령 문자열에 값 금지, Sensitive 기본값 유지) 후 Redeploy.
+
+#### #76
+> github mcp server 사용해서 cubrain 아니면 lucidify 레포에서 vercel cli --sensitive 관련 내용 불러와줘 그걸로 진행해야돼
+- **의도**: 값 재등록 절차를 원본 규칙(cubrain §28)과 대조한 뒤 진행 — 룰의 출처를 확인하고 따르기.
+- **결과**: GitHub MCP(`search_code` → `get_file_contents`)로 **cubrain `skills/AGENTS.md` §28 Zero-Trust Secret Management** 원문 확보. §28.1 Blind CLI Updates(값은 대화형 프롬프트로만 — 명령 문자열·히스토리에 남기지 않음), §28.2 Sensitive Flag(Vercel 변수 전부 Sensitive), §28.3 `.env` gitignore. 이 프로젝트의 `secret-management.md`·가드 훅이 이미 §28의 이관본임을 재확인 — 절차 변경 없음, `--sensitive` 명시만 추가(Production/Preview 기본값과 동일 효과). 코드 검색에는 비공개 레포가 안 잡혀 파일 직접 조회로 우회.
+
+#### #77 🟡
+> ㅇㅇ #2에서 literal value 말고 Uppercase의 key 그대로 붙여넣었어
+- **의도**: 재등록 실행 결과 보고 — 값 프롬프트에 실제 값 대신 **키 이름 문자열**을 붙여넣었음을 자진 신고. #75의 "빈 값" 원인도 최초 등록 때 같은 실수였을 가능성이 높음.
+- **결과**: 절차 재안내 — `.env`에서 `=` 오른쪽 값만 복사(`DATABASE_URL` → `postgresql://…`, `BLOB_READ_WRITE_TOKEN` → `vercel_blob_rw_…`) 후 rm → add → Redeploy 재수행. 값은 여전히 채팅에 노출되지 않음.
+
+#### #78 🟡
+> "값은 절대 명령 문자열에 넣지 않기" ← 그럼 이 부분을 수정해야겠는데? 값이라고 해서 right value를 넣지 말라고 이해했거든
+- **의도**: #77 실수의 원인이 안내 문구의 모호함이었음을 지적 — "값을 넣지 말라"가 **어디에** 넣지 말라는 건지 불명확해 "실제 값은 아예 입력하면 안 된다"로 읽힘.
+- **결과**: 문서 정비 — README 배포 절(§시크릿 등록)의 주석과 금지 항목을 "금지 대상은 **명령어 줄에 값을 쓰는 형태**뿐이고, **대화형 프롬프트에 실제 값을 입력하는 것이 올바른(유일한) 방법**"으로 재서술. 안내 문구 작성 원칙으로 일반화: 금지 규칙에는 반드시 "금지되는 곳"과 "해야 하는 곳"을 쌍으로 명시(피드백 메모리 저장).
+
+#### #79
+> BLOB_READ_WRITE_TOKEN에 vercel blob 스니펫 그대로 복사했더니 "text"처럼 큰따옴표가 있는데 그대로 붙여넣으면 돼?
+- **의도**: 값 붙여넣기 전 형식 확인 — 대시보드 스니펫의 따옴표 포함 여부.
+- **결과**: 따옴표는 `.env` 문법이지 값이 아님 — **따옴표 안쪽만** 붙여넣기(`vercel_blob_rw_…` / `postgresql://…`). 따옴표를 포함하면 값에 `"` 문자가 들어가 인증 실패.
+
+#### #80 ✅ 배포 500 해결 — Q7 달성
+> (앱 화면 스크린샷) 오 됬다! … cubrain skills/AGENTS.md 원문도 올바른 문장으로 수정해줘 / (이어서) 아 ㄴㄴㄴㄴ 내가 원격 레포에서 직접 수정할께 위치만 알려줘
+- **의도**: 값 재등록 + Redeploy 성공 보고. 오해를 낳은 원문(cubrain §28.1)도 고쳐 재발 방지 — 단, 수정은 본인이 직접.
+- **결과**: **프로덕션 도메인 `GET https://flow-assignment-opal.vercel.app/` → 200** (2026-08-31, node fetch 실측) — **Q7 충족**. 근본 원인 체인 확정: 최초 등록 때 값 프롬프트에 키 이름을 붙여넣어 빈/무의미한 값 → `handle`에서 throw → 500. cubrain 수정 위치 전달: `Seung-zedd/cubrain` `skills/AGENTS.md` §28.1 "Blind CLI Updates" 불릿(L346) + 제안 문안(금지 위치/입력 위치 쌍 + 따옴표 제외 + 키≠값 명시). AI의 직접 push는 사용자가 중단시키고 본인 수행으로 전환.
+
 ---
 
 ## 2. 사용한 스킬 / 플러그인 / MCP / 에이전트 / 도구
@@ -475,6 +517,7 @@
 | MCP | Context7 (`/vercel/storage`) | `@vercel/blob` 2.8.0 `put` 옵션(`access: 'private'` 지원 여부·`token`·`contentType`)을 기억 대신 최신 문서로 확인한 뒤 스폰 프롬프트에 명시 |
 | 에이전트 | `manager-develop` (**Fable 5** — 의도는 Opus) | M4 — 테스트 `.env` 격리 · Neon 마이그레이션 실측 · README · CONSIDERATIONS 28항목. `name`을 붙인 스폰이 Agent Teams 팀원으로 생성돼 settings.json 모델(Fable)을 상속(#68). 사용자가 팀원 창에서 발견 |
 | CLI 도구 | `gh api` (GitHub REST) | cubrain README 골격 추출(#64) — 조회 시점에 GitHub MCP 미로드. 직후 `plugin:github` MCP 연결됨 |
+| MCP | `plugin:github` (GitHub MCP Server) | 배포 500 해결 시 cubrain `skills/AGENTS.md` §28(Zero-Trust Secret Management) 원문 조회(#76) — 비공개 레포라 코드 검색 대신 `get_file_contents`로 직접 조회 |
 | CLI 도구 | Vercel CLI 54.5 (`whoami`·`project ls/inspect`·`ls`·`link --yes`) | M4 배포 상태 파악·프로젝트 연결. `env` 계열 명령은 훅이 차단하는 형태 외엔 사용하지 않음 |
 
 > 이후 단계에서 쓰는 스킬/에이전트는 사용 시점에 추가.
