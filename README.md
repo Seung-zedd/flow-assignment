@@ -52,11 +52,11 @@
 
 ## 🏗 시스템 아키텍처
 
-브라우저가 파일을 `POST /api/upload`로 보내면, Vercel Functions 위에서 도는 SvelteKit 서버 라우트가 요청을 받습니다. 요청마다 `hooks.server.ts`가 Neon HTTP 클라이언트와 Vercel Blob 스토어를 `locals`에 주입하고, 엔드포인트는 Neon에서 현재 차단 정책을 읽어 판정한 뒤, 통과한 파일만 Vercel Blob(private)에 `uploads/{UUID}` 키로 저장하고 판정 결과 1행을 Neon의 `upload_attempt`에 기록합니다. Neon HTTP 드라이버를 쓰는 이유는 서버리스 함수마다 커넥션 풀을 새로 여는 비용을 피하기 위해서입니다. Blob은 private이라 URL만으로는 열리지 않으며, 업로드된 파일을 다시 내려주는 엔드포인트는 의도적으로 만들지 않았습니다.
-
 <p align="center">
   <img src="./docs/diagrams/architecture.png" alt="시스템 아키텍처 — 브라우저 → Vercel Edge(icn1) → SvelteKit Functions(sin1) → Neon PostgreSQL·Vercel Blob, GitHub main 푸시 = 자동 배포" width="900"/>
 </p>
+
+브라우저가 파일을 `POST /api/upload`로 보내면, Vercel Functions 위에서 도는 SvelteKit 서버 라우트가 요청을 받습니다. 요청마다 `hooks.server.ts`가 Neon HTTP 클라이언트와 Vercel Blob 스토어를 `locals`에 주입하고, 엔드포인트는 Neon에서 현재 차단 정책을 읽어 판정한 뒤, 통과한 파일만 Vercel Blob(private)에 `uploads/{UUID}` 키로 저장하고 판정 결과 1행을 Neon의 `upload_attempt`에 기록합니다. Neon HTTP 드라이버를 쓰는 이유는 서버리스 함수마다 커넥션 풀을 새로 여는 비용을 피하기 위해서입니다. Blob은 private이라 URL만으로는 열리지 않으며, 업로드된 파일을 다시 내려주는 엔드포인트는 의도적으로 만들지 않았습니다.
 
 <br/>
 
@@ -118,6 +118,10 @@ DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)�
 
 ## 🔄 업로드 판정 흐름
 
+<p align="center">
+  <img src="./docs/diagrams/upload-flow.png" alt="업로드 판정 플로우차트 — 정규화 후 크기·확장자 부재·차단 목록·시그니처 4개 관문, 거부 시 사유 코드와 함께 upload_attempt 기록" width="720"/>
+</p>
+
 요청 하나는 파일 하나를 싣습니다. 아래 8단계는 `src/routes/api/upload/+server.ts`의 `POST` 핸들러와 `src/lib/server/upload/decide.ts`의 `decideUpload()`가 실제로 실행하는 순서입니다.
 
 1. **`Content-Length` 선차단** — 헤더가 4MB를 넘으면 본문을 읽기 전에 `FILE_TOO_LARGE`(413). 이 시점에는 파일명·실제 크기가 확정되지 않아 DB 행 없이 구조화 로그만 남깁니다.
@@ -129,10 +133,6 @@ DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)�
 7. **시그니처 대조** — 앞 4100바이트를 읽어 매직 넘버와 선행 텍스트를 판별합니다(`sniffSignature`). 판별된 확장자가 차단 목록에 있을 때만 `SIGNATURE_BLOCKED`(415)로 거부합니다. **단순 불일치는 거부하지 않습니다** — `mismatch` 플래그로 기록만 합니다.
 8. **저장과 기록** — 통과하면 `uploads/{UUID}` 키로 Blob에 저장(원본 파일명·확장자를 키에 쓰지 않음)한 뒤 `upload_attempt`에 1행을 남깁니다.
 
-<p align="center">
-  <img src="./docs/diagrams/upload-flow.png" alt="업로드 판정 플로우차트 — 정규화 후 크기·확장자 부재·차단 목록·시그니처 4개 관문, 거부 시 사유 코드와 함께 upload_attempt 기록" width="720"/>
-</p>
-
 <br/>
 
 ## 🔥 핵심 트러블슈팅 및 설계 결정 (Key Engineering Decisions)
@@ -141,27 +141,35 @@ DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)�
 
 ### 1. 확장자·시그니처 2중 판정과 별칭 표 단일 원본
 
-- **문제:** 확장자는 사용자가 바꿀 수 있는 문자열이라 `report.jpg`라는 이름의 실행 파일을 막지 못함. 반대로 내용 판별 결과와 확장자의 불일치를 곧바로 거부하면 컨테이너 포맷(`docx`→zip)·텍스트 포맷에서 오탐이 쏟아져 사용자가 차단 메시지 자체를 신뢰하지 않게 됨.
-- **해결:** 판별 결과를 **차단 목록과 대조할 때만** 거부 근거로 삼고(`decideUpload` 4단계), 단순 불일치는 `mismatch` 플래그로 기록만 함. 별칭 표(`jpeg`→`jpg` 등)는 `EXTENSION_ALIASES` 하나만 두고 파일명 후보 추출·시그니처 판별·정책 저장이 **모두 같은 표**를 참조하도록 `@MX:ANCHOR`로 고정.
-- **결과:** `jpg`를 차단하면 `photo.jpeg`도 `matched: "jpg"`로 막히고, 정상 JPEG는 오거부되지 않음. 표가 갈라져 한쪽만 고쳐지는 순간 오탐이 조용히 돌아오는 구조적 위험을 제거.
+**문제.** 확장자는 사용자가 마음대로 바꿀 수 있는 문자열이라, 이름만 봐서는 `report.jpg`로 위장한 실행 파일을 막을 수 없습니다. 그렇다고 내용 판별 결과와 확장자가 다르다는 이유만으로 거부하면 반대쪽이 무너집니다. `docx`처럼 zip으로 판별되는 컨테이너 포맷과 텍스트 포맷에서 오탐이 쏟아지고, 사용자는 차단 메시지 자체를 믿지 않게 됩니다.
+
+**해결.** 판별 결과는 차단 목록과 대조될 때만 거부 근거로 삼고(`decideUpload` 4단계), 단순 불일치는 `mismatch` 플래그로 기록만 남깁니다. 별칭 표(`jpeg`→`jpg` 등)는 `EXTENSION_ALIASES` 하나만 두고, 파일명 후보 추출과 시그니처 판별과 정책 저장이 모두 같은 표를 참조하도록 `@MX:ANCHOR`로 고정했습니다.
+
+**결과.** `jpg`를 차단하면 `photo.jpeg`도 `matched: "jpg"`로 막히고, 정상 JPEG는 오거부되지 않습니다. 표가 갈라져 한쪽만 고쳐지는 순간 오탐이 조용히 돌아오는 구조적 위험도 함께 사라졌습니다.
 
 ### 2. 커스텀 확장자 200개 상한을 단일 원자 SQL로
 
-- **문제:** "세어 보고 200 미만이면 INSERT"의 두 단계 구현은 동시 요청 두 건이 199개를 함께 읽고 둘 다 넣어 201개가 되는 경합에 열려 있음.
-- **해결:** 카운트와 삽입을 조건부 INSERT를 담은 **하나의 CTE**로 묶어 왕복 1회·원자 1연산으로 처리(`policy-repo.ts`의 `addCustom()`). 고정 확장자와의 충돌은 `UNIQUE(extension)` 제약이 마지막 방어선.
-- **결과:** 애플리케이션 검사와 DB 제약이 이중으로 걸려, 새 코드 경로가 생겨도 상한이 뚫리지 않음. READ COMMITTED에서 완전히 닫히지는 않는 잔여 경합은 `@MX:WARN`으로 명시.
+**문제.** "세어 보고 200 미만이면 INSERT"라는 두 단계 구현은 경합에 열려 있습니다. 동시 요청 두 건이 199개를 함께 읽으면 둘 다 삽입에 성공해 201개가 됩니다.
+
+**해결.** 카운트와 삽입을 조건부 INSERT를 담은 하나의 CTE로 묶어 왕복 1회, 원자 1연산으로 처리했습니다(`policy-repo.ts`의 `addCustom()`). 고정 확장자와의 충돌은 `UNIQUE(extension)` 제약이 마지막 방어선을 맡습니다.
+
+**결과.** 애플리케이션 검사와 DB 제약이 이중으로 걸려 있어, 새 코드 경로가 생겨도 상한이 뚫리지 않습니다. READ COMMITTED에서 완전히 닫히지는 않는 잔여 경합은 `@MX:WARN`으로 코드에 명시해 두었습니다.
 
 ### 3. 정책 화면 낙관적 갱신과 "서버가 준 값으로" 롤백
 
-- **문제:** 체크박스를 낙관적으로 먼저 바꾸고 실패 시 **직전 로컬 상태**로 되돌리는 흔한 구현은, 그 사이 다른 탭에서 정책이 바뀌었으면 화면을 더 낡은 값으로 되돌려 놓음.
-- **해결:** 정책 변경 엔드포인트가 변경 후의 **정식 정책 상태**를 응답에 함께 반환하고, 화면은 실패 시 그 값으로 재조정(`FixedExtensionList.svelte`). 서버가 진실이라는 원칙을 롤백 경로에까지 관철.
-- **결과:** 저장에 실패해도 화면과 DB가 반드시 수렴. 이 롤백 과도 상태를 jsdom 컴포넌트 테스트로 직접 검증(AC-UPLOAD-016a).
+**문제.** 체크박스를 낙관적으로 먼저 바꾸고 실패하면 직전 로컬 상태로 되돌리는 흔한 구현에는 함정이 있습니다. 그 사이 다른 탭에서 정책이 바뀌었다면, 롤백이 화면을 더 낡은 값으로 되돌려 놓습니다.
+
+**해결.** 정책 변경 엔드포인트가 변경 후의 정식 정책 상태를 응답에 함께 돌려주고, 화면은 실패 시 그 값으로 재조정합니다(`FixedExtensionList.svelte`). "서버가 진실"이라는 원칙을 롤백 경로에까지 관철한 것입니다.
+
+**결과.** 저장에 실패해도 화면과 DB가 반드시 수렴합니다. 이 롤백 과도 상태는 jsdom 컴포넌트 테스트로 직접 검증했습니다(AC-UPLOAD-016a).
 
 ### 4. 제로 트러스트 시크릿 취급 — 그리고 실제로 한 번 새어 나갔을 때
 
-- **문제:** 2026년 4월 Vercel 공급망 사고 이후, 시크릿이 명령어 문자열·셸 히스토리·AI 세션 어디에도 남지 않아야 함. 문서로만 정한 규칙은 급할 때 지켜지지 않음.
-- **해결:** 애플리케이션은 `$env/dynamic/private`로만 읽고, Vercel 변수는 대화형 `vercel env add`로만 등록하며 전부 Sensitive. 이를 훅으로 기계 강제(`block-env-edit.mjs`, `block-vercel-env-insecure.mjs`)해 `--value`·파이프 입력·`vercel env pull`을 아예 거부.
-- **결과:** 실제로 연결 문자열이 AI 채팅에 한 번 노출됐을 때 AI가 그 값의 사용을 거부하고 즉시 교체를 권고 → `neondb_owner` 비밀번호 재설정, 현재 모든 값은 교체 후의 값. 부수적으로 **테스트가 `.env`를 자동으로 읽고 있던 문제**도 발견해 `$env/dynamic/private` 모킹으로 격리(자세한 경위는 `CONSIDERATIONS.md` E5).
+**문제.** 2026년 4월 Vercel 공급망 사고 이후, 시크릿은 명령어 문자열에도 셸 히스토리에도 AI 세션에도 남지 않아야 합니다. 그런데 문서로만 정한 규칙은 급할 때 지켜지지 않습니다.
+
+**해결.** 애플리케이션은 `$env/dynamic/private`로만 시크릿을 읽고, Vercel 변수는 대화형 `vercel env add`로만 등록하며 전부 Sensitive로 둡니다. 이 규칙을 훅으로 기계 강제해(`block-env-edit.mjs`, `block-vercel-env-insecure.mjs`) `--value` 옵션, 파이프 입력, `vercel env pull`을 아예 거부하게 만들었습니다.
+
+**결과.** 실제로 연결 문자열이 AI 채팅에 한 번 노출되는 사고가 있었는데, AI가 그 값의 사용을 거부하고 즉시 교체를 권고해 `neondb_owner` 비밀번호를 재설정했습니다. 현재 모든 값은 교체 후의 값입니다. 이 과정에서 테스트가 `.env`를 자동으로 읽고 있던 문제도 발견해 `$env/dynamic/private` 모킹으로 격리했습니다(자세한 경위는 `CONSIDERATIONS.md` E5).
 
 <br/>
 
