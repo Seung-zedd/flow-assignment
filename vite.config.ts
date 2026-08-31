@@ -12,7 +12,10 @@ export default defineConfig({
 			},
 			// 업로드 요청은 최대 4MB 본문을 읽고 시그니처를 판별한 뒤 Blob에 저장한다.
 			// plan.md §14의 레퍼런스 패턴(maxDuration: 60)을 업로드 경로 실측치에 맞춰 30초로 낮춘다.
-			adapter: adapter({ maxDuration: 30 })
+			// regions: 기본값(iad1, 미국 동부)이면 사용자(서울 엣지)↔함수↔DB(Neon ap-southeast-1) 경로가
+			// API 1콜당 0.5~1초로 늘어난다(2026-08-31 실측, x-vercel-id icn1::iad1::). 함수를 DB와
+			// 같은 싱가포르(sin1)에 고정해 DB 왕복을 지역 내로 줄인다.
+			adapter: adapter({ maxDuration: 30, regions: ['sin1'] })
 		})
 	],
 	test: {
