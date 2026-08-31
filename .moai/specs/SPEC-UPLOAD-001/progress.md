@@ -620,7 +620,7 @@ coverage_stmts_pct: 97.12
 ```yaml
 spec_id: SPEC-UPLOAD-001
 sync_complete_at: 2026-08-31
-sync_commit_sha: pending-backfill-2026-08-31   # sync 커밋이 자기 SHA를 모르므로 후속 커밋에서 백필
+sync_commit_sha: 17444a9
 sync_status: complete
 executed_by: orchestrator-direct   # manager-docs 미스폰 — 세션 한도 방어 결정(PROMPT_LOG #84), 문서화된 편차
 sync_audit: skipped-documented     # sync-auditor 미스폰 — 같은 결정. Q 게이트 증거는 아래에 직접 첨부
