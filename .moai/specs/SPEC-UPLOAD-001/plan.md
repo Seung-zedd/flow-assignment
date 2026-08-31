@@ -1,11 +1,11 @@
 ---
 id: SPEC-UPLOAD-001
 title: 확장자 차단 정책 관리 및 서버 사이드 업로드 검증
-status: draft
+status: completed
 tier: M
 phase: "v0.1.0 target"
 created: 2026-08-29
-updated: 2026-08-29
+updated: 2026-08-31
 ---
 
 # SPEC-UPLOAD-001 — 구현 계획 (plan)

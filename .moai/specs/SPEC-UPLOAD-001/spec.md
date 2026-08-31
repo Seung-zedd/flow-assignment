@@ -1,10 +1,10 @@
 ---
 id: SPEC-UPLOAD-001
 title: "확장자 차단 정책 관리 및 서버 사이드 업로드 검증"
-version: "0.2.1"
-status: in-progress
+version: "0.2.2"
+status: completed
 created: 2026-08-29
-updated: 2026-08-30
+updated: 2026-08-31
 author: michael_jo
 priority: P1
 phase: "v0.1.0 target"
@@ -205,9 +205,10 @@ issue_number: 1
 - zip/tar 내부 엔트리 검사, zip-slip 대응, 압축 폭탄 방어, 바이러스 스캔 연동을 만들지 않는다.
 - 근거: 확장자 정책은 컨테이너만 본다. 내부 검사는 별도의 해제·격리 인프라를 요구하며 과제 규모를 넘어선다. 한계 자체를 문서에 명시하는 것으로 대신한다.
 
-### 5.5 Out of Scope — E2E 테스트 및 rate limiting
-- 브라우저 자동화 E2E와 IP 기반 요청 제한을 만들지 않는다.
-- 근거: 배포 URL의 수동 데모가 E2E와 같은 확신을 주고 CI 배선 비용이 과제 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기 상한(4MB)과 요청당 1파일 제약, 그리고 Blob Hobby 무료 한도가 실질적 차단기 역할을 한다.
+### 5.5 Out of Scope — E2E CI 배선 및 rate limiting
+- 브라우저 자동화 E2E의 **CI 파이프라인 배선**과 IP 기반 요청 제한을 만들지 않는다.
+- 근거: CI 배선 비용이 과제 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기 상한(4MB)과 요청당 1파일 제약, 그리고 Blob Hobby 무료 한도가 실질적 차단기 역할을 한다.
+- (sync 정정 2026-08-31) 초안은 "배포 URL 수동 데모로 E2E를 대체"했으나, 배포 후 **1회성 Playwright 스모크**를 배포 URL 대상으로 실행해 핵심 여정 5건과 Q12 문구 12종 캡처를 확보했다(`e2e/`, 증거: `e2e/screenshots/q12/`, 로그: `.moai/state/verify/18010b75/e2e-smoke.log`). 배제 대상은 "E2E 자체"가 아니라 "CI 상시 배선"으로 좁혀진다 (결정: PROMPT_LOG #54·#86).
 
 ### 5.6 Out of Scope — 업로드 시도 조회 API
 - 최근 업로드 시도를 돌려주는 `GET /api/uploads/recent` 엔드포인트를 만들지 않는다.
@@ -222,4 +223,5 @@ issue_number: 1
 - **주 커버리지 표면**: `src/lib/server/**` — `acceptance.md` Q2의 측정 분모와 동일한 glob을 쓴다
 - **통합**: PGlite 인프로세스 PostgreSQL에 `migrations/001_init.sql`을 적용한 리포지토리 및 엔드포인트 테스트
 - **컴포넌트**: Vitest `jsdom` 환경 + `@testing-library/svelte`로 `FixedExtensionList.svelte`를 렌더링해 AC-016a의 롤백 과도 상태를 검증한다. 브라우저를 띄우지 않는 단위 수준 DOM 테스트이며 §5.5의 E2E 배제와 충돌하지 않는다 (도구 선정 근거: `plan.md` §8)
-- **품질 게이트**: `acceptance.md` § 품질 게이트 (Q1~Q11)
+- **E2E 스모크(1회성)**: Playwright + chromium으로 배포 URL(`https://flow-assignment-opal.vercel.app`)을 대상으로 핵심 여정 5건 + Q12 문구 캡처를 실행한다 (`e2e/smoke.spec.ts`, `e2e/q12-messages.spec.ts`; §5.5 정정 참조)
+- **품질 게이트**: `acceptance.md` § 품질 게이트 (Q1~Q12)

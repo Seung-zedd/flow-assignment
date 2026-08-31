@@ -99,7 +99,7 @@
 - **Given** 차단 목록에 `html`이 없을 때,
 - **When** 사용자가 `<!DOCTYPE html>`로 시작하는 평범한 `page.html`을 업로드하면,
 - **Then** 업로드가 **성공한다**. prefix 스니핑이 `html`을 합성 확장자로 인식하더라도 그 값이 차단 목록에 없으므로 거부 사유가 되지 않는다.
-- **그리고** `html`을 커스텀 차단에 추가한 뒤 같은 파일을 올리면 HTTP 415 + `SIGNATURE_BLOCKED`로 거부된다.
+- **그리고** `html`을 커스텀 차단에 추가한 뒤 같은 파일을 올리면 HTTP 415 + `BLOCKED_EXTENSION`(`details.matched: "html"`)으로 거부된다. (sync 정정 2026-08-31: 판정 순서상 선언 확장자 검사가 시그니처 검사보다 먼저라 `SIGNATURE_BLOCKED`가 아니다 — M3 구현 중 실동작으로 발견, PROMPT_LOG #57. 코드가 아니라 문서가 틀렸다고 판정)
 
 ## E. 기록 및 감사
 

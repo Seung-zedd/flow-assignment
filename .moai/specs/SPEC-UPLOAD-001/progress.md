@@ -617,7 +617,30 @@ coverage_stmts_pct: 97.12
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-_<pending sync-phase>_
+```yaml
+spec_id: SPEC-UPLOAD-001
+sync_complete_at: 2026-08-31
+sync_commit_sha: pending-backfill-2026-08-31   # sync 커밋이 자기 SHA를 모르므로 후속 커밋에서 백필
+sync_status: complete
+executed_by: orchestrator-direct   # manager-docs 미스폰 — 세션 한도 방어 결정(PROMPT_LOG #84), 문서화된 편차
+sync_audit: skipped-documented     # sync-auditor 미스폰 — 같은 결정. Q 게이트 증거는 아래에 직접 첨부
+```
+
+**sync 변경 내역** (커밋 하나로 4문서 상태 전이 + 문구 정정):
+- `acceptance.md` AC-UPLOAD-014 2절: `SIGNATURE_BLOCKED` → `BLOCKED_EXTENSION` 정정 (M3 실동작 발견분, PROMPT_LOG #57의 예고 이행)
+- `spec.md` §5.5: E2E 배제 범위를 "E2E 자체" → "CI 상시 배선"으로 좁힘 (1회성 배포 URL 스모크 수행 반영) · §6 게이트 표기 Q1~Q11 → Q1~Q12 · frontmatter v0.2.2 / completed
+- `plan.md` frontmatter: completed (draft로 남아 있던 낡은 상태 정리)
+
+**품질 게이트 증거 (sync 시점 확정분)**:
+
+| 게이트 | 상태 | 증거 |
+|---|---|---|
+| Q7 (배포 URL 동작) | **PASS** | `GET https://flow-assignment-opal.vercel.app/` → 200 (2026-08-31 실측, node fetch). 500 원인은 env 값 미입력 — 해결 경위 PROMPT_LOG #73~#80 |
+| Q11 (PROMPT_LOG 3절) | **PASS** | §1 타임라인 #86까지 (M4 이후 세션 7 포함) · §2 도구 표 · §3 회고 (M4·sync 절은 세션 7 마감에서 초안) |
+| Q12 (화면 문구 13종) | **PASS(12/13) + 수동 1건** | Playwright로 12종 유발·문구 정확 일치 단언·스크린샷 `e2e/screenshots/q12/<CODE>.png` + 로그 `.moai/state/verify/18010b75/e2e-smoke.log` (16 passed·exit 0). `EXT_LIMIT_REACHED`는 프로덕션 200행 비용으로 스킵 — 사용자 수동 확인 항목 |
+
+**미검증(Gaps)**: 사용자 QA 4건(PROMPT_LOG #65) 미수행 — 사용자 몫으로 남김. `EXT_LIMIT_REACHED` 화면 문구 미캡처. sync-auditor 독립 감사 미수행(문서화된 스킵).
+**잔여 위험**: E2E는 1회성 실측이라 이후 배포에서 회귀 감지 없음(CI 미배선 — §5.5 의도된 범위). 프로덕션에 테스트 upload_attempt 행 + 소형 txt Blob 1건 잔류(감사 로그 성격, 정책 상태는 원복 확인).
 
 ## §F Phase 4 Mode Selection
 
