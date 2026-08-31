@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { restoreToBaseline, setFixed } from './policy-api';
+import { addCustom, deleteCustom, getPolicy, restoreToBaseline, setFixed } from './policy-api';
 
 // Q12 게이트 증거 수집: 사유 코드 10종 + 알림 3종을 배포 URL에서 실제로 유발해
 // 화면 문구가 reason-codes.ts(= plan.md §4.1 문구 상수 표)와 정확히 일치하는지 단언하고,
@@ -87,9 +87,39 @@ test('EXT_IS_FIXED — 고정 확장자를 커스텀으로 추가', async ({ pag
 	await page.screenshot({ path: `${SHOT_DIR}/EXT_IS_FIXED.png` });
 });
 
-// 커스텀 확장자를 200개까지 채워야 유발되는 코드. 프로덕션 DB에 200행을 쓰는 비용 대비
-// 얻는 증거가 작아 스킵하고, sync 단계 게이트 표에 수동 확인 항목으로 남긴다.
-test.skip('EXT_LIMIT_REACHED — 200개 한도 (프로덕션 부하로 스킵)', () => {});
+// 커스텀 확장자를 200개까지 채워야 유발되는 코드. 처음엔 프로덕션 쓰기 비용으로 스킵했으나
+// 사용자 결정(PROMPT_LOG #94)으로 1회 실행해 캡처한다. API로 채우고(청크 병렬) UI에서
+// 201번째 추가를 시도해 문구를 단언한 뒤, 채운 행은 finally에서 직접 지운다.
+// 잔여 편차는 afterEach의 restoreToBaseline이 마저 되돌린다.
+test('EXT_LIMIT_REACHED — 200개 한도에서 추가 시도', async ({ page }) => {
+	test.setTimeout(360_000);
+	const added: string[] = [];
+	try {
+		let count = (await getPolicy()).customCount;
+		let seq = 0;
+		while (count < 200) {
+			const batch: string[] = [];
+			while (batch.length < Math.min(10, 200 - count)) {
+				batch.push(`zfill${String(seq++).padStart(3, '0')}`);
+			}
+			await Promise.all(batch.map((extension) => addCustom(extension)));
+			added.push(...batch);
+			count = (await getPolicy()).customCount;
+		}
+		expect(count).toBe(200);
+
+		await page.goto('/');
+		await expect(page.locator('.custom-extension-input')).toContainText('200/200');
+		await addCustomViaUi(page, 'overflow1');
+		await expect(inputError(page)).toHaveText('커스텀 확장자는 최대 200개까지 추가할 수 있어요.');
+		// 에러 문구는 칩 200개 아래에 렌더링돼 뷰포트 캡처에는 안 담긴다 — 전체 페이지로 캡처.
+		await page.screenshot({ path: `${SHOT_DIR}/EXT_LIMIT_REACHED.png`, fullPage: true });
+	} finally {
+		for (let i = 0; i < added.length; i += 10) {
+			await Promise.all(added.slice(i, i + 10).map((extension) => deleteCustom(extension)));
+		}
+	}
+});
 
 test('ALIAS_FOLDED — 별칭(jpeg) 추가 시 대표형(jpg) 접힘 알림', async ({ page }) => {
 	await page.goto('/');
