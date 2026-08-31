@@ -26,7 +26,10 @@ function inputNotice(page: Page) {
 }
 
 function uploadAlert(page: Page, fileName: string) {
-	return page.locator('.result-list li').filter({ hasText: fileName }).locator('span[role="alert"]');
+	return page
+		.locator('.result-list li')
+		.filter({ hasText: fileName })
+		.locator('span[role="alert"]');
 }
 
 async function addCustomViaUi(page: Page, value: string) {
@@ -100,7 +103,12 @@ test('ALIAS_FOLDED — 별칭(jpeg) 추가 시 대표형(jpg) 접힘 알림', as
 test('BLOCKED_EXTENSION — 차단 확장자 업로드', async ({ page }) => {
 	await setFixed('exe', true);
 	await page.goto('/');
-	await uploadFile(page, 'setup.exe', Buffer.from('not a real executable'), 'application/octet-stream');
+	await uploadFile(
+		page,
+		'setup.exe',
+		Buffer.from('not a real executable'),
+		'application/octet-stream'
+	);
 	await expect(uploadAlert(page, 'setup.exe')).toHaveText('차단된 확장자예요: exe');
 	await page.screenshot({ path: `${SHOT_DIR}/BLOCKED_EXTENSION.png` });
 });
@@ -111,14 +119,18 @@ test('SIGNATURE_BLOCKED — 허용 확장자 뒤에 숨은 실행 파일 내용'
 	// MZ 매직 넘버로 시작하는 내용 → 시그니처 판정이 exe로 감지한다.
 	const mzPayload = Buffer.concat([Buffer.from([0x4d, 0x5a]), Buffer.from('fake executable body')]);
 	await uploadFile(page, 'innocent.txt', mzPayload, 'text/plain');
-	await expect(uploadAlert(page, 'innocent.txt')).toHaveText('파일 내용이 차단 대상 형식(exe)이에요.');
+	await expect(uploadAlert(page, 'innocent.txt')).toHaveText(
+		'파일 내용이 차단 대상 형식(exe)이에요.'
+	);
 	await page.screenshot({ path: `${SHOT_DIR}/SIGNATURE_BLOCKED.png` });
 });
 
 test('NO_EXTENSION — 확장자 없는 파일', async ({ page }) => {
 	await page.goto('/');
 	await uploadFile(page, 'README', Buffer.from('no extension here'));
-	await expect(uploadAlert(page, 'README')).toHaveText('확장자가 없어 차단 정책을 적용할 수 없어요.');
+	await expect(uploadAlert(page, 'README')).toHaveText(
+		'확장자가 없어 차단 정책을 적용할 수 없어요.'
+	);
 	await page.screenshot({ path: `${SHOT_DIR}/NO_EXTENSION.png` });
 });
 

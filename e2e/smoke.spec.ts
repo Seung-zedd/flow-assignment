@@ -20,7 +20,10 @@ function counter(page: Page) {
 }
 
 function fixedCheckbox(page: Page, extension: string) {
-	return page.locator('.fixed-extension-list li').filter({ hasText: extension }).getByRole('checkbox');
+	return page
+		.locator('.fixed-extension-list li')
+		.filter({ hasText: extension })
+		.getByRole('checkbox');
 }
 
 test.afterEach(async () => {
@@ -88,7 +91,9 @@ test('커스텀 확장자 — 추가 시 칩·카운터가 늘고 삭제 시 되
 		addButton(page).click()
 	]);
 
-	await expect(page.locator('.chip-list li.chip').filter({ hasText: CUSTOM_TEST_EXT })).toBeVisible();
+	await expect(
+		page.locator('.chip-list li.chip').filter({ hasText: CUSTOM_TEST_EXT })
+	).toBeVisible();
 	await expect(counter(page)).toHaveText(`${startCount + 1}/200`);
 
 	await Promise.all([
@@ -100,9 +105,9 @@ test('커스텀 확장자 — 추가 시 칩·카운터가 늘고 삭제 시 되
 		page.getByRole('button', { name: `${CUSTOM_TEST_EXT} 삭제` }).click()
 	]);
 
-	await expect(
-		page.locator('.chip-list li.chip').filter({ hasText: CUSTOM_TEST_EXT })
-	).toHaveCount(0);
+	await expect(page.locator('.chip-list li.chip').filter({ hasText: CUSTOM_TEST_EXT })).toHaveCount(
+		0
+	);
 	await expect(counter(page)).toHaveText(`${startCount}/200`);
 });
 
