@@ -209,12 +209,13 @@ pnpm dev
 시크릿 등록은 운영자가 직접, 최초 1회 수행합니다. 이 프로젝트는 [`.claude/rules/local/secret-management.md`](./.claude/rules/local/secret-management.md)의 zero-trust 규칙을 따릅니다(근거: 2026년 4월 Vercel 공급망 사고).
 
 ```bash
-# 대화형 프롬프트에서 값을 붙여 넣습니다 — 값이 명령어 문자열에 들어가지 않습니다.
+# 명령을 실행하면 값을 묻는 대화형 프롬프트가 뜹니다.
+# 실제 값(.env에서 `=` 오른쪽 부분)은 그 프롬프트에 붙여 넣습니다.
 vercel env add DATABASE_URL production
 vercel env add BLOB_READ_WRITE_TOKEN production
 ```
 
-- `--value`로 값을 넘기거나 `echo VALUE | vercel env add ...`로 파이프하는 형태는 **금지**입니다. 셸 히스토리와 CI 로그에 평문이 남습니다.
+- 금지되는 것은 **명령어 줄 자체에 값을 쓰는 형태**입니다 — `--value`로 값을 넘기거나 `echo VALUE | vercel env add ...`로 파이프하면 셸 히스토리와 CI 로그에 평문이 남습니다. 대화형 프롬프트에 실제 값을 입력하는 것은 올바른(그리고 유일한) 방법입니다.
 - Production·Preview 변수는 **모두 Sensitive**로 둡니다. CLI 기본값이 sensitive이므로 `--no-sensitive`를 붙이지 않으면 됩니다. Sensitive 변수는 대시보드·`vercel env ls`·API로 되읽을 수 없습니다.
 - Development 타깃은 sensitive로 만들 수 없으므로 **로컬 개발용 값은 Vercel에 등록하지 않고** 추적되지 않는 `.env`에 직접 타이핑합니다.
 - `.vercel/` 디렉터리는 커밋하지 않습니다.
