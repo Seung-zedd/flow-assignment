@@ -227,7 +227,7 @@ Issue #1을 만들었다(`spec` 라벨 신규 생성 후 부여). `spec.md`의 `
 
 세션 1 말미에 AI가 만들어 준 6블록 재개 메시지를 그대로 붙여 넣어, 새 컨텍스트에서 곧바로 구현 단계로 들어갔다. 전제 4건(커밋 상태, SPEC 버전, Issue 상태, 가드 훅)은 먼저 기계적으로 확인하게 했다.
 
-검증 결과는 이렇다. `git log` fc160ce/8fc999c 확인 — 단, 메시지에는 "2 ahead 미push"라고 적혀 있었지만 실제로는 origin/main과 `0 0`으로 이미 동기화된 상태였다. 재개 메시지의 전제가 낡아 있던 사례인데, 명령으로 확인했기에 무해했다. `version "0.2.0"`, `issue_number 1`, `status draft` 확인. Issue #1 OPEN 확인. 가드 훅 테스트 14/14 ALL PASS. `rtk` 접두어(전역 CLAUDE.md 규칙)는 Bash 도구 PATH에 없어 두 명령이 실패했고, 일반 명령으로 재실행했다.
+검증 결과는 이렇다. `git log` c91d336/b4dd66a 확인 — 단, 메시지에는 "2 ahead 미push"라고 적혀 있었지만 실제로는 origin/main과 `0 0`으로 이미 동기화된 상태였다. 재개 메시지의 전제가 낡아 있던 사례인데, 명령으로 확인했기에 무해했다. `version "0.2.0"`, `issue_number 1`, `status draft` 확인. Issue #1 OPEN 확인. 가드 훅 테스트 14/14 ALL PASS. `rtk` 접두어(전역 CLAUDE.md 규칙)는 Bash 도구 PATH에 없어 두 명령이 실패했고, 일반 명령으로 재실행했다.
 
 run 진입 전에 AI가 사용자에게 묻지 않고 내린 결정이 3건 있다.
 
@@ -239,7 +239,7 @@ run 진입 전에 AI가 사용자에게 묻지 않고 내린 결정이 3건 있�
 
 오류도 1건 있었다. 감사관 호출에 `name`(팀 모드 이름표)을 붙였더니 "team file for session … not found"로 거부됐다. 이 세션엔 Agent Teams 런타임이 초기화되지 않은 상태였고, 이름표 없이 일반 서브에이전트로 재호출해 해결했다(프롬프트 동일). 🟡 사소한 호출 방식 수정.
 
-재감사 결과는 PASS 0.85(Clarity 0.80, Completeness 0.80, Testability 0.85, Traceability 0.95, must-pass 7/7, Claude 단독). blocking 3건은 전부 "요청당 1파일" 결정 뒤에 남은 낡은 문장이었다 — D1 매트릭스 3-1-f의 `5개`(CONSIDERATIONS 뼈대라 실질 감점 위험), D2 rate-limit 제외 근거가 삭제된 개수 상한을 참조, D3 `/api/uploads/recent` Out of Scope h3 부재. optional인 D5(`EXT_EMPTY` AC 없음)와 D6(`upload-repo` 최근 조회 잔재)도 같이 수정했고 D4·D7은 조치가 필요 없었다. 🟢 절차대로 founder 판정 없이 manager-spec(Opus)에 자동 수정을 위임해 커밋 `15a5205`(v0.2.1, REQ 16/AC 논리 16 불변)로 닫았다. 의미가 변하지 않는 문장 정합 교정이라 재감사는 생략했다.
+재감사 결과는 PASS 0.85(Clarity 0.80, Completeness 0.80, Testability 0.85, Traceability 0.95, must-pass 7/7, Claude 단독). blocking 3건은 전부 "요청당 1파일" 결정 뒤에 남은 낡은 문장이었다 — D1 매트릭스 3-1-f의 `5개`(CONSIDERATIONS 뼈대라 실질 감점 위험), D2 rate-limit 제외 근거가 삭제된 개수 상한을 참조, D3 `/api/uploads/recent` Out of Scope h3 부재. optional인 D5(`EXT_EMPTY` AC 없음)와 D6(`upload-repo` 최근 조회 잔재)도 같이 수정했고 D4·D7은 조치가 필요 없었다. 🟢 절차대로 founder 판정 없이 manager-spec(Opus)에 자동 수정을 위임해 커밋 `8531032`(v0.2.1, REQ 16/AC 논리 16 불변)로 닫았다. 의미가 변하지 않는 문장 정합 교정이라 재감사는 생략했다.
 
 #### #26 (AskUserQuestion 응답 3건) `시작 (권장)` · `자율 진행 (권장)` · `M3 끝나면 안내 받고 준비`
 
@@ -281,15 +281,15 @@ AI는 `llm.yaml`의 `agent_overrides`로 `manager-develop`을 `sonnet`으로 잡
 
 #### #31 (AI 주도) M1 재개 — 스캐폴드 복구 → Sonnet RED→GREEN → 검증
 
-Sonnet 호출 가능 여부를 읽기 전용 프로브 1콜로 확인한 뒤, 중단된 워크트리의 스캐폴드 13파일을 main으로 복사해 커밋했다(`4c6112e`). 이 과정에서 결함 2건을 잡았다. `sv create` 최소 템플릿의 `eslint.config.js`가 `svelte.configs.prettier`(배열)를 스프레드 없이 넣어 ESLint 10에서 `Unexpected array`로 터지는 문제는 js/ts/svelte recommended + prettier 스프레드 구성으로 교체했고, pre-commit 훅(`moai gate`)이 `prettier --check .`로 `.moai/`와 `docs/`와 `*.md`까지 검사하는 문제는 `.prettierignore` 확장으로 풀었다. 🟡 스캐폴드 수정 후 채택. 부수적으로, 실패한 첫 커밋 시도에서 스테이징돼 있던 `llm.yaml`·`progress.md`·`PROMPT_LOG.md`가 스캐폴드 커밋에 함께 들어갔는데 이력 재작성은 하지 않았다.
+Sonnet 호출 가능 여부를 읽기 전용 프로브 1콜로 확인한 뒤, 중단된 워크트리의 스캐폴드 13파일을 main으로 복사해 커밋했다(`40cf9e2`). 이 과정에서 결함 2건을 잡았다. `sv create` 최소 템플릿의 `eslint.config.js`가 `svelte.configs.prettier`(배열)를 스프레드 없이 넣어 ESLint 10에서 `Unexpected array`로 터지는 문제는 js/ts/svelte recommended + prettier 스프레드 구성으로 교체했고, pre-commit 훅(`moai gate`)이 `prettier --check .`로 `.moai/`와 `docs/`와 `*.md`까지 검사하는 문제는 `.prettierignore` 확장으로 풀었다. 🟡 스캐폴드 수정 후 채택. 부수적으로, 실패한 첫 커밋 시도에서 스테이징돼 있던 `llm.yaml`·`progress.md`·`PROMPT_LOG.md`가 스캐폴드 커밋에 함께 들어갔는데 이력 재작성은 하지 않았다.
 
-M1 RED→GREEN(manager-develop, Sonnet)은 `migrations/001_init.sql`(plan §2.5 DDL 그대로), `scripts/migrate.ts`, `src/lib/constants.ts`, `src/lib/server/upload/{reason-codes,extension,signature,decide}.ts`와 테스트 4개, PGlite `schema.test.ts`를 만들었다. RED 증거(모듈 없음으로 5개 스위트 실패)를 캡처한 뒤 GREEN으로 갔다. 커밋은 `6cb5d6b`(코드)와 `dc51fe9`(bookkeeping, pillwriter 방식 5절)로 나눠 origin/main에 push했고, `spec.md` status는 `draft → in-progress`가 됐다.
+M1 RED→GREEN(manager-develop, Sonnet)은 `migrations/001_init.sql`(plan §2.5 DDL 그대로), `scripts/migrate.ts`, `src/lib/constants.ts`, `src/lib/server/upload/{reason-codes,extension,signature,decide}.ts`와 테스트 4개, PGlite `schema.test.ts`를 만들었다. RED 증거(모듈 없음으로 5개 스위트 실패)를 캡처한 뒤 GREEN으로 갔다. 커밋은 `3aae8dc`(코드)와 `bed4d72`(bookkeeping, pillwriter 방식 5절)로 나눠 origin/main에 push했고, `spec.md` status는 `draft → in-progress`가 됐다.
 
 오케스트레이터가 main 체크아웃에서 직접 재검증했다. `pnpm test` 87/87 통과, `pnpm check` 0 errors, 커버리지 98.8%(에이전트 보고). `pnpm lint`는 11파일이 실패했는데 코드가 아니라 CRLF 문제였다. 에이전트 워크트리가 `core.autocrlf=true`라 M1 파일이 CRLF로 체크아웃됐고 Prettier는 LF를 기대한다(`decide.ts`에 CR 56개, 스캐폴드 파일은 0개). `.gitattributes`(`eol=lf`)와 포맷 1회로 해소하기로 하고 REFACTOR에 포함시켰다.
 
-에이전트 자체 판단 2건은 수용했다. 워크트리 HEAD가 위임 프롬프트의 가정(`4c6112e`)과 달라 `git merge --ff-only main`으로 스스로 동기화한 것, 그리고 TIFF 실바이트 픽스처를 `file-type`의 IFD 파싱 요구 때문에 M1에서 제외한 것(별칭 폴딩은 다른 테스트로 커버).
+에이전트 자체 판단 2건은 수용했다. 워크트리 HEAD가 위임 프롬프트의 가정(`40cf9e2`)과 달라 `git merge --ff-only main`으로 스스로 동기화한 것, 그리고 TIFF 실바이트 픽스처를 `file-type`의 IFD 파싱 요구 때문에 M1에서 제외한 것(별칭 폴딩은 다른 테스트로 커버).
 
-#27의 후속인 Vercel 시크릿 룰도 이때 적용했다. `.claude/rules/local/secret-management.md`와 `block-vercel-env-insecure.mjs`(settings.json PreToolUse Bash 등록)를 만들었고, 가드 테스트 26/26 PASS — 신규 9건은 `--no-sensitive`, 파이프 값, `--value`, 4번째 인자, `env pull` 차단과 대화형 추가·`< file`·`ls`/`deploy` 허용이다. 🟢 채택, 커밋 `fed4548`.
+#27의 후속인 Vercel 시크릿 룰도 이때 적용했다. `.claude/rules/local/secret-management.md`와 `block-vercel-env-insecure.mjs`(settings.json PreToolUse Bash 등록)를 만들었고, 가드 테스트 26/26 PASS — 신규 9건은 `--no-sensitive`, 파이프 값, `--value`, 4번째 인자, `env pull` 차단과 대화형 추가·`< file`·`ls`/`deploy` 허용이다. 🟢 채택, 커밋 `35d3328`.
 
 #### #32
 > 오케이 이제 .moai/specs/SPEC-UPLOAD-001/progress.md를 읽으려고 하는데 코드 라인을 보니까 240줄이 넘어가거든? 이걸 전부 다 읽을 필요가 있을까? … 결국 founder가 읽을 부분은 어디지? / (이어서) 앞으로 progress.md를 읽을 때 founder가 정말 읽어야 할 부분만 압축해서 업로드해줘 … PRD 문서와 맞게 구현이 됐는지 체크리스트 정도를 작성하면 될 것 같은데 맞니?
@@ -300,7 +300,7 @@ AI의 답: progress.md 240줄 중 founder용은 `Deviations from spec/plan`과 `
 
 #### #33 (AI 주도) M1 REFACTOR (manager-develop, Opus) → M1 완료
 
-커밋 `07d4602`(refactor)와 `5f905a4`(bookkeeping)를 origin/main에 push했다. 테스트는 87에서 91로 늘었고(추가 4: `formatMessage` fallback, 1바이트 버퍼, 실제 TIFF 시그니처, BOM+공백+대문자 `<?PHP`), 커버리지는 Statements/Lines 100%에 Branch 97.6%다. 유일한 미커버 분기는 `TextDecoder`가 BOM을 먼저 제거해 구조적으로 도달할 수 없는 곳이라 방어 코드로 유지했다. `pnpm lint` exit 0, `pnpm check` 0, MX 태그 4곳(plan §13 M1 부분집합)에 `[AUTO]`와 `@MX:REASON`이 갖춰졌는지도 확인했다.
+커밋 `8fd39e4`(refactor)와 `064773c`(bookkeeping)를 origin/main에 push했다. 테스트는 87에서 91로 늘었고(추가 4: `formatMessage` fallback, 1바이트 버퍼, 실제 TIFF 시그니처, BOM+공백+대문자 `<?PHP`), 커버리지는 Statements/Lines 100%에 Branch 97.6%다. 유일한 미커버 분기는 `TextDecoder`가 BOM을 먼저 제거해 구조적으로 도달할 수 없는 곳이라 방어 코드로 유지했다. `pnpm lint` exit 0, `pnpm check` 0, MX 태그 4곳(plan §13 M1 부분집합)에 `[AUTO]`와 `@MX:REASON`이 갖춰졌는지도 확인했다.
 
 CRLF는 근본적으로 해결했다. `.gitattributes`(`* text=auto eol=lf`)에 `git add --renormalize .`(내용 diff 0건 확인)와 `pnpm format`을 더한 것이다. 에이전트 진단으로는 인덱스는 이미 LF였고 워킹 카피만 `core.autocrlf=true` 때문에 CRLF였다. 🟢 채택.
 
@@ -313,7 +313,7 @@ M1 완료 판정: plan §11의 M1 완료 기준(001_init.sql PGlite 적용, 순�
 #### #34
 > M1 끝나면 지금 새벽 1시라서 세션을 마무리해야 돼. 끝나면 짧게 브리핑해줘
 
-AI가 마무리로 로컬 main 동기화(`5f905a4`), 재검증, PROMPT_LOG 커밋·push를 마친 뒤 재개 메시지(전제 검증 4건 + `/moai run SPEC-UPLOAD-001` M2)를 채팅에 출력하고 메모리에 저장했다. 세션 2 종료 시점 상태는 M1 완료, M2~M4 대기, 시크릿 미준비(의도된 것), stale 에이전트 워크트리 3개(`rm -rf` 승인 대기)였다.
+AI가 마무리로 로컬 main 동기화(`064773c`), 재검증, PROMPT_LOG 커밋·push를 마친 뒤 재개 메시지(전제 검증 4건 + `/moai run SPEC-UPLOAD-001` M2)를 채팅에 출력하고 메모리에 저장했다. 세션 2 종료 시점 상태는 M1 완료, M2~M4 대기, 시크릿 미준비(의도된 것), stale 에이전트 워크트리 3개(`rm -rf` 승인 대기)였다.
 
 ### 2026-08-30 — 세션 3: M2 진입 (`/clear` 후 재개, 메인 세션 Fable 5)
 
@@ -330,7 +330,7 @@ AI가 마무리로 로컬 main 동기화(`5f905a4`), 재검증, PROMPT_LOG 커�
 #### #37 (paste-ready 재개 메시지 붙여넣기)
 > ultrathink. SPEC-UPLOAD-001 run 진입 (M2 시작). … 어제 세션 마무리하기 전에 너가 복사하라고 해서 그대로 복붙함
 
-전제 검증 결과: HEAD `97c2e2e`에 origin `0 0`, `pnpm test` 91/91에 `pnpm lint` exit 0과 `pnpm check` 0 ERRORS, `status: in-progress`에 가드 테스트 ALL PASS, 그리고 워크트리 3개의 안전성 점검(등록 2개는 `main` 대비 0 ahead에 미커밋 변경 0건, 1개는 이미 prune된 빈 폴더)까지 전부 통과했다. 증거는 `.moai/state/verify/f4050a0d/{test,lint,check}.log`.
+전제 검증 결과: HEAD `bd4eaee`에 origin `0 0`, `pnpm test` 91/91에 `pnpm lint` exit 0과 `pnpm check` 0 ERRORS, `status: in-progress`에 가드 테스트 ALL PASS, 그리고 워크트리 3개의 안전성 점검(등록 2개는 `main` 대비 0 ahead에 미커밋 변경 0건, 1개는 이미 prune된 빈 폴더)까지 전부 통과했다. 증거는 `.moai/state/verify/f4050a0d/{test,lint,check}.log`.
 
 #### #38 (AskUserQuestion 응답) `지워 주세요 (권장)`
 
@@ -338,7 +338,7 @@ AI가 마무리로 로컬 main 동기화(`5f905a4`), 재검증, PROMPT_LOG 커�
 
 #### #39 (AI 주도) `/moai run SPEC-UPLOAD-001` — M2 정책 API + 정책 화면
 
-컨텍스트로 `run.md` 라우터, `plan.md` §4~§8·§11·§13, `acceptance.md`의 A·B·F와 품질 게이트, `spec.md`의 REQ-001~006·016과 §4 파일표, M1 코드(`constants.ts`, `reason-codes.ts`, `schema.test.ts`, `migrate.ts`, `vite.config.ts`), 가드 훅 허용 범위(`pnpm add` 허용), 커밋 서식(`07d4602`), `llm.yaml`의 `agent_overrides`(manager-develop → sonnet)를 로딩했다. 스폰 전 점검으로 `moai session list --filter-spec`이 `[]`, origin 동기화 `0 0`을 확인했고, `product.md` 부재는 세션 1·2와 동일하게 생략했다(over-planning 회피).
+컨텍스트로 `run.md` 라우터, `plan.md` §4~§8·§11·§13, `acceptance.md`의 A·B·F와 품질 게이트, `spec.md`의 REQ-001~006·016과 §4 파일표, M1 코드(`constants.ts`, `reason-codes.ts`, `schema.test.ts`, `migrate.ts`, `vite.config.ts`), 가드 훅 허용 범위(`pnpm add` 허용), 커밋 서식(`8fd39e4`), `llm.yaml`의 `agent_overrides`(manager-develop → sonnet)를 로딩했다. 스폰 전 점검으로 `moai session list --filter-spec`이 `[]`, origin 동기화 `0 0`을 확인했고, `product.md` 부재는 세션 1·2와 동일하게 생략했다(over-planning 회피).
 
 위임 프롬프트(5-section, Tier M)에는 오케스트레이터의 설계 결정을 담았다. Neon과 PGlite를 같은 `Db` 인터페이스로 추상화해 리포지토리는 인터페이스에만 의존하게 한다. `hooks.server.ts`가 `locals.db`를 주입하므로 엔드포인트 테스트는 핸들러를 직접 호출한다(서버·네트워크 없음). 200개 상한은 `INSERT … SELECT … WHERE count < 200` 단일 문장으로 처리하고, 중복은 UNIQUE 위반(23505)을 잡아 `kind`로 `EXT_IS_FIXED`/`EXT_DUPLICATE`를 분기한다. Vitest jsdom 프로젝트에는 `resolve.conditions: ['browser']`가 필수다. 정책 사유 코드가 아닌 라우팅·형식 오류(고정 7개 밖 `[ext]`, 잘못된 body)는 SvelteKit `error(404/400)`로 처리하되 Deviation으로 기록하게 했다. `UploadArea`와 `/api/upload`와 `upload-repo`는 M3으로 미루고, `CLIENT_HINT_DISCLAIMER` 문자열만 자리표시 섹션에 렌더한다(AC-016b).
 
@@ -391,9 +391,9 @@ AI의 답은 이랬다. 서브에이전트는 스폰마다 새 컨텍스트를 �
 
 #### #49 (AI 주도) M2 RED→GREEN (manager-develop, Sonnet) → 오케스트레이터 재검증
 
-커밋 `898ce43`(feat, 21 files, +1520)와 `fb95916`(bookkeeping)이 나왔다. 테스트는 91에서 129로 늘었다(정책 리포지토리 15, 클라이언트 2, 엔드포인트 20, 컴포넌트 jsdom 2, SSR 1 = 신규 38). M2 스코프 AC는 12/12 PASS로, AC-001~007의 API/DB, AC-016a의 낙관적 갱신→500→롤백, AC-016b의 SSR HTML 체크 상태와 면책 문구가 모두 통과했다. 커버리지는 `src/lib/server/**` 기준 Stmts 96.72, Branch 92.06, Lines 96.58.
+커밋 `5a09259`(feat, 21 files, +1520)와 `e0bbae0`(bookkeeping)이 나왔다. 테스트는 91에서 129로 늘었다(정책 리포지토리 15, 클라이언트 2, 엔드포인트 20, 컴포넌트 jsdom 2, SSR 1 = 신규 38). M2 스코프 AC는 12/12 PASS로, AC-001~007의 API/DB, AC-016a의 낙관적 갱신→500→롤백, AC-016b의 SSR HTML 체크 상태와 면책 문구가 모두 통과했다. 커버리지는 `src/lib/server/**` 기준 Stmts 96.72, Branch 92.06, Lines 96.58.
 
-오케스트레이터가 main(`fb95916`)에서 재검증했다. `pnpm test` 10 files / 129 passed, `pnpm lint` exit 0, `pnpm check` 0 ERRORS 3 WARNINGS, `pnpm build` exit 0, 커버리지 수치는 보고와 일치했다. 증거는 `.moai/state/verify/f4050a0d/m2-*.log`. 스폰 프롬프트에 넣은 설계 결정 — Db 인터페이스, locals.db 주입, 단일 SQL 상한, 23505 분기, jsdom browser 조건 — 이 전부 구현에 반영됐음을 코드 열람으로 확인했다.
+오케스트레이터가 main(`e0bbae0`)에서 재검증했다. `pnpm test` 10 files / 129 passed, `pnpm lint` exit 0, `pnpm check` 0 ERRORS 3 WARNINGS, `pnpm build` exit 0, 커버리지 수치는 보고와 일치했다. 증거는 `.moai/state/verify/f4050a0d/m2-*.log`. 스폰 프롬프트에 넣은 설계 결정 — Db 인터페이스, locals.db 주입, 단일 SQL 상한, 23505 분기, jsdom browser 조건 — 이 전부 구현에 반영됐음을 코드 열람으로 확인했다.
 
 에이전트 재량 판단 5건은 수용했다(REFACTOR에서 재검토하기로). `normalizeExtensionCandidate()`를 최소로만 추출한 것(M1 시그니처 불변), 고정 7개 밖 `[ext]`와 잘못된 body는 SvelteKit `error(404/400)`로 처리한 것, svelte-check 경고 3건(`state_referenced_locally`)이 낙관적 갱신용 로컬 복사 패턴이라 의도된 것, PGlite 다중 기동 경합으로 `hookTimeout: 30000`을 준 것, 그리고 계획에 없던 `client.test.ts`를 신규로 추가해 커버리지를 보강한 것이다. 🟢 채택.
 
@@ -406,11 +406,11 @@ AI의 답은 이랬다. 서브에이전트는 스폰마다 새 컨텍스트를 �
 
 #### #51 (AI 주도) M2 REFACTOR (manager-develop, Opus) → 재검증 → push → M2 완료
 
-커밋 `86baa60`(refactor, 7 files +79/-21)와 `cc518d7`(bookkeeping)이 나왔다. 검토 후보 9건 중 5건을 변경했다. svelte-check 경고 3건을 `untrack()`으로 해소해 주석으로 억제하는 대신 "초기값 한 번만 읽는다"를 코드가 말하게 했다. `getPolicy`의 DB 왕복을 2회에서 1회로 줄였다(`ORDER BY kind, sort_order, extension` 한 절로 두 정렬 규칙을 처리). `ALIAS_FOLDED` 문구의 `{input}`을 원문 대신 정규화 후보로 바꿔 `" .JPEG "` 같은 값 누출을 정정했다. Neon 어댑터의 이중 단언을 `index.d.ts:1118` 실측 후 제거하고 `Db`에 `@MX:NOTE`를 달았다. 접근성도 2곳(`role="status"`, 카운터 `aria-label`) 손봤다. 나머지 2건은 유지했다 — 오류 봉투 헬퍼 추출은 호출부가 1곳뿐이라 M3에서 두 번째가 생길 때로 미뤘고, `hookTimeout`은 테스트가 `beforeEach`마다 PGlite를 기동하는 격리 계약이라 그대로 두었다. 판단을 고정하는 테스트 2건을 추가해 129에서 131이 됐고, 기존 단언은 한 줄도 수정하지 않았다(`git diff -U0 … | grep -c "^-[^-]"` → 0).
+커밋 `ca7d3a9`(refactor, 7 files +79/-21)와 `429e3dd`(bookkeeping)이 나왔다. 검토 후보 9건 중 5건을 변경했다. svelte-check 경고 3건을 `untrack()`으로 해소해 주석으로 억제하는 대신 "초기값 한 번만 읽는다"를 코드가 말하게 했다. `getPolicy`의 DB 왕복을 2회에서 1회로 줄였다(`ORDER BY kind, sort_order, extension` 한 절로 두 정렬 규칙을 처리). `ALIAS_FOLDED` 문구의 `{input}`을 원문 대신 정규화 후보로 바꿔 `" .JPEG "` 같은 값 누출을 정정했다. Neon 어댑터의 이중 단언을 `index.d.ts:1118` 실측 후 제거하고 `Db`에 `@MX:NOTE`를 달았다. 접근성도 2곳(`role="status"`, 카운터 `aria-label`) 손봤다. 나머지 2건은 유지했다 — 오류 봉투 헬퍼 추출은 호출부가 1곳뿐이라 M3에서 두 번째가 생길 때로 미뤘고, `hookTimeout`은 테스트가 `beforeEach`마다 PGlite를 기동하는 격리 계약이라 그대로 두었다. 판단을 고정하는 테스트 2건을 추가해 129에서 131이 됐고, 기존 단언은 한 줄도 수정하지 않았다(`git diff -U0 … | grep -c "^-[^-]"` → 0).
 
-오케스트레이터가 `cc518d7`에서 재검증했다. `pnpm test` 131/131, `pnpm lint` 0, `pnpm check` 0 ERRORS 0 WARNINGS, `pnpm build` 0, 커버리지 96.8/92.3/96.96/96.66(Funcs가 -0.18%p인 것은 `.map` 콜백 2개가 사라져 분모가 줄었을 뿐 미커버 함수 수는 동일), `process.env` 0건, `@MX:TODO` 0건. 증거는 `.moai/state/verify/f4050a0d/m2r-*.log`. 🟢 채택.
+오케스트레이터가 `429e3dd`에서 재검증했다. `pnpm test` 131/131, `pnpm lint` 0, `pnpm check` 0 ERRORS 0 WARNINGS, `pnpm build` 0, 커버리지 96.8/92.3/96.96/96.66(Funcs가 -0.18%p인 것은 `.map` 콜백 2개가 사라져 분모가 줄었을 뿐 미커버 함수 수는 동일), `process.env` 0건, `@MX:TODO` 0건. 증거는 `.moai/state/verify/f4050a0d/m2r-*.log`. 🟢 채택.
 
-`git rev-list --left-right origin/main...HEAD`로 `0 6`을 확인한 뒤 `git push origin main`으로 `97c2e2e..cc518d7`를 올렸고, 이후 `0 0`이 됐다.
+`git rev-list --left-right origin/main...HEAD`로 `0 6`을 확인한 뒤 `git push origin main`으로 `bd4eaee..429e3dd`를 올렸고, 이후 `0 0`이 됐다.
 
 M2 완료 판정: plan §11의 M2 기준 — 토글·추가·삭제가 새로고침 후에도 유지되는 것(AC-001/002/007 API+DB), 거부 사유 6종이 노출되는 것(AC-003~006, 화면 문구는 Q12 수동) — 을 충족했다. Founder 판단이 남은 항목은 `{input}` 정규화 후보 표시와 고정 7개 밖 `[ext]`의 404 재량이다.
 
@@ -425,7 +425,7 @@ M2 Founder digest ①의 재량 판단 2건은 둘 다 유지했다(코드 변�
 #### #53
 > (세션 3이 남긴 재개 블록 붙여넣기) `ultrathink. SPEC-UPLOAD-001 run 진입 (M3 시작). … 전제 검증 1)~4) … 실행: /moai run SPEC-UPLOAD-001 — M3(업로드 엔드포인트 + Blob 저장 + upload_attempt 기록 + UploadArea 클라이언트 힌트): manager-develop RED→GREEN sonnet → REFACTOR opus, Blob put은 테스트에서 스텁 … ㄱㄱ`
 
-새 세션에서 M3를 시작하는 것이었다. 재개 블록의 전제 4건을 먼저 기계로 검증하고, 통과하면 `/moai run`으로 진입하기로 했다. 검증 결과는 전부 통과였다. `git merge-base --is-ancestor cc518d7 HEAD`가 exit 0이고 `origin/main...HEAD`는 `0 0`(HEAD `3d77a91`). `pnpm test` 10 files / 131 passed, `pnpm lint` exit 0, `pnpm check` 0 ERRORS 0 WARNINGS. `status: in-progress`이고 `~/.claude/settings.json`과 `.claude/settings.json` 둘 다 `fable[1m]`이었다. `.claude/worktrees/`는 비어 있고 `git worktree list`에 main 하나뿐이며, `moai session list --filter-spec`도 `[]`로 동시 세션이 없음을 확인했다.
+새 세션에서 M3를 시작하는 것이었다. 재개 블록의 전제 4건을 먼저 기계로 검증하고, 통과하면 `/moai run`으로 진입하기로 했다. 검증 결과는 전부 통과였다. `git merge-base --is-ancestor 429e3dd HEAD`가 exit 0이고 `origin/main...HEAD`는 `0 0`(HEAD `ea687bb`). `pnpm test` 10 files / 131 passed, `pnpm lint` exit 0, `pnpm check` 0 ERRORS 0 WARNINGS. `status: in-progress`이고 `~/.claude/settings.json`과 `.claude/settings.json` 둘 다 `fable[1m]`이었다. `.claude/worktrees/`는 비어 있고 `git worktree list`에 main 하나뿐이며, `moai session list --filter-spec`도 `[]`로 동시 세션이 없음을 확인했다.
 
 스폰 전 준비도 했다. M3는 `@vercel/blob`이 처음 필요한 마일스톤이라, 프로젝트 규칙(`block-npm-supply-chain-risk.mjs` 주석)대로 `pkg-check @vercel/blob`을 오케스트레이터가 먼저 실행했다(결과는 #55). `rtk`는 Git Bash PATH에 없어 `pnpm`을 직접 호출했다.
 
@@ -444,9 +444,9 @@ M2 Founder digest ①의 재량 판단 2건은 둘 다 유지했다(코드 변�
 
 스폰 전 준비로 `pkg-check @vercel/blob`을 돌려 exit 0을 확인했다 — lifecycle 스크립트가 없고(`scripts`는 build/test뿐), 감사 결과는 하위 의존성 `undici <6.28.0`의 moderate 1건(GHSA-v3r7-h72x-cjcm)이지만 요구 범위가 `^6.23.0`이라 설치 시 6.28.0으로 해석됐다. `@vercel/blob` 2.8.0의 `put` 옵션(`access: 'private'`, `token`, `contentType`, `addRandomSuffix`)은 Context7(`/vercel/storage`)로 원문을 확인했다. 스폰 프롬프트에는 오케스트레이터 설계 결정 2건을 주입했다. Blob 저장소를 `Db`와 같은 패턴으로 `locals.blob`에 주입해 테스트는 가짜 구현을 쓰게 하는 것, 그리고 클라이언트 힌트는 `$lib/server`를 import할 수 없으니(Svel테Kit 경계) `load()`가 차단 집합과 별칭 표를 내려주고 컴포넌트가 경량으로 대조하는 것이다.
 
-결과로 커밋 `436eb73`(feat, 15 files +1396/-11)와 `eca8119`(bookkeeping)가 나왔다. 테스트는 131에서 159로 늘었다(신규 28: 업로드 엔드포인트 22, upload-repo 1, blob store 1, UploadArea jsdom 4). M3 스코프 AC는 22/22 PASS로 AC-007 2절, 008, 009a, 009b, 010, 011, 012, 013, 014, 015와 엣지 6건이 통과했다. 새로 생긴 파일은 `src/lib/server/blob/{store,store.test}.ts`, `src/lib/server/db/{upload-repo,upload-repo.test}.ts`, `src/routes/api/upload/{+server,server.test}.ts`, `src/lib/components/{UploadArea.svelte,UploadArea.test.ts}`이고, `@vercel/blob ^2.8.0`을 추가했다.
+결과로 커밋 `ab3b123`(feat, 15 files +1396/-11)와 `92eeb0a`(bookkeeping)가 나왔다. 테스트는 131에서 159로 늘었다(신규 28: 업로드 엔드포인트 22, upload-repo 1, blob store 1, UploadArea jsdom 4). M3 스코프 AC는 22/22 PASS로 AC-007 2절, 008, 009a, 009b, 010, 011, 012, 013, 014, 015와 엣지 6건이 통과했다. 새로 생긴 파일은 `src/lib/server/blob/{store,store.test}.ts`, `src/lib/server/db/{upload-repo,upload-repo.test}.ts`, `src/routes/api/upload/{+server,server.test}.ts`, `src/lib/components/{UploadArea.svelte,UploadArea.test.ts}`이고, `@vercel/blob ^2.8.0`을 추가했다.
 
-오케스트레이터가 main(`eca8119`)에서 재검증했다. `pnpm test` 14 files / 159 passed, `pnpm lint` 0, `pnpm check` 454 FILES 0 ERRORS 0 WARNINGS, `pnpm build` 0. `pnpm test:coverage`는 1차 실패했는데(훅 타임아웃 4건 — 커버리지 계측과 PGlite 14개 동시 기동 경합, Duration 179s), `--maxWorkers=2`로 재시도해 159/159를 통과했다. `src/lib/server/**` 커버리지는 92.64 / 87.32 / 91.89 / 92.36으로 보고값과 일치했다. 경계 grep 3종 0건, `pnpm why undici`는 6.28.0을 확인했다. 기존 테스트 단언은 한 줄도 삭제하지 않았고(`page.ssr.test.ts`는 `load` 데이터 리터럴 확장만), 증거는 `.moai/state/verify/bb9ff997/m3-*.log`에 남겼다. 코드를 직접 열람해 설계 결정 2건, put→INSERT 순서, `orphan_blob` 로그, 64자 로그 절단이 반영됐음을 확인했다.
+오케스트레이터가 main(`92eeb0a`)에서 재검증했다. `pnpm test` 14 files / 159 passed, `pnpm lint` 0, `pnpm check` 454 FILES 0 ERRORS 0 WARNINGS, `pnpm build` 0. `pnpm test:coverage`는 1차 실패했는데(훅 타임아웃 4건 — 커버리지 계측과 PGlite 14개 동시 기동 경합, Duration 179s), `--maxWorkers=2`로 재시도해 159/159를 통과했다. `src/lib/server/**` 커버리지는 92.64 / 87.32 / 91.89 / 92.36으로 보고값과 일치했다. 경계 grep 3종 0건, `pnpm why undici`는 6.28.0을 확인했다. 기존 테스트 단언은 한 줄도 삭제하지 않았고(`page.ssr.test.ts`는 `load` 데이터 리터럴 확장만), 증거는 `.moai/state/verify/bb9ff997/m3-*.log`에 남겼다. 코드를 직접 열람해 설계 결정 2건, put→INSERT 순서, `orphan_blob` 로그, 64자 로그 절단이 반영됐음을 확인했다.
 
 에이전트 재량 판단 2건은 수용해 digest ①로 이월했다. 🟡 AC-UPLOAD-014 2절 — 원문은 `html`을 차단한 뒤 `page.html`이 `SIGNATURE_BLOCKED`가 돼야 한다고 썼지만, `decideUpload`의 실제 순서상(확장자 대조가 먼저) 정답은 `BLOCKED_EXTENSION`이다. 코드는 유지하고 테스트를 실제 동작에 맞췄으며, 위장 파일(`notes.dat`)로 시그니처 경로를 별도 검증했다. acceptance.md의 문구 오류는 sync에서 정정하기로 했다. 🟡 300자 파일명 — 255바이트 앞자름으로 확장자가 잘려 `415 NO_EXTENSION`(fail-closed)이 됐다. 위임 지시가 "200 기대"로 잘못 짚었던 것인데, 실제 파일시스템(NTFS/ext4/APFS)은 255바이트를 넘는 파일명을 만들 수 없어 조작된 요청에서만 이 경로에 도달한다.
 
@@ -456,11 +456,11 @@ REFACTOR 후보로 Opus에 전달한 것은, 오류 봉투 헬퍼가 정책·업
 
 #### #56 (AI 주도) M3 REFACTOR (manager-develop, Opus) → 재검증 → push → M3 완료
 
-커밋 `18b1f12`(refactor, 11 files +355/-107)와 `cb7953d`(bookkeeping)가 나왔다. 검토 후보 B1~B9 중 6건을 변경했다. 오류 봉투 헬퍼를 `src/lib/server/upload/http.ts` 하나로 통합했다(M2가 "호출부 2곳일 때"로 미뤄둔 항목인데, 정책 라우트 응답에 `details: {}` 키가 붙는 것이 유일한 전선 변화라 문구 불변을 `test.each` 6건으로 고정했고 화면 소비자 4곳은 `error?.message`만 읽는다). `upload_attempt` 행을 단일 원본으로 두고 로그를 그 투영으로 만들어(`recordAndLogAttempt`) 핸들러 3곳의 필드 중복 24회를 제거했다. UTF-8 바이트 절단 루프를 `extension.ts`의 `truncateUtf8` 하나로 합쳐 255B와 64B가 공용하게 했다(`normalizeFilename` 동작은 동일). `test:coverage`에만 `--maxWorkers=2`를 줘서 격리 계약과 `hookTimeout`을 그대로 두고도 2회 연속 exit 0에 타임아웃 0건을 만들었다. `decide.ts`의 ANCHOR 주석에 있던 허위 호출 관계("클라이언트 힌트가 호출")도 정정했고, 접근성 2곳(`aria-describedby`, `aria-busy`)도 손봤다. 나머지 3건은 유지했다 — `getBlobStore()`를 매 요청 호출하는 것(`getDb()`와 같은 캐시 패턴), `decideUpload`의 크기 재확인(단일 진입점 계약), §Deviations 4·5(Founder 판정 대기). 판단을 고정하는 테스트 12건을 추가해 159에서 171이 됐고, 기존 단언은 수정하지 않았다.
+커밋 `191a85c`(refactor, 11 files +355/-107)와 `6217abf`(bookkeeping)가 나왔다. 검토 후보 B1~B9 중 6건을 변경했다. 오류 봉투 헬퍼를 `src/lib/server/upload/http.ts` 하나로 통합했다(M2가 "호출부 2곳일 때"로 미뤄둔 항목인데, 정책 라우트 응답에 `details: {}` 키가 붙는 것이 유일한 전선 변화라 문구 불변을 `test.each` 6건으로 고정했고 화면 소비자 4곳은 `error?.message`만 읽는다). `upload_attempt` 행을 단일 원본으로 두고 로그를 그 투영으로 만들어(`recordAndLogAttempt`) 핸들러 3곳의 필드 중복 24회를 제거했다. UTF-8 바이트 절단 루프를 `extension.ts`의 `truncateUtf8` 하나로 합쳐 255B와 64B가 공용하게 했다(`normalizeFilename` 동작은 동일). `test:coverage`에만 `--maxWorkers=2`를 줘서 격리 계약과 `hookTimeout`을 그대로 두고도 2회 연속 exit 0에 타임아웃 0건을 만들었다. `decide.ts`의 ANCHOR 주석에 있던 허위 호출 관계("클라이언트 힌트가 호출")도 정정했고, 접근성 2곳(`aria-describedby`, `aria-busy`)도 손봤다. 나머지 3건은 유지했다 — `getBlobStore()`를 매 요청 호출하는 것(`getDb()`와 같은 캐시 패턴), `decideUpload`의 크기 재확인(단일 진입점 계약), §Deviations 4·5(Founder 판정 대기). 판단을 고정하는 테스트 12건을 추가해 159에서 171이 됐고, 기존 단언은 수정하지 않았다.
 
-오케스트레이터가 `cb7953d`에서 재검증했다. `pnpm test` 15 files / 171 passed, `pnpm lint` 0, `pnpm check` 456 FILES 0 ERRORS 0 WARNINGS, `pnpm build` 0, `pnpm test:coverage` exit 0에 `Hook timed out` 0건. `src/lib/server/**` 커버리지는 92.8 / 87.67 / 92.3 / 92.53으로 RED→GREEN 대비 네 지표가 모두 올랐는데(미커버 수는 동일하고 분모만 증가), 경계 grep 3종은 0건이었고 `git diff 7121040 -- 'src/**/*.test.ts' | grep '^-[^-]'`도 무출력이었다. MX 태그는 8건(신규 2: 업로드 핸들러 ANCHOR, UploadArea WARN). 증거는 `.moai/state/verify/bb9ff997/m3r-*.log`에 남겼다. 🟢 채택.
+오케스트레이터가 `6217abf`에서 재검증했다. `pnpm test` 15 files / 171 passed, `pnpm lint` 0, `pnpm check` 456 FILES 0 ERRORS 0 WARNINGS, `pnpm build` 0, `pnpm test:coverage` exit 0에 `Hook timed out` 0건. `src/lib/server/**` 커버리지는 92.8 / 87.67 / 92.3 / 92.53으로 RED→GREEN 대비 네 지표가 모두 올랐는데(미커버 수는 동일하고 분모만 증가), 경계 grep 3종은 0건이었고 `git diff 783fc0a -- 'src/**/*.test.ts' | grep '^-[^-]'`도 무출력이었다. MX 태그는 8건(신규 2: 업로드 핸들러 ANCHOR, UploadArea WARN). 증거는 `.moai/state/verify/bb9ff997/m3r-*.log`에 남겼다. 🟢 채택.
 
-`origin/main...HEAD`로 `0 5`를 확인한 뒤 `git push origin main`으로 `3d77a91..cb7953d`를 올렸고, 이후 `0 0`이 됐다.
+`origin/main...HEAD`로 `0 5`를 확인한 뒤 `git push origin main`으로 `ea687bb..6217abf`를 올렸고, 이후 `0 0`이 됐다.
 
 M3 완료 판정: plan §11의 M3 기준 — 차단 파일이 사유와 함께 거부되는 것(AC-008/009/012/014), 정상 파일이 Blob에 저장되는 것(AC-013/015, 가짜 저장소 기준), 두 경우 모두 `upload_attempt`에 1행이 남는 것(AC-014/015) — 을 충족했다. 실제 Vercel Blob 경로와 Neon 경로는 토큰과 URL이 없어 M4에서 실측하기로 했다. Founder 판단이 남은 것은 AC-014 2절 문구와 300자 파일명 처리다.
 
@@ -484,7 +484,7 @@ M3 Founder digest ①의 4건을 확정했다. AC-UPLOAD-014 2절은 코드를 �
 
 세션 4 종료다. 시크릿은 본인이 별도 터미널에서 준비하고(AI는 값을 보지 않는 규칙 그대로), AI는 `.moai/state/founder-memo.md`(git 미추적 개인 메모)의 §0을 오늘 기준으로 새로 쓰고 이전 §0은 `0-prev`로 옮겼다. 상태 한 줄, 파운더가 세션 밖에서 할 시크릿 5단계, 결정, 만든 것, 다음 순서, 판단 필요 사항, 함정(pre-commit 게이트 3분 초과, 커버리지 워커, 환경변수 둘 다 필수 등)을 담았다. 이 커밋 후 재개 블록(M4 진입)을 채팅에 출력하고 세션을 종료했다.
 
-세션 4 종료 시점 상태는 M1~M3 완료·push(main `6801022` = origin), 171 tests, lint 0, check 0/0, 커버리지 92.8이었다. M4~sync는 대기, 시크릿은 본인 작업 예정으로 미준비, §3 회고는 초안 표시가 남아 본인 확정이 필요했다.
+세션 4 종료 시점 상태는 M1~M3 완료·push(main `93edfe2` = origin), 171 tests, lint 0, check 0/0, 커버리지 92.8이었다. M4~sync는 대기, 시크릿은 본인 작업 예정으로 미준비, §3 회고는 초안 표시가 남아 본인 확정이 필요했다.
 
 ---
 
@@ -561,7 +561,7 @@ M4 manager-develop을 `model: "opus"`로 스폰했는데(감사 로그에는 `de
 
 AI는 사용자가 취침 전 위임한 대로 결정을 내렸다. 4커밋 중 2번째가 진행 중이라 재스폰은 낭비이니 그대로 완료시키고, §2 표에 "M4 manager-develop: 의도 Opus, 실제 Fable 5(named 스폰 원인)" 행을 추가했다. 재발 방지 메모리 `feedback-named-spawn-drops-model-override`에는 모델 지정이 중요할 때는 `name`을 붙이지 않는다는 규칙을 남겼다. 후속으로 "왜 Agent Teams가 켜져 있지? 기본값인가?"라고 물었는데, Claude Code 기본값은 꺼짐이라는 답이 나왔다.
 
-M4 완료 보고는 이랬다. 커밋 5건 — `3461a41`(테스트 격리), `d9f0c80`(게이트 test 타임아웃 120→300초, 계획 밖), `2cdba81`(`db:migrate` → `node --env-file-if-exists=.env`), `4e48a4b`(README+CONSIDERATIONS 28/28), `4f72b84`(progress.md) — 를 오케스트레이터가 `95cb161..4f72b84`로 push했다. 테스트 173/173, lint 0, check 0/0, build 0, 서버 커버리지 97.12%. Neon 마이그레이션도 실적용됐다(`applied 001_init.sql`, 재실행 0건, 테이블 3개에 시드 7행). 로그 20개 중 `postgresql://` 패턴은 0건이었다. README가 cubrain 골격(#64)대로 나오지 않아서, 두 번째 에이전트(`name` 없이 Opus 지정)가 `251a074`로 재구성하면서 eslint ignores에 `.claude/worktrees/**`도 추가했다.
+M4 완료 보고는 이랬다. 커밋 5건 — `ff42e66`(테스트 격리), `8c8d597`(게이트 test 타임아웃 120→300초, 계획 밖), `3d6ba99`(`db:migrate` → `node --env-file-if-exists=.env`), `60ae917`(README+CONSIDERATIONS 28/28), `64e30ff`(progress.md) — 를 오케스트레이터가 `55c0ab8..64e30ff`로 push했다. 테스트 173/173, lint 0, check 0/0, build 0, 서버 커버리지 97.12%. Neon 마이그레이션도 실적용됐다(`applied 001_init.sql`, 재실행 0건, 테이블 3개에 시드 7행). 로그 20개 중 `postgresql://` 패턴은 0건이었다. README가 cubrain 골격(#64)대로 나오지 않아서, 두 번째 에이전트(`name` 없이 Opus 지정)가 `b0c26b9`로 재구성하면서 eslint ignores에 `.claude/worktrees/**`도 추가했다.
 
 #### #69 🔴 세션 5 마무리 — 서브에이전트 모델 상속 미해결
 > 잠깐 정지. 여전히 서브에이전트들도 Fable로 상속되서 돌고 있어 일단 잠깐 세션 마무리할꺼니까 기록해두고 세션 재시작하면 메인 세션 상속 안하고 SPEC 단계 및 REFACTOR는 opus / 단순 구현 및 RED -> GREEN은 sonnet으로 배정되는게 맞겠지?
@@ -570,7 +570,7 @@ M4 완료 보고는 이랬다. 커밋 5건 — `3461a41`(테스트 격리), `d9f
 
 조치로 `settings.local.json`에 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"`을 넣어 다음 세션부터 적용하기로 했다. 다음 세션 첫 작업은 모델 프로브로 정했다 — 실제 작업 전에 작은 읽기 전용 스폰을 한 번 돌려 창의 모델 표시와 `.moai/logs/agent-model-audit.jsonl`을 대조하고, Opus나 Sonnet이 확인될 때까지 구현 스폰을 금지하는 것이다.
 
-세션 5 종료 시점 상태는 이랬다. M4 커밋 6건 중 5건이 push됐고(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬에 남아 push 대기였다. 배포 URL의 `/`와 `/api/policy`는 여전히 500이었다 — push로 새 배포(`efihchig1`, Ready)는 만들어졌지만 런타임 오류가 지속돼, 다음 세션에서 Vercel Runtime Logs로 예외 문구를 확인하는 것이 1순위로 남았다(후보는 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7은 미충족이었다. 사용자가 README 에이전트를 중지시켰는데(커밋은 이미 완료된 뒤였다), 워크트리 `.claude/worktrees/agent-a44a…`가 남아 정리가 필요했다. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 MoAI-ADK 템플릿 기본값이었다(전역 `~/.claude/settings.json`에도 동일하게 있었다). 이 프로젝트 규모엔 불필요해서 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 껐다(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트에 영향이 있어 보류했다.
+세션 5 종료 시점 상태는 이랬다. M4 커밋 6건 중 5건이 push됐고(`64e30ff` = origin), `b0c26b9`(README 재구성)와 progress.md bookkeeping 커밋은 로컬에 남아 push 대기였다. 배포 URL의 `/`와 `/api/policy`는 여전히 500이었다 — push로 새 배포(`efihchig1`, Ready)는 만들어졌지만 런타임 오류가 지속돼, 다음 세션에서 Vercel Runtime Logs로 예외 문구를 확인하는 것이 1순위로 남았다(후보는 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7은 미충족이었다. 사용자가 README 에이전트를 중지시켰는데(커밋은 이미 완료된 뒤였다), 워크트리 `.claude/worktrees/agent-a44a…`가 남아 정리가 필요했다. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `789335f`(moai-adk 3.1.2 scaffold)이 넣은 MoAI-ADK 템플릿 기본값이었다(전역 `~/.claude/settings.json`에도 동일하게 있었다). 이 프로젝트 규모엔 불필요해서 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 껐다(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트에 영향이 있어 보류했다.
 
 ### 2026-08-30 — 세션 6: M4 마무리 — 배포 500 추적 (`/clear` 후 재개, 메인 세션 Fable 5)
 
@@ -579,13 +579,13 @@ M4 완료 보고는 이랬다. 커밋 5건 — `3461a41`(테스트 격리), `d9f
 
 세션 5의 재개 블록이다. 1순위는 배포 500 원인 해결, 그다음 Q7(GET / 200), 마지막이 Playwright 스모크다. 구현 스폰 전 모델 프로브가 필수 조건으로 붙었다.
 
-전제 검증에서는 git `0 0`에 `ad2d740` 확인, spec `in-progress` 확인, 배포 URL 500(해결 대상)을 확인했다. 모델 프로브는 "구현 스폰이 실제로 필요해지는 시점 직전"으로 미뤘다 — 환경변수 문제라면 스폰 없이 끝날 수 있기 때문이다. 실제로 이번 세션엔 스폰이 0회였다.
+전제 검증에서는 git `0 0`에 `f9cf8ca` 확인, spec `in-progress` 확인, 배포 URL 500(해결 대상)을 확인했다. 모델 프로브는 "구현 스폰이 실제로 필요해지는 시점 직전"으로 미뤘다 — 환경변수 문제라면 스폰 없이 끝날 수 있기 때문이다. 실제로 이번 세션엔 스폰이 0회였다.
 
 AI는 값을 열람하지 않고 진단했다. 정적 파일 `/robots.txt`는 200인데 존재하지 않는 `/health`나 `/api/files`까지 404가 아닌 500 `{"message":"Internal Error"}`가 나오는 걸 보면, 라우팅 전에 실행되는 `hooks.server.ts`의 `handle`에서 예외가 나는 것이다. 그 안엔 `getDb()`와 `getBlobStore()`뿐이고 둘 다 "환경변수 없으면 throw"하는 구조다.
 
 로컬에서 재현도 해봤다. `pnpm build` 후 `DATABASE_URL= BLOB_READ_WRITE_TOKEN= pnpm preview`로 돌리면 `/health`와 `/` 모두 500에 동일한 JSON이 나오고 서버 로그에 `Error: DATABASE_URL이 설정되지 않았습니다.`가 찍힌다. 로컬 `.env`가 로드된 상태에서는 `/health`가 404, `/`가 200이었다. 증거는 `.moai/state/verify/2b3763e1/deploy-500-diagnosis.md`.
 
-GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f72b84 13:43Z, ad2d740 14:00Z) 모두 success인데 전부 500이었다. #63의 변수 등록이 이보다 앞서므로 "등록 후 재배포 누락"은 제외할 수 있었다. 남은 후보는 변수를 등록한 프로젝트가 배포 프로젝트(`prj_KsXr…`)와 다른 경우, 변수 이름 불일치, 값 형식 오류(`neon()` 파서 거부), 스코프 착오였다. 넷 중 무엇인지는 Runtime Logs의 문구로만 갈릴 수 있었다.
+GitHub deployments(`gh api`)를 보니 Production 배포 3건(55c0ab8 12:35Z, 64e30ff 13:43Z, f9cf8ca 14:00Z) 모두 success인데 전부 500이었다. #63의 변수 등록이 이보다 앞서므로 "등록 후 재배포 누락"은 제외할 수 있었다. 남은 후보는 변수를 등록한 프로젝트가 배포 프로젝트(`prj_KsXr…`)와 다른 경우, 변수 이름 불일치, 값 형식 오류(`neon()` 파서 거부), 스코프 착오였다. 넷 중 무엇인지는 Runtime Logs의 문구로만 갈릴 수 있었다.
 
 빌드 산출물 `.vc-config.json`에서 런타임이 `nodejs24.x`(adapter-vercel)임을 확인했고, `$env/dynamic/private`는 `process.env`를 읽으니 코드 경로 문제는 아니라고 판단했다. 배포별 URL은 302(배포 보호)이고 프로덕션 도메인만 공개돼 있어 정상이었다.
 
@@ -607,7 +607,7 @@ GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f
 
 세션 종료다. Vercel 확인(#71의 A~D)은 내일 사용자가 결정하기로 했다.
 
-세션 6 종료 시점 상태는 origin/main이 `e40e8ee`(PROMPT_LOG #70~#71) 이후 이 #72 커밋까지 push된 상태였고, 코드 변경과 스폰은 0이었다. 배포 URL은 여전히 500이었다. 원인은 "Vercel 런타임에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 보이지 않아 `handle`이 throw한다"로 좁혀졌지만, 넷 중 무엇(프로젝트 불일치, 이름, 값 형식, 스코프)인지는 사용자가 대시보드나 CLI로 확인해야 하는 상태였다. Q7 미충족, Playwright 스모크 미착수, 모델 프로브 미실행(스폰이 없었으니). 재개 블록은 메모리 `project-spec-upload-001-m4-complete.md`에 저장했다.
+세션 6 종료 시점 상태는 origin/main이 `7766311`(PROMPT_LOG #70~#71) 이후 이 #72 커밋까지 push된 상태였고, 코드 변경과 스폰은 0이었다. 배포 URL은 여전히 500이었다. 원인은 "Vercel 런타임에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 보이지 않아 `handle`이 throw한다"로 좁혀졌지만, 넷 중 무엇(프로젝트 불일치, 이름, 값 형식, 스코프)인지는 사용자가 대시보드나 CLI로 확인해야 하는 상태였다. Q7 미충족, Playwright 스모크 미착수, 모델 프로브 미실행(스폰이 없었으니). 재개 블록은 메모리 `project-spec-upload-001-m4-complete.md`에 저장했다.
 
 ### 2026-08-31 — 세션 7: 배포 500 해결 → Q7 → 마무리
 
@@ -616,7 +616,7 @@ GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f
 
 세션 재개 브리핑 요청 뒤, #71에서 제시한 배포 500 확인 방법 4택 중 A(사용자가 Vercel 대시보드를 직접 확인)를 선택했다.
 
-재개 시점을 재검증하니 origin/main은 `fdddf33`(`0 0`)이었고, 배포 URL의 `GET /`는 여전히 500이었다. A 절차를 안내했다. 대시보드에서 프로젝트가 맞는지(prj_KsXr…) 확인하고, Settings → Environment Variables에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 Production 스코프로 존재하는지(Sensitive 배지 포함) 보고, Deployments → 최신 배포 → Runtime Logs의 예외 문구를 확인해 달라는 것이었다. 값 자체는 여전히 AI에게 전달하지 않는다(secret-management 룰).
+재개 시점을 재검증하니 origin/main은 `6d801d5`(`0 0`)이었고, 배포 URL의 `GET /`는 여전히 500이었다. A 절차를 안내했다. 대시보드에서 프로젝트가 맞는지(prj_KsXr…) 확인하고, Settings → Environment Variables에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 Production 스코프로 존재하는지(Sensitive 배지 포함) 보고, Deployments → 최신 배포 → Runtime Logs의 예외 문구를 확인해 달라는 것이었다. 값 자체는 여전히 AI에게 전달하지 않는다(secret-management 룰).
 
 #### #74
 > (Runtime Logs 원문 붙여넣기) `Error: DATABASE_URL이 설정되지 않았습니다. at getDb (…hooks.server.js:9:27)` 로그 확인했어
@@ -708,7 +708,7 @@ cubrain의 `frontend/package.json`에서 선례를 찾았다 — `"packageManage
 
 자율 진행 범위를 지정한 것으로, 사용자 수동 QA 직전까지 완주한 뒤 세션을 종료하는 것이다.
 
-자율 범위는 세 가지를 완료했다. e2e 커밋 `827810b`(스펙 4+1, 스크린샷 12장, packageManager 핀). sync 커밋 `17444a9` — AC-014 정정, spec §5.5/§6 정합, spec v0.2.2에 plan status를 completed로 만들어 SPEC-UPLOAD-001의 plan→run→sync 3단계를 종결했다(manager-docs와 sync-auditor는 한도 방어를 위해 스폰하지 않았고, 이 편차는 progress §E.4에 문서화했다). PROMPT_LOG #73~#87과 §3 회고 초안. 사용자에게 남긴 것은 QA 4건(#65), `EXT_LIMIT_REACHED` 화면 수동 확인 1건, 선택 사항으로 `npm i -g pnpm@11.25.0 --ignore-scripts`와 디자인·다이어그램 버퍼였다.
+자율 범위는 세 가지를 완료했다. e2e 커밋 `f94204e`(스펙 4+1, 스크린샷 12장, packageManager 핀). sync 커밋 `dab2159` — AC-014 정정, spec §5.5/§6 정합, spec v0.2.2에 plan status를 completed로 만들어 SPEC-UPLOAD-001의 plan→run→sync 3단계를 종결했다(manager-docs와 sync-auditor는 한도 방어를 위해 스폰하지 않았고, 이 편차는 progress §E.4에 문서화했다). PROMPT_LOG #73~#87과 §3 회고 초안. 사용자에게 남긴 것은 QA 4건(#65), `EXT_LIMIT_REACHED` 화면 수동 확인 1건, 선택 사항으로 `npm i -g pnpm@11.25.0 --ignore-scripts`와 디자인·다이어그램 버퍼였다.
 
 ### 2026-08-31 — 세션 8: QA·버퍼 (`/clear` 후 재개)
 
@@ -717,9 +717,9 @@ cubrain의 `frontend/package.json`에서 선례를 찾았다 — `"packageManage
 
 타임라인의 판단 마커를 집계해 자율 판단 통과율과 인간 개입 지점을 정량화하려는 것이다. §3 회고의 정량 근거로 쓰기 위해서다.
 
-재개 전제 4건(origin/main `0 0`, HEAD `a9f11e9`, spec `completed`, 배포 `GET /` 200)을 먼저 검증했다. 그런 다음 node 스크립트로 §1 전체의 마커를 위치와 문맥까지 전수 추출해 헤더에 "판단 집계" 표를 신설했다. 판단 마커는 총 44건으로 🟢 23건(52%), 🟡 16건(36%), 🔴 3건(7%), ⏳ 2건(5%, 모두 해소)이었다. 범례 줄, 표기 언급(#44), 진행판 아이콘(#45)은 판단이 아니라서 제외했다. 부수적으로, Git Bash의 `grep`이 이모지 alternation 매칭을 깨뜨려 오집계(⏳3, 🔴1, 🟡1, 🟢1)를 냈던 것을 node로 재집계해 정정했다.
+재개 전제 4건(origin/main `0 0`, HEAD `9add409`, spec `completed`, 배포 `GET /` 200)을 먼저 검증했다. 그런 다음 node 스크립트로 §1 전체의 마커를 위치와 문맥까지 전수 추출해 헤더에 "판단 집계" 표를 신설했다. 판단 마커는 총 44건으로 🟢 23건(52%), 🟡 16건(36%), 🔴 3건(7%), ⏳ 2건(5%, 모두 해소)이었다. 범례 줄, 표기 언급(#44), 진행판 아이콘(#45)은 판단이 아니라서 제외했다. 부수적으로, Git Bash의 `grep`이 이모지 alternation 매칭을 깨뜨려 오집계(⏳3, 🔴1, 🟡1, 🟢1)를 냈던 것을 node로 재집계해 정정했다.
 
-부수 수정도 있었다. 커밋 시도 중 pre-commit 게이트가 세션 7 e2e 스펙 2개의 prettier 위반을 적발했는데(에이전트 워크트리 회수분이 미포맷 상태로 커밋돼 있었다), 포맷만 정리해 `80eb84b`로 단독 커밋했다. 게이트의 blob store 테스트 1건이 타임아웃난 것은 병렬 부하 경합이었고(단독 재실행 2초 2/2 통과, #33과 같은 유형), 재시도로 통과했으며 우회 플래그는 쓰지 않았다.
+부수 수정도 있었다. 커밋 시도 중 pre-commit 게이트가 세션 7 e2e 스펙 2개의 prettier 위반을 적발했는데(에이전트 워크트리 회수분이 미포맷 상태로 커밋돼 있었다), 포맷만 정리해 `0efdbf7`로 단독 커밋했다. 게이트의 blob store 테스트 1건이 타임아웃난 것은 병렬 부하 경합이었고(단독 재실행 2초 2/2 통과, #33과 같은 유형), 재시도로 통과했으며 우회 플래그는 쓰지 않았다.
 
 #### #89 (사용자 QA) 고정 확장자 토글 딜레이 → 리전 핀
 > 일단 지금 (스크린샷) 크롬 시크릿 창을 통해 QA하고 있는데 저 고정 확장자 체크박스를 누를 때 딜레이가 생겨 opt-in opt-out 둘다
@@ -728,7 +728,7 @@ QA 1건 보고 — 토글 반응이 느리다는 것이다.
 
 AI가 진단했다. 기능은 설계대로였다. 체크 표시는 즉시 반영되고(낙관적 갱신, `FixedExtensionList.svelte:25`) 서버 응답이 올 때까지 그 박스만 `disabled`가 된다(:70, 연타 경쟁 방지). 체감 딜레이는 곧 이 잠김 구간, 즉 API 왕복 시간이었다. 실측해 보니 `GET /api/policy`가 460ms~1.03초 걸렸고 `x-vercel-id: icn1::iad1::`가 찍혔다 — 함수가 기본 리전(iad1, 미국 동부)에서 도는데 사용자는 서울에 있고 DB(Neon)는 싱가포르에 있어, 한국에서 미국을 거쳐 싱가포르까지 왕복하는 구조였다. 원인은 `vite.config.ts` adapter 옵션에 `regions`가 설정돼 있지 않은 것이었다.
 
-판단: 🟢 사용자가 "sin1 핀 적용 (권장)"을 선택했다. `regions: ['sin1']` 한 줄을 넣고 빌드 산출물 `.vc-config.json`에 `regions: ["sin1"]`이 반영된 것을 확인한 뒤 커밋 `1faf3d0`을 push해 자동 재배포했다.
+판단: 🟢 사용자가 "sin1 핀 적용 (권장)"을 선택했다. `regions: ['sin1']` 한 줄을 넣고 빌드 산출물 `.vc-config.json`에 `regions: ["sin1"]`이 반영된 것을 확인한 뒤 커밋 `4151a4b`을 push해 자동 재배포했다.
 
 재측정 결과 `icn1::sin1`을 확인했고, 워밍업 후 325~376ms로 안정됐다 — 최악이었던 1초 구간은 사라졌다. 예상치(100~200ms)보다는 높았는데(엣지 경유와 한국↔싱가포르 지리적 왕복이 하한을 만든다), 예측 대비 실측 결과를 그대로 기록했다.
 
@@ -759,7 +759,7 @@ QA 3건이 통과했다. sin1 핀의 체감 개선을 사용자가 직접 검증
 
 #86에서 의도적으로 스킵했던 200개 한도 문구 캡처를 자동으로 확보하려는 것이다. Q12 증거를 12/13에서 13/13으로 채운다.
 
-스킵 테스트를 실제 테스트로 교체했다. API로 커스텀을 200개까지 채우고(zfill000~199, 10개 청크 병렬), UI에서 201번째(`overflow1`)를 추가하려 시도해 409 문구("커스텀 확장자는 최대 200개까지 추가할 수 있어요.")를 정확히 단언한 뒤 캡처했다. finally에서 채운 행만 삭제하고 afterEach로 원복하는 이중 안전망도 넣었다. 커밋 `569577e`.
+스킵 테스트를 실제 테스트로 교체했다. API로 커스텀을 200개까지 채우고(zfill000~199, 10개 청크 병렬), UI에서 201번째(`overflow1`)를 추가하려 시도해 409 문구("커스텀 확장자는 최대 200개까지 추가할 수 있어요.")를 정확히 단언한 뒤 캡처했다. finally에서 채운 행만 삭제하고 afterEach로 원복하는 이중 안전망도 넣었다. 커밋 `b2d5791`.
 
 🟡 AI가 스스로 문제를 잡아냈다. 1차 실행(passed, 38.4초)의 캡처가 뷰포트 캡처라서 문구가 칩 200개 아래 화면 밖에 있었다 — 단언은 통과했지만 증거 사진에는 정작 문구가 없었던 것이다. `fullPage: true`로 고쳐 재실행하니(passed, 17초) 카운터 200/200, 칩 200개, 문구가 한 장에 모두 담겼다.
 
@@ -771,14 +771,14 @@ AskUserQuestion 4택에서 사용자가 "클린 프로덕트 톤 (권장)"을 �
 
 `ui-ux-pro-max` 스킬을 처음 실사용했다(#40에서 예고됐던 것). 디자인 시스템 검색 결과(trust blue #2563EB, bg #F8FAFC, border #E2E8F0)를 채택하고, 글래스모피즘과 오렌지 CTA 제안은 클린 톤에 맞지 않아 기각했다. 적용한 것은 `app.css`에 토큰 신설, `app.html`의 `lang=ko` 정정과 Pretendard CDN, 레이아웃을 760px 컨테이너로, 섹션을 카드화, 고정 토글을 체크 상태가 배경과 테두리로도 구분되는 칩으로(`:has` 활용), 추가·업로드 버튼을 primary화, 결과 목록의 성공/실패를 색과 왼쪽 선으로 이중 구분(색약 대응), `prefers-reduced-motion` 존중, 페이지 `<title>` 추가였다. 캐스케이드 결함 1건도 스스로 고쳤다 — 성공 배지가 초록으로 물드는 문제를 `:not(.badge)`로 해결했다.
 
-검증에서 기존 테스트는 무수정 173/173, lint 0, check 0, build 0이었다(로그 `.moai/state/verify/2da62d2d/design-*.log`). 커밋 `59271a5`를 push하고 배포 반영을 15초 내로 확인한 뒤 배포 URL을 fullPage로 캡처해(`design-pass-live.png`) 시각적으로도 확인했다. 🟢 채택.
+검증에서 기존 테스트는 무수정 173/173, lint 0, check 0, build 0이었다(로그 `.moai/state/verify/2da62d2d/design-*.log`). 커밋 `ccd5d5c`를 push하고 배포 반영을 15초 내로 확인한 뒤 배포 URL을 fullPage로 캡처해(`design-pass-live.png`) 시각적으로도 확인했다. 🟢 채택.
 
 #### #96 (AI 주도) 다이어그램 3종 + README 삽입 (버퍼 2·3/3) — 자율 진행 구간
 > Goal set: 나 저녁 먹을 시간 됬으니까 내가 판단해야하는 부분 직전까지만 알아서 해줘 ㅇㅋ?
 
 자율 진행 범위를 위임한 것으로 #50·#58·#71과 같은 패턴이다. AI가 버퍼의 나머지(다이어그램 → README)를 판단 지점 없이 완주했다.
 
-`diagram-design` 스킬을 처음 실사용했다. 스타일 가이드가 기본 스킨을 쓰는 방식이라 프로젝트 관례를 확인해야 했는데, 기존 프로젝트 자산(sbb_board)이 프로젝트별로 브랜드 스킨을 따로 쓴다는 것(빨강이었다)을 확인하고, 사용자에게 묻지 않고 그 관례를 그대로 따랐다 — 이 프로젝트의 디자인 토큰(trust blue)으로 3종을 만들었다. 시스템 아키텍처(브라우저→icn1 엣지→sin1 함수→Neon·Blob과 GitHub 배포 흐름), ERD(blocked_extension과 upload_attempt, FK 없는 논리적 참조와 의도된 비정규화를 명시), 업로드 판정 플로우차트(정규화 → 4관문 → 거부 수집/성공, decideUpload의 실제 순서 그대로)다. 소스 HTML과 2x PNG를 `docs/diagrams/`에 커밋하고 README의 TODO 마커 3곳을 교체했으며(`1382cac`), 전역 자산 폴더(`diagram-design/assets/<프로젝트>/`)에도 복사했다.
+`diagram-design` 스킬을 처음 실사용했다. 스타일 가이드가 기본 스킨을 쓰는 방식이라 프로젝트 관례를 확인해야 했는데, 기존 프로젝트 자산(sbb_board)이 프로젝트별로 브랜드 스킨을 따로 쓴다는 것(빨강이었다)을 확인하고, 사용자에게 묻지 않고 그 관례를 그대로 따랐다 — 이 프로젝트의 디자인 토큰(trust blue)으로 3종을 만들었다. 시스템 아키텍처(브라우저→icn1 엣지→sin1 함수→Neon·Blob과 GitHub 배포 흐름), ERD(blocked_extension과 upload_attempt, FK 없는 논리적 참조와 의도된 비정규화를 명시), 업로드 판정 플로우차트(정규화 → 4관문 → 거부 수집/성공, decideUpload의 실제 순서 그대로)다. 소스 HTML과 2x PNG를 `docs/diagrams/`에 커밋하고 README의 TODO 마커 3곳을 교체했으며(`b144ed3`), 전역 자산 폴더(`diagram-design/assets/<프로젝트>/`)에도 복사했다.
 
 부수 관찰도 있었다. Write 도구가 프로젝트 밖 경로(전역 자산 폴더, 스크래치패드)를 차단해(#81과 같은 가드) 리포 안에 작성한 뒤 Bash `cp`로 전역 폴더에 동기화했다. pre-commit 게이트가 또 병렬 부하 경합으로 한 번 실패했는데(같은 blob store 테스트에 워커 기동 타임아웃이 겹쳤고, diff는 문서·이미지뿐이었다), 재시도로 통과했다. 게이트 경합이 세 번째로 재발한 것은 회고에 남길 개선 후보였다(테스트 워커 수 고정 등).
 
@@ -787,7 +787,7 @@ AskUserQuestion 4택에서 사용자가 "클린 프로덕트 톤 (권장)"을 �
 
 컨텍스트 관리 방법을 결정해 달라는 요청이다. `/clear`를 권고했다. 이 세션은 `fable[1m]`(1M 창)이라 60%면 핸드오프 문턱(50%)을 이미 넘은 상태였다. `/compact`는 진행 중인 작업을 이어갈 때 쓰는 도구인데, 세션 8의 작업(QA 4건, EXT_LIMIT_REACHED 캡처, 디자인 패스, 다이어그램 3종, 산출물 대조 4/4)은 전부 push가 끝난 상태라 이어갈 컨텍스트가 없었다. 재개 블록을 발행하고 메모리에 저장한 뒤 세션을 종료했다.
 
-세션 8 종료 시점 상태는 origin/main이 `df5bd06`(이후 이 #97 커밋)이었고, 배포는 200(sin1), Q12는 13/13, 판단 집계는 46건이었다. 사용자에게 남은 것은 §3 회고 초안을 본인 문장으로 확정하는 것과, 새 디자인과 다이어그램 3장을 눈으로 검수하는 것이었다. 데모 예열 항목은 별도로 남겨 두었다.
+세션 8 종료 시점 상태는 origin/main이 `3d48c14`(이후 이 #97 커밋)이었고, 배포는 200(sin1), Q12는 13/13, 판단 집계는 46건이었다. 사용자에게 남은 것은 §3 회고 초안을 본인 문장으로 확정하는 것과, 새 디자인과 다이어그램 3장을 눈으로 검수하는 것이었다. 데모 예열 항목은 별도로 남겨 두었다.
 
 ---
 

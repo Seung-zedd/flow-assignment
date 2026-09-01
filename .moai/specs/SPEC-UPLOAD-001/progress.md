@@ -149,7 +149,7 @@ iter1 결함별 조치 요약:
 #### Test counts
 
 - 테스트 파일 5개, 테스트 87개, 전부 PASS. 실행: `pnpm test` → exit 0.
-- `pnpm lint` (prettier --check + eslint) → exit 1 — **이번 마일스톤이 만든 파일은 0건**, 남은 11건은 스캐폴드 커밋(`4c6112e`)에서 이미 포맷이 어긋난 기존 파일(`eslint.config.js`, `package.json`, `pnpm-workspace.yaml`, `prettier.config.js`, `src/app.d.ts`, `src/app.html`, `src/lib/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `tsconfig.json`, `vite.config.ts`) — PRESERVE 범위 밖이라 손대지 않음(pre-existing baseline, NOT a new defect).
+- `pnpm lint` (prettier --check + eslint) → exit 1 — **이번 마일스톤이 만든 파일은 0건**, 남은 11건은 스캐폴드 커밋(`40cf9e2`)에서 이미 포맷이 어긋난 기존 파일(`eslint.config.js`, `package.json`, `pnpm-workspace.yaml`, `prettier.config.js`, `src/app.d.ts`, `src/app.html`, `src/lib/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `tsconfig.json`, `vite.config.ts`) — PRESERVE 범위 밖이라 손대지 않음(pre-existing baseline, NOT a new defect).
 - `pnpm check` (svelte-check) → exit 0, `0 ERRORS 0 WARNINGS`.
 - `pnpm build` → exit 0.
 - `pnpm test:coverage` (`src/lib/server/**`, v8): 전체 Stmts 98.82% · Branch 92.68% · Funcs 100% · Lines 98.75% (85% 목표 상회). 파일별: `reason-codes.ts` 100/80/100/100(라인 57 `formatMessage` 미치환 fallback 분기 미커버), `signature.ts` 96.15/83.33/100/96(라인 13 `startsWithBinary`의 길이-부족 조기 반환 분기 미커버) — `extension.ts`·`decide.ts`는 4개 지표 전부 100%.
@@ -174,7 +174,7 @@ iter1 결함별 조치 요약:
 
 #### REFACTOR (Opus)
 
-커밋 `07d4602`. 동작 변경 없음 — RED→GREEN이 만든 87개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 추가한 4건을 포함해 91개가 통과한다.
+커밋 `8fd39e4`. 동작 변경 없음 — RED→GREEN이 만든 87개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 추가한 4건을 포함해 91개가 통과한다.
 
 ##### 무엇을 왜 바꿨나
 
@@ -188,7 +188,7 @@ iter1 결함별 조치 요약:
 
 `decideUpload` 판정 순서(크기 → 확장자 부재 → 파일명 순서상 먼저 걸린 차단 세그먼트 → 시그니처 → 성공/mismatch), `normalizeFilename`의 코드 포인트 단위 255바이트 절단, `normalizeExtensionInput`의 앞뒤 점 제거·NFKC 선행·정규화 후 길이 측정, `reason-codes.ts` 13개 문구의 `plan.md` §4.1 표와의 문자 단위 일치, 별칭 표가 파일명 후보·시그니처 결과·정책 입력 세 경로 모두에서 `canonicalizeExtension` 하나만 거치는지 — 전부 계획과 일치해 손대지 않았다.
 
-##### 검증 (커밋 `07d4602` 기준)
+##### 검증 (커밋 `8fd39e4` 기준)
 
 | 명령 | 종료 코드 | 결과 |
 |---|---|---|
@@ -275,7 +275,7 @@ iter1 결함별 조치 요약:
 
 #### REFACTOR (Opus)
 
-커밋 `86baa60`. 동작 변경 없음 — RED→GREEN이 만든 129개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 판단을 고정하려고 추가한 2건을 포함해 131개가 통과한다. 테스트 파일 diff는 31줄 삽입·0줄 삭제(`git diff 9ffcfff..86baa60 -- 'src/**/*.test.ts' --stat`).
+커밋 `ca7d3a9`. 동작 변경 없음 — RED→GREEN이 만든 129개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 판단을 고정하려고 추가한 2건을 포함해 131개가 통과한다. 테스트 파일 diff는 31줄 삽입·0줄 삭제(`git diff f8db328..ca7d3a9 -- 'src/**/*.test.ts' --stat`).
 
 ##### 무엇을 왜 바꿨나
 
@@ -302,7 +302,7 @@ iter1 결함별 조치 요약:
 
 M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensionInput`의 정규화 순서·`reason-codes.ts` 13개 문구는 계획과 일치해 손대지 않았다. `normalizeExtensionCandidate()`(§Deviations 1)도 유지했다 — 이번에 `{input}` 대입 값으로도 쓰이면서 추출의 값이 오히려 커졌다.
 
-##### 검증 (커밋 `86baa60` 기준)
+##### 검증 (커밋 `ca7d3a9` 기준)
 
 | 명령 | 종료 코드 | 결과 |
 |---|---|---|
@@ -423,11 +423,11 @@ M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensio
 
 #### Planned-vs-actual files
 
-`spec.md` §4 M3 대상 신규 파일 전부 생성 완료: `src/lib/server/blob/store.ts`(+`store.test.ts`), `src/lib/server/db/upload-repo.ts`(+`upload-repo.test.ts`), `src/routes/api/upload/+server.ts`(+`server.test.ts`), `src/lib/components/UploadArea.svelte`(+`UploadArea.test.ts`). 기존 파일 확장: `src/hooks.server.ts`(`locals.blob` 배선), `src/app.d.ts`(`Locals.blob` 타입), `src/routes/+page.server.ts`(`blockedExtensions`·`extensionAliases`·`clientHintBlocked` 추가), `src/routes/+page.svelte`(플레이스홀더 → `UploadArea` 연결), `src/routes/page.ssr.test.ts`(`data` 리터럴에 3개 필드 추가 — 기존 단언 삭제 없음, `git diff 3d77a91 -- 'src/**/*.test.ts' | grep -E '^-[^-]'`로 확인). 계획에 없던 추가 의존성: `@vercel/blob@2.8.0`(`package.json`·`pnpm-lock.yaml`). `src/lib/server/upload/decide.ts`(M1 PRESERVE 대상)는 시그니처·동작 변경 없이 그대로 재사용했습니다.
+`spec.md` §4 M3 대상 신규 파일 전부 생성 완료: `src/lib/server/blob/store.ts`(+`store.test.ts`), `src/lib/server/db/upload-repo.ts`(+`upload-repo.test.ts`), `src/routes/api/upload/+server.ts`(+`server.test.ts`), `src/lib/components/UploadArea.svelte`(+`UploadArea.test.ts`). 기존 파일 확장: `src/hooks.server.ts`(`locals.blob` 배선), `src/app.d.ts`(`Locals.blob` 타입), `src/routes/+page.server.ts`(`blockedExtensions`·`extensionAliases`·`clientHintBlocked` 추가), `src/routes/+page.svelte`(플레이스홀더 → `UploadArea` 연결), `src/routes/page.ssr.test.ts`(`data` 리터럴에 3개 필드 추가 — 기존 단언 삭제 없음, `git diff ea687bb -- 'src/**/*.test.ts' | grep -E '^-[^-]'`로 확인). 계획에 없던 추가 의존성: `@vercel/blob@2.8.0`(`package.json`·`pnpm-lock.yaml`). `src/lib/server/upload/decide.ts`(M1 PRESERVE 대상)는 시그니처·동작 변경 없이 그대로 재사용했습니다.
 
 #### REFACTOR (Opus)
 
-커밋 `18b1f12`. 동작 변경 없음 — RED→GREEN이 만든 159개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 이번 판단을 고정하려고 추가한 12건을 포함해 171개가 통과한다. 테스트 파일 diff는 154줄 삽입·0줄 삭제(`git diff 7121040..18b1f12 -- 'src/**/*.test.ts' --stat`), 삭제된 단언 줄 0건.
+커밋 `191a85c`. 동작 변경 없음 — RED→GREEN이 만든 159개 테스트를 하나도 수정하지 않은 채 그대로 통과시키며, 이번 판단을 고정하려고 추가한 12건을 포함해 171개가 통과한다. 테스트 파일 diff는 154줄 삽입·0줄 삭제(`git diff 783fc0a..191a85c -- 'src/**/*.test.ts' --stat`), 삭제된 단언 줄 0건.
 
 ##### 무엇을 왜 바꿨나
 
@@ -455,7 +455,7 @@ M1 REFACTOR와 마찬가지로, `decideUpload` 판정 순서·`normalizeExtensio
 
 M1·M2 PRESERVE 대상은 이번에도 손대지 않았다 — `decide.ts`의 판정 순서(주석 문구만 정정), `signature.ts`, `normalizeFilename`의 255바이트 앞자름 의미론, `reason-codes.ts`의 문구 상수, `policy-repo.ts`, `client.ts`. §Deviations 4(AC-014 문구 → `BLOCKED_EXTENSION`)와 5(300자 파일명 → `NO_EXTENSION`)는 창업자 판정대로 코드를 그대로 뒀다.
 
-##### 검증 (커밋 `18b1f12` 기준)
+##### 검증 (커밋 `191a85c` 기준)
 
 | 명령 | 종료 코드 | 결과 |
 |---|---|---|
@@ -476,7 +476,7 @@ M1·M2 PRESERVE 대상은 이번에도 손대지 않았다 — `decide.ts`의 �
 | 서버 모듈의 클라이언트 유출 없음 | `grep -rn "lib/server" src/lib/components src/routes/+page.svelte` | 0건 (exit 1) |
 | 미해소 TODO 없음 | `grep -rn "@MX:TODO" src/ scripts/` | 0건 (exit 1) |
 | `.env*` 미접촉 | `git status --short` | `.env` 계열 변경 0건 |
-| 테스트 단언 미수정 | `git diff 7121040..18b1f12 -- 'src/**/*.test.ts'`에서 삭제 줄 추출 | 삭제 줄 0건 (exit 1), 삽입 154줄 |
+| 테스트 단언 미수정 | `git diff 783fc0a..191a85c -- 'src/**/*.test.ts'`에서 삭제 줄 추출 | 삭제 줄 0건 (exit 1), 삽입 154줄 |
 
 ##### MX 태그
 
@@ -564,12 +564,12 @@ M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 문서�
 
 | SHA | 제목 | 담긴 파일 |
 |---|---|---|
-| `3461a41` | `test(SPEC-UPLOAD-001): M4 — 환경변수 부재 테스트를 .env 유무와 격리` | `client.test.ts`, `store.test.ts` |
-| `d9f0c80` | `chore(SPEC-UPLOAD-001): M4 — pre-commit 게이트의 test 타임아웃을 300초로 상향` | `.moai/config/sections/gate.yaml` |
-| `2cdba81` | `feat(SPEC-UPLOAD-001): M4 — db:migrate가 .env를 직접 읽도록 변경` | `package.json` |
-| `4e48a4b` | `docs(SPEC-UPLOAD-001): M4 — README(실행 방법·table schema·배포) + CONSIDERATIONS 28항목` | `README.md`, `CONSIDERATIONS.md` |
+| `ff42e66` | `test(SPEC-UPLOAD-001): M4 — 환경변수 부재 테스트를 .env 유무와 격리` | `client.test.ts`, `store.test.ts` |
+| `8c8d597` | `chore(SPEC-UPLOAD-001): M4 — pre-commit 게이트의 test 타임아웃을 300초로 상향` | `.moai/config/sections/gate.yaml` |
+| `3d6ba99` | `feat(SPEC-UPLOAD-001): M4 — db:migrate가 .env를 직접 읽도록 변경` | `package.json` |
+| `60ae917` | `docs(SPEC-UPLOAD-001): M4 — README(실행 방법·table schema·배포) + CONSIDERATIONS 28항목` | `README.md`, `CONSIDERATIONS.md` |
 
-| `251a074` | `docs(SPEC-UPLOAD-001): M4 — README를 포트폴리오 레이아웃으로 재구성` | `README.md`, `eslint.config.js` |
+| `b0c26b9` | `docs(SPEC-UPLOAD-001): M4 — README를 포트폴리오 레이아웃으로 재구성` | `README.md`, `eslint.config.js` |
 
 다섯 커밋 모두 pre-commit 게이트(`moai gate`)를 통과했습니다. 아직 push하지 않았습니다 — push는 오케스트레이터가 수행합니다.
 
@@ -594,7 +594,7 @@ M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 문서�
 ```yaml
 spec_id: SPEC-UPLOAD-001
 run_complete_at: 2026-08-30
-run_commit_sha: 251a074
+run_commit_sha: b0c26b9
 run_status: complete
 ac_pass_count: 55        # M1 21 + M2 12 + M3 22 (M4는 새 AC를 추가하지 않음)
 ac_fail_count: 0
@@ -620,7 +620,7 @@ coverage_stmts_pct: 97.12
 ```yaml
 spec_id: SPEC-UPLOAD-001
 sync_complete_at: 2026-08-31
-sync_commit_sha: 17444a9
+sync_commit_sha: dab2159
 sync_status: complete
 executed_by: orchestrator-direct   # manager-docs 미스폰 — 세션 한도 방어 결정(PROMPT_LOG #84), 문서화된 편차
 sync_audit: skipped-documented     # sync-auditor 미스폰 — 같은 결정. Q 게이트 증거는 아래에 직접 첨부
