@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { addCustom, deleteCustom, getPolicy, restoreToBaseline, setFixed } from './policy-api';
 
-// Q12 게이트 증거 수집: 사유 코드 10종 + 알림 3종을 배포 URL에서 실제로 유발해
+// 사유 코드 10종 + 알림 3종을 실행 중인 대상 환경에서 실제로 유발해
 // 화면 문구가 reason-codes.ts(= plan.md §4.1 문구 상수 표)와 정확히 일치하는지 단언하고,
 // 코드별 스크린샷을 e2e/screenshots/q12/<CODE>.png 로 남긴다.
 // 문구가 어긋나면 테스트가 실패한다 — 그 실패 자체가 Q12가 잡아야 할 결함이다.
@@ -87,7 +87,7 @@ test('EXT_IS_FIXED — 고정 확장자를 커스텀으로 추가', async ({ pag
 	await page.screenshot({ path: `${SHOT_DIR}/EXT_IS_FIXED.png` });
 });
 
-// 커스텀 확장자를 200개까지 채워야 유발되는 코드. 처음엔 프로덕션 쓰기 비용으로 스킵했으나
+// 커스텀 확장자를 200개까지 채워야 유발되는 코드. 처음엔 대상 환경 쓰기 비용으로 스킵했으나
 // 사용자 결정(PROMPT_LOG #94)으로 1회 실행해 캡처한다. API로 채우고(청크 병렬) UI에서
 // 201번째 추가를 시도해 문구를 단언한 뒤, 채운 행은 finally에서 직접 지운다.
 // 잔여 편차는 afterEach의 restoreToBaseline이 마저 되돌린다.

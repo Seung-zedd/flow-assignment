@@ -167,7 +167,7 @@ llm:
   #   agent_overrides:
   #     manager-develop: { model: opus, effort: xhigh }
   #
-  # flow-assignment routing (user decision 2026-08-29, PROMPT_LOG #30 — mirrors
+  # secure-file-upload routing (user decision 2026-08-29, PROMPT_LOG #30 — mirrors
   # the pillwriter split after the Opus-only run exhausted the session limit):
   #   main session (orchestrator)              -> Fable (not an agent row)
   #   plan-phase / audits (manager-spec,

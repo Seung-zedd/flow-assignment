@@ -1,6 +1,6 @@
 // 정책 API를 직접 호출하는 얇은 헬퍼. 테스트 본문은 UI만 조작하고,
 // 이 모듈은 "테스트 전 상태 스냅샷 / 테스트 후 원상복구"에만 쓴다.
-// 프로덕션에 쓰기를 남기지 않는 것이 목적이므로 UI 경로와 분리해 둔다.
+// 대상 환경에 쓰기를 남기지 않는 것이 목적이므로 UI 경로와 분리해 둔다.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -22,7 +22,7 @@ export interface Policy {
 export const BASELINE_PATH = path.join('e2e', '.runs', 'policy-baseline.json');
 
 export function baseURL(): string {
-	return process.env.PLAYWRIGHT_BASE_URL ?? 'https://flow-assignment-opal.vercel.app';
+	return process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
 }
 
 export async function getPolicy(): Promise<Policy> {

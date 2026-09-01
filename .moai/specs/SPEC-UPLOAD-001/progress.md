@@ -106,7 +106,7 @@ iter1 결함별 조치 요약:
 
 **미해결 / 다음 단계 의존**
 
-- ~~`issue_number: 0` 자리표시자~~ → Phase 2.5 완료: GitHub Issue **#1** 생성(https://github.com/Seung-zedd/flow-assignment/issues/1), `spec.md` `issue_number: 1` 기록, Issue에 SPEC 경로 역참조 댓글.
+- ~~`issue_number: 0` 자리표시자~~ → Phase 2.5 완료: GitHub Issue **#1** 생성, `spec.md` `issue_number: 1` 기록, Issue에 SPEC 경로 역참조 댓글.
 - Vercel Hobby Blob 무료 포함량 수치는 미검증(`plan.md` §14). README 작성 시 대시보드 실측값 사용.
 - REQ·AC 모두 상한 포화(16/16). 추가 요구가 나오면 상한 완화가 아니라 통합·분해 또는 SPEC 분할로 대응한다.
 - **REQ-013 하위 동작 4건 중 2건이 AC 미보유** (N4, 의도적 수용 — AC를 늘리지 않기로 결정). REQ-013은 빈 차단 목록 상태에서 ① 크기 제한 ② 개수 제한 ③ 확장자 부재 거부 ④ 내용 판별이 모두 계속 동작할 것을 요구하는데, 빈 목록 Given을 가진 AC는 ③(AC-010)과 ①(AC-011) 둘뿐이다.
@@ -508,7 +508,7 @@ ANCHOR 3건의 fan_in을 실제로 세어 보면 기준선이 애매하다는 �
 
 #### Acceptance scenario completion — 품질 게이트 Q8·Q9 충족, Q7은 오케스트레이터 확인 대기
 
-M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 제출 문서를 만드는 마일스톤입니다. `acceptance.md` 품질 게이트 기준으로 판정합니다.
+M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 문서를 마무리하는 마일스톤입니다. `acceptance.md` 품질 게이트 기준으로 판정합니다.
 
 | 게이트 | 판정 | 근거 |
 |---|---|---|
@@ -577,7 +577,7 @@ M4는 새 AC를 구현하는 마일스톤이 아니라 배포 준비와 제출 �
 
 작성자의 기존 포트폴리오 README(cubrain)와 섹션 순서·시각적 스타일을 맞춰 달라는 지시를 받아 `README.md`를 재구성했습니다. **내용은 그대로 두고 배치와 표현만 바꿨습니다** — table schema(컬럼·타입·제약·인덱스), 실행 방법, 환경변수 표, 배포 절차는 새 섹션 구조 안으로 옮겼을 뿐 사실관계가 바뀐 곳은 없습니다. Q8 충족 상태는 유지됩니다.
 
-10개 섹션 순서: 타이틀 + 태그라인 + 서비스 링크 + 배지 5종 → 프로젝트 소개 → 열람 안내(For Interviewers) → 기술 스택 → 시스템 아키텍처 → DB 스키마(ERD) → 업로드 판정 흐름 → 핵심 트러블슈팅 4건 → 로컬 실행 및 테스트 안내 → 문서.
+10개 섹션 순서: 타이틀 + 태그라인 + 서비스 링크 + 배지 5종 → 프로젝트 소개 → 코드 읽는 순서 → 기술 스택 → 시스템 아키텍처 → DB 스키마(ERD) → 업로드 판정 흐름 → 핵심 트러블슈팅 4건 → 로컬 실행 및 테스트 안내 → 문서.
 
 - 다이어그램 3곳(아키텍처 · ERD · 업로드 판정 플로우차트)은 `<!-- TODO(diagram-design): ... -->` 자리만 두고 그리지 않았습니다 — 지시대로입니다.
 - 새로 쓴 "업로드 판정 흐름 8단계"는 `api/upload/+server.ts`의 `POST`와 `decide.ts`의 `decideUpload()`를 읽고 실제 실행 순서를 옮긴 것입니다(추측 아님): Content-Length 선차단 → formData 파싱 → 크기 실측 → 파일명 정규화 → 확장자 후보 추출 → 정책 대조 → 시그니처 대조 → 저장·기록.
@@ -635,7 +635,7 @@ sync_audit: skipped-documented     # sync-auditor 미스폰 — 같은 결정. Q
 
 | 게이트 | 상태 | 증거 |
 |---|---|---|
-| Q7 (배포 URL 동작) | **PASS** | `GET https://flow-assignment-opal.vercel.app/` → 200 (2026-08-31 실측, node fetch). 500 원인은 env 값 미입력 — 해결 경위 PROMPT_LOG #73~#80 |
+| Q7 (배포 URL 동작) | **PASS** | 프로덕션 도메인의 `GET /` → 200 (2026-08-31 실측, node fetch). 500 원인은 env 값 미입력 — 해결 경위 PROMPT_LOG #73~#80 |
 | Q11 (PROMPT_LOG 3절) | **PASS** | §1 타임라인 #86까지 (M4 이후 세션 7 포함) · §2 도구 표 · §3 회고 (M4·sync 절은 세션 7 마감에서 초안) |
 | Q12 (화면 문구 13종) | **PASS(12/13) + 수동 1건** | Playwright로 12종 유발·문구 정확 일치 단언·스크린샷 `e2e/screenshots/q12/<CODE>.png` + 로그 `.moai/state/verify/18010b75/e2e-smoke.log` (16 passed·exit 0). `EXT_LIMIT_REACHED`는 프로덕션 200행 비용으로 스킵 — 사용자 수동 확인 항목 |
 

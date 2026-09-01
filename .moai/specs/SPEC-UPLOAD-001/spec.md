@@ -38,7 +38,7 @@ issue_number: 1
 - **스택**: SvelteKit 2 (Svelte 5 runes, TypeScript) · Neon PostgreSQL · Vercel Blob · `@sveltejs/adapter-vercel`
 - **개발 방식**: TDD (RED-GREEN-REFACTOR), 커버리지 목표 85%
 - **설계 근거 전문**: `plan.md` (결정 7건 + 위험 + 마일스톤)
-- **고려사항 28항목 매트릭스**: `plan.md` §9 (과제 §3의 19항목 + 자체 발굴 E1~E9) — 이 문서에 표를 복제하지 않는다. 서술형 산출물은 `CONSIDERATIONS.md`가 담당한다.
+- **고려사항 28항목 매트릭스**: `plan.md` §9 (요구사항 원문의 19항목 + 자체 발굴 E1~E9) — 이 문서에 표를 복제하지 않는다. 서술형 산출물은 `CONSIDERATIONS.md`가 담당한다.
 
 ## 2. 목표
 
@@ -65,11 +65,11 @@ issue_number: 1
 
 **REQ-UPLOAD-002** (Event-driven)
 사용자가 고정 확장자의 차단 여부를 변경할 때, 시스템은 변경된 상태를 영속 저장해야 하며 이후의 모든 정책 재조회가 변경된 값을 반환해야 한다.
-→ 근거: 과제 §2-A "check/uncheck 시 DB에 저장 → 새로고침 시 유지", plan.md §5 `PATCH /api/policy/fixed/[ext]`
+→ 근거: 요구사항 "check/uncheck 시 DB에 저장 → 새로고침 시 유지", plan.md §5 `PATCH /api/policy/fixed/[ext]`
 
 **REQ-UPLOAD-003** (Event-driven)
 사용자가 커스텀 확장자를 삭제할 때, 시스템은 해당 항목을 정책에서 제거해야 하며 이후의 정책 재조회 결과와 업로드 판정 대상에 그 항목이 포함되지 않아야 한다.
-→ 근거: 과제 §2-A "각 항목 옆 `X` 클릭 시 DB에서 삭제", plan.md §5 `DELETE /api/policy/custom/[ext]`
+→ 근거: 요구사항 "각 항목 옆 `X` 클릭 시 DB에서 삭제", plan.md §5 `DELETE /api/policy/custom/[ext]`
 
 **REQ-UPLOAD-004** (Unwanted behavior)
 시스템은 `kind = 'custom'`인 항목을 **200개를 초과해 저장하지 않아야 한다**. 상한 검사는 카운트와 삽입이 하나의 원자 연산 안에서 이루어져야 한다.
@@ -103,7 +103,7 @@ issue_number: 1
 
 **REQ-UPLOAD-008** (Event-driven)
 **대표형으로 정규화된** 후보 중 하나라도 차단 목록에 있을 때, 시스템은 **실제로 걸린 대표형 세그먼트를 응답 `details.matched`에 포함**해 `BLOCKED_EXTENSION`(HTTP 415)으로 거부해야 한다. 따라서 `jpg`를 차단하면 `photo.jpeg`도 `matched: "jpg"`로 거부된다.
-→ 근거: plan.md §3 단계 5, §3.3, 과제 §3-3 "무엇이, 왜 막혔는지"
+→ 근거: plan.md §3 단계 5, §3.3, 요구사항 "무엇이, 왜 막혔는지"
 
 **REQ-UPLOAD-009** (Event-driven)
 **파일 내용으로부터 판별된 확장자**가 별칭 정규화 후 차단 목록에 있을 때, 시스템은 `SIGNATURE_BLOCKED`(HTTP 415)으로 거부해야 한다. 판별은 이진 포맷의 매직 넘버와 텍스트 실행 파일의 선행 바이트 양쪽을 대상으로 한다.
@@ -115,7 +115,7 @@ issue_number: 1
 
 **REQ-UPLOAD-011** (Unwanted behavior)
 시스템은 원본 파일명을 저장소 키로 사용하지 않아야 하며, 저장 키에 확장자를 포함하지 않아야 한다. 키는 `uploads/{UUID}` 형태다. 파일명은 REQ-UPLOAD-007의 **정규화·절단을 거친 값**만 메타데이터로 보관하며, 클라이언트가 보낸 원본 바이트를 그대로 저장하지 않아야 한다 — 저장되는 값은 표시·감사용 정규화 파일명이다.
-→ 근거: plan.md §3 단계 10, §2.5 (`original_name` 컬럼 주석), 과제 §3-1 "원본 파일명 사용 위험"
+→ 근거: plan.md §3 단계 10, §2.5 (`original_name` 컬럼 주석), 요구사항 "원본 파일명 사용 위험"
 
 **REQ-UPLOAD-012** (Ubiquitous)
 **요청 하나는 파일 하나를 싣는다.** 따라서 4MB 상한은 파일 상한이자 요청 상한이며, 시스템은 이를 두 겹으로 강제해야 한다 — (1) `Content-Length`가 존재하고 4MB를 초과하면 본문 스트림을 소비하기 전에 `FILE_TOO_LARGE`(413)로 거부해야 하고, (2) 헤더가 없거나(청크 전송) 실제보다 작게 신고된 경우에도 본문을 바이트 상한을 걸어 읽은 뒤 실제 바이트 수가 4MB를 초과하면 같은 코드로 거부해야 한다. 플랫폼의 4.5MB 요청 본문 한도는 이 둘을 모두 통과한 경우의 최후 방어선이며 애플리케이션의 판정 근거가 아니다. 확장자 후보가 하나도 없으면 `NO_EXTENSION`(415)으로 거부해야 한다.
@@ -129,7 +129,7 @@ issue_number: 1
 시스템은 **파일 단위 판정(수락·거부)**에 대해 `upload_attempt` 테이블에 정확히 1행과 구조화 로그 1줄을 남겨야 하며, **파일 내용은 어느 쪽에도 기록하지 않아야 한다**. 파일명은 로그에서 64자로 절단해야 한다.
 
 본문을 읽기 전에 확정되는 **요청 단위 거부**(`Content-Length` 선차단으로 발생하는 413)는 테이블에 행을 남기지 않아야 하며 구조화 로그만 남긴다. 그 시점에는 파일명과 실제 크기가 확정되지 않아 `original_name`·`size_bytes`가 NOT NULL인 행을 만들 수 없기 때문이다.
-→ 근거: plan.md §3 단계 1·11, §7, 과제 §3-4 "로그/모니터링"
+→ 근거: plan.md §3 단계 1·11, §7, 요구사항 "로그/모니터링"
 
 ### 3.4 `policy-api` — HTTP 계약
 
@@ -143,7 +143,7 @@ issue_number: 1
 클라이언트에서 JavaScript가 동작하는 환경에서는, 시스템이 다음 세 가지를 제공해야 한다 — (1) 정책 변경에 낙관적 갱신을 적용하고 실패 시 서버가 반환한 정식 상태로 화면을 되돌린다, (2) 파일 선택 시점에 **이미 페이지에 로드된 정책**으로 확장자를 조회해 차단 대상이면 비차단 안내(`CLIENT_HINT_BLOCKED`)를 표시한다 — 이 힌트는 업로드를 막지 않으며 사용자는 그대로 전송할 수 있다, (3) 그 힌트가 편의 기능일 뿐임을 알리는 고정 문구(`CLIENT_HINT_DISCLAIMER`)를 함께 표시한다. 초기 정책 상태는 서버에서 렌더링되어야 한다.
 
 **서버는 유일한 강제 지점이다.** 클라이언트 힌트는 어떤 판정에도 입력으로 쓰이지 않으며, 힌트를 무시하고 전송된 요청도 서버에서 동일하게 판정된다.
-→ 근거: plan.md §4 (문구 상수), §5, §7, 과제 §3-3 "저장 실패 시 화면 상태와 DB 상태의 일관성", §3-1 "서버 사이드 검증의 필요성"
+→ 근거: plan.md §4 (문구 상수), §5, §7, 요구사항 "저장 실패 시 화면 상태와 DB 상태의 일관성"·"서버 사이드 검증의 필요성"
 
 ---
 
@@ -151,7 +151,7 @@ issue_number: 1
 
 | 경로 | 구분 | 역할 |
 |---|---|---|
-| `migrations/001_init.sql` | 신규 | DDL 단일 원본 — README의 table schema 제출물과 동일 |
+| `migrations/001_init.sql` | 신규 | DDL 단일 원본 — README의 table schema 문서와 동일 |
 | `scripts/migrate.ts` | 신규 | `migrations/*.sql` 순차 적용 + `_migration` 이력 |
 | `src/lib/constants.ts` | 신규 | `MAX_CUSTOM_EXTENSIONS` · `MAX_EXTENSION_LENGTH` · `MAX_UPLOAD_BYTES` + `plan.md` §4.1 문구 상수 표 |
 | `src/lib/server/db/client.ts` | 신규 | `@neondatabase/serverless` HTTP 클라이언트 |
@@ -190,7 +190,7 @@ issue_number: 1
 ### 5.1 Out of Scope — 업로드 파일 재제공
 - 업로드된 파일을 다시 내려주는 다운로드·미리보기 엔드포인트를 만들지 않는다.
 - Blob store는 private으로 두어 URL만으로는 열 수 없게 한다.
-- 근거: 재제공하는 순간 `Content-Disposition` / `Content-Type` 처리 실수 하나로 저장형 XSS(업로드된 `.svg`·`.html`이 우리 오리진에서 실행)와 피싱 호스팅 위험이 열린다. 과제 요구는 "정상 파일은 업로드 성공 처리"까지이므로 위험 표면을 설계 단계에서 제거한다.
+- 근거: 재제공하는 순간 `Content-Disposition` / `Content-Type` 처리 실수 하나로 저장형 XSS(업로드된 `.svg`·`.html`이 우리 오리진에서 실행)와 피싱 호스팅 위험이 열린다. 요구 범위는 "정상 파일은 업로드 성공 처리"까지이므로 위험 표면을 설계 단계에서 제거한다.
 
 ### 5.2 Out of Scope — 인증 및 사용자별 정책
 - 로그인·사용자·권한 개념을 만들지 않으며 정책은 전역 단일 정책이다.
@@ -199,15 +199,15 @@ issue_number: 1
 
 ### 5.3 Out of Scope — 4.5MB 초과 파일 및 클라이언트 직접 업로드
 - Vercel Function 본문 한도(4.5MB)를 넘는 파일을 다루지 않으며, 브라우저가 저장소에 직접 올리는 업로드 경로를 채택하지 않는다.
-- 근거: 그 경로는 **서버가 파일 바이트를 보지 못해 내용 판별이 원리적으로 불가능**하다. 이 과제의 핵심이 서버 사이드 검증이라 정면으로 충돌한다.
+- 근거: 그 경로는 **서버가 파일 바이트를 보지 못해 내용 판별이 원리적으로 불가능**하다. 이 프로젝트의 핵심이 서버 사이드 검증이라 정면으로 충돌한다.
 
 ### 5.4 Out of Scope — 압축파일 내부 검사 및 안티바이러스
 - zip/tar 내부 엔트리 검사, zip-slip 대응, 압축 폭탄 방어, 바이러스 스캔 연동을 만들지 않는다.
-- 근거: 확장자 정책은 컨테이너만 본다. 내부 검사는 별도의 해제·격리 인프라를 요구하며 과제 규모를 넘어선다. 한계 자체를 문서에 명시하는 것으로 대신한다.
+- 근거: 확장자 정책은 컨테이너만 본다. 내부 검사는 별도의 해제·격리 인프라를 요구하며 이 프로젝트의 규모를 넘어선다. 한계 자체를 문서에 명시하는 것으로 대신한다.
 
 ### 5.5 Out of Scope — E2E CI 배선 및 rate limiting
 - 브라우저 자동화 E2E의 **CI 파이프라인 배선**과 IP 기반 요청 제한을 만들지 않는다.
-- 근거: CI 배선 비용이 과제 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기 상한(4MB)과 요청당 1파일 제약, 그리고 Blob Hobby 무료 한도가 실질적 차단기 역할을 한다.
+- 근거: CI 배선 비용이 이 프로젝트 규모에 비해 크다. rate limiting은 무인증 공개 배포의 비용 DoS를 막는 개선안으로 문서에만 남기며, 현재는 업로드 크기 상한(4MB)과 요청당 1파일 제약, 그리고 Blob Hobby 무료 한도가 실질적 차단기 역할을 한다.
 - (sync 정정 2026-08-31) 초안은 "배포 URL 수동 데모로 E2E를 대체"했으나, 배포 후 **1회성 Playwright 스모크**를 배포 URL 대상으로 실행해 핵심 여정 5건과 Q12 문구 12종 캡처를 확보했다(`e2e/`, 증거: `e2e/screenshots/q12/`, 로그: `.moai/state/verify/18010b75/e2e-smoke.log`). 배제 대상은 "E2E 자체"가 아니라 "CI 상시 배선"으로 좁혀진다 (결정: PROMPT_LOG #54·#86).
 
 ### 5.6 Out of Scope — 업로드 시도 조회 API
@@ -223,5 +223,5 @@ issue_number: 1
 - **주 커버리지 표면**: `src/lib/server/**` — `acceptance.md` Q2의 측정 분모와 동일한 glob을 쓴다
 - **통합**: PGlite 인프로세스 PostgreSQL에 `migrations/001_init.sql`을 적용한 리포지토리 및 엔드포인트 테스트
 - **컴포넌트**: Vitest `jsdom` 환경 + `@testing-library/svelte`로 `FixedExtensionList.svelte`를 렌더링해 AC-016a의 롤백 과도 상태를 검증한다. 브라우저를 띄우지 않는 단위 수준 DOM 테스트이며 §5.5의 E2E 배제와 충돌하지 않는다 (도구 선정 근거: `plan.md` §8)
-- **E2E 스모크(1회성)**: Playwright + chromium으로 배포 URL(`https://flow-assignment-opal.vercel.app`)을 대상으로 핵심 여정 5건 + Q12 문구 캡처를 실행한다 (`e2e/smoke.spec.ts`, `e2e/q12-messages.spec.ts`; §5.5 정정 참조)
+- **E2E 스모크(1회성)**: Playwright + chromium으로 배포된 인스턴스를 대상으로 핵심 여정 5건 + Q12 문구 캡처를 실행한다 (`e2e/smoke.spec.ts`, `e2e/q12-messages.spec.ts`; §5.5 정정 참조)
 - **품질 게이트**: `acceptance.md` § 품질 게이트 (Q1~Q12)

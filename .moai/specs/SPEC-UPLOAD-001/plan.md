@@ -12,7 +12,7 @@ updated: 2026-08-31
 
 ## 1. 목표와 범위
 
-확장자 기반 차단 정책을 DB에 저장·관리하고, 그 정책이 **실제 업로드 요청에서 서버 사이드로 강제**되는 단일 배포 애플리케이션을 만든다. 과제 브리프 §2(A+B)가 최소 범위이며, 평가 가중치가 가장 높은 §3(고려사항)은 코드가 아니라 `CONSIDERATIONS.md`로 답한다.
+확장자 기반 차단 정책을 DB에 저장·관리하고, 그 정책이 **실제 업로드 요청에서 서버 사이드로 강제**되는 단일 배포 애플리케이션을 만든다. 요구사항 원문의 기능 범위(정책 관리 화면 + 업로드 강제)가 최소 범위이며, 그보다 비중이 큰 고려사항 항목은 코드가 아니라 `CONSIDERATIONS.md`로 답한다.
 
 - **스택**: SvelteKit 2.x (Svelte 5 runes, TypeScript) + Neon PostgreSQL + Vercel Blob, `@sveltejs/adapter-vercel`로 Vercel 단일 배포. 패키지 매니저 pnpm.
 - **개발 방식**: TDD (RED-GREEN-REFACTOR). `quality.yaml` 기준 커버리지 목표 85%, 커밋당 최소 80%.
@@ -22,9 +22,9 @@ updated: 2026-08-31
 
 정식 Out of Scope 선언(h3 6개)은 `spec.md` §5가, 서술형 근거는 `CONSIDERATIONS.md`가 담당한다. 여기서는 계획 판단에 필요한 요지만 둔다.
 
-- **업로드 파일 재제공** — 다운로드/미리보기 엔드포인트를 만들지 않고 Blob store를 private으로 둔다. 재제공하는 순간 `Content-Disposition`/`Content-Type` 실수 하나로 저장형 XSS(업로드된 `.svg`·`.html`이 우리 오리진에서 실행)와 피싱 호스팅 위험이 열린다. 과제 요구는 "정상 파일은 업로드 성공 처리"까지이므로 위험 표면을 설계로 제거한다.
+- **업로드 파일 재제공** — 다운로드/미리보기 엔드포인트를 만들지 않고 Blob store를 private으로 둔다. 재제공하는 순간 `Content-Disposition`/`Content-Type` 실수 하나로 저장형 XSS(업로드된 `.svg`·`.html`이 우리 오리진에서 실행)와 피싱 호스팅 위험이 열린다. 요구 범위는 "정상 파일은 업로드 성공 처리"까지이므로 위험 표면을 설계로 제거한다.
 - **인증·사용자별 정책** — 전역 단일 정책만 둔다. 인증 없이 "누가 바꿨는가"를 기록하면 감사 로그가 절반만 참인 상태가 된다(§2.4와 연결).
-- **4.5MB 초과 파일 / client upload** — client upload 경로는 **서버가 파일 바이트를 보지 못해 시그니처 검사가 불가능**하다. 이 과제의 핵심과 정면으로 충돌하므로 서버 업로드만 채택한다.
+- **4.5MB 초과 파일 / client upload** — client upload 경로는 **서버가 파일 바이트를 보지 못해 시그니처 검사가 불가능**하다. 이 프로젝트의 핵심과 정면으로 충돌하므로 서버 업로드만 채택한다.
 - **압축파일 내부 검사, 안티바이러스, E2E** — zip 내부 엔트리·zip-slip·압축 폭탄·바이러스 스캔·Playwright는 만들지 않는다. 근거는 §9 매트릭스.
 - **최근 업로드 시도 조회 엔드포인트(`GET /api/uploads/recent`)** — 만들지 않는다. 이를 규정하는 REQ도 검증하는 AC도 없었고, 무인증 공개 배포 위에서는 **다른 사용자가 올린 파일명·선언 MIME·탐지 MIME을 누구나 열람**하게 만든다. 운영 관점 데모라는 편익보다 노출 비용이 크다. `upload_attempt` 테이블은 그대로 유지하므로 감사 기록 자체는 남으며, 필요하면 DB를 직접 조회한다.
 
@@ -65,7 +65,7 @@ RETURNING extension;
 
 ### 2.5 DDL 초안 (`migrations/001_init.sql`)
 
-이 파일이 README의 table schema 제출물과 **동일한 원본**이다(README는 이 파일을 인용한다).
+이 파일이 README의 table schema 문서와 **동일한 원본**이다(README는 이 파일을 인용한다).
 
 ```sql
 CREATE TABLE IF NOT EXISTS blocked_extension (
@@ -136,7 +136,7 @@ ON CONFLICT (extension) DO NOTHING;
 
    **평범한 `.html` 업로드는 `html`이 차단 목록에 없는 한 거부되지 않는다** — prefix 적중 자체는 거부 사유가 아니다. `<script`를 `js`로 매핑하지 않는 점에 주의한다: `<script` 태그의 존재는 HTML 문서라는 뜻이지 `.js` 파일이라는 뜻이 아니고, `js`는 고정 확장자 7개 중 하나라 잘못 매핑하면 사용자가 `js`를 체크하는 순간 모든 HTML이 차단된다.
 
-   근거: `.sh`, `.bat`, `.cmd`처럼 **매직 넘버가 없는 텍스트 실행 파일**은 라이브러리가 판별할 수 없다 — `file-type` README가 "This package is for detecting binary-based file formats, not text-based formats like `.txt`, `.csv`, `.svg`, etc."라고 명시한다. 이 과제의 위험 목록이 정확히 그 부류라 라이브러리 하나로 끝났다고 말하면 거짓이 된다.
+   근거: `.sh`, `.bat`, `.cmd`처럼 **매직 넘버가 없는 텍스트 실행 파일**은 라이브러리가 판별할 수 없다 — `file-type` README가 "This package is for detecting binary-based file formats, not text-based formats like `.txt`, `.csv`, `.svg`, etc."라고 명시한다. 이 프로젝트의 위험 목록이 정확히 그 부류라 라이브러리 하나로 끝났다고 말하면 거짓이 된다.
 9. **선언 MIME 취급** — 브라우저가 보낸 `file.type`은 **신뢰 경계 밖의 힌트**로만 쓴다. 판정에 사용하지 않고 `upload_attempt.declared_mime`에 기록만 한다. 근거: 대부분의 브라우저는 파일 내용이 아니라 **확장자와 OS의 MIME 데이터베이스**로 이 값을 만든다 — 즉 확장자의 독립적인 검증 수단이 아니라 확장자의 파생값이다.
 10. **저장** — 원본 파일명을 절대 저장 키로 쓰지 않는다. 키는 `uploads/${crypto.randomUUID()}`이며 **확장자를 붙이지 않는다**(경로 기반 Content-Type 추론 차단). 원본 파일명은 `upload_attempt.original_name` 메타데이터로만 남기고, 화면 표시 시 이스케이프한다.
 11. **기록** — 성공/거부 모두 `upload_attempt`에 1행. 그리고 구조화 로그 한 줄.
@@ -149,7 +149,7 @@ ON CONFLICT (extension) DO NOTHING;
 
 **채택: (a) 탐지 확장자가 차단 목록에 있을 때만 거부, 단순 불일치는 기록만** / **기각: (b) 탐지 ≠ 선언이면 무조건 거부**
 
-근거: 과제가 명시한 위협은 "`report.jpg`인데 실제로는 실행 파일"이다 — **위험한 것으로 판명된 내용물**이 문제이지 불일치 자체가 문제가 아니다. (b)를 택하면 PNG를 `notes.txt`로 저장해 둔 무해한 파일이 거부되고, 오탐이 쌓이면 사용자가 차단 메시지를 읽지 않게 된다. 차단 UX의 신뢰도가 실제 손실이다. 다만 (b)를 버리는 것은 아니다 — 불일치는 `upload_attempt.detected_mime`과 구조화 로그에 남아 **차단하지 않되 보이게** 한다. 화이트리스트 모델로 전환하면 (b)가 자연스러운 기본값이 되므로 그때 뒤집힐 판단임을 명시한다. 결과적으로 `EXTENSION_CONTENT_MISMATCH`는 거부 사유 코드에서 빠지고 기록 전용 플래그(`mismatch: true`)가 된다.
+근거: 요구사항이 명시한 위협은 "`report.jpg`인데 실제로는 실행 파일"이다 — **위험한 것으로 판명된 내용물**이 문제이지 불일치 자체가 문제가 아니다. (b)를 택하면 PNG를 `notes.txt`로 저장해 둔 무해한 파일이 거부되고, 오탐이 쌓이면 사용자가 차단 메시지를 읽지 않게 된다. 차단 UX의 신뢰도가 실제 손실이다. 다만 (b)를 버리는 것은 아니다 — 불일치는 `upload_attempt.detected_mime`과 구조화 로그에 남아 **차단하지 않되 보이게** 한다. 화이트리스트 모델로 전환하면 (b)가 자연스러운 기본값이 되므로 그때 뒤집힐 판단임을 명시한다. 결과적으로 `EXTENSION_CONTENT_MISMATCH`는 거부 사유 코드에서 빠지고 기록 전용 플래그(`mismatch: true`)가 된다.
 
 ### 3.3 확장자 별칭 정규화 (비교 전에 적용)
 
@@ -209,7 +209,7 @@ NFKC를 먼저 두는 이유는 전각 입력(`ｅｘｅ`)을 `exe`로 접기 �
 
 **`+server.ts` JSON 엔드포인트 채택, form actions 기각.**
 
-근거: (a) 정책 화면은 체크박스 토글·칩 추가/삭제가 잦은 상호작용 UI라 form action은 액션마다 전체 무효화 왕복 또는 `enhance` 배선을 강요한다. (b) 이 과제의 핵심 산출물인 **기계 판독 가능한 `reason_code` 에러 규격**은 JSON 응답으로 표현하는 것이 자연스럽다. (c) 업로드 결과를 사유 코드와 함께 화면에 즉시 반영해야 한다.
+근거: (a) 정책 화면은 체크박스 토글·칩 추가/삭제가 잦은 상호작용 UI라 form action은 액션마다 전체 무효화 왕복 또는 `enhance` 배선을 강요한다. (b) 이 프로젝트의 핵심 산출물인 **기계 판독 가능한 `reason_code` 에러 규격**은 JSON 응답으로 표현하는 것이 자연스럽다. (c) 업로드 결과를 사유 코드와 함께 화면에 즉시 반영해야 한다.
 
 **요청 하나 = 파일 하나.** 다중 파일 선택은 클라이언트가 **파일 개수만큼 순차 요청**을 보내 처리하며 서버는 요청당 정확히 한 개의 파일만 받는다. 이 결정이 세 가지를 동시에 정리한다 — `Content-Length`가 곧 그 파일의 크기가 되어 선차단이 정확해지고, 부분 성공(5개 중 1개 차단)이라는 애매한 응답 계약 자체가 사라지며, 근거 없는 상수 하나(`MAX_FILES_PER_REQUEST = 5`)가 없어진다. 파일별 결과는 요청별 응답으로 자연히 분리된다.
 
@@ -241,7 +241,7 @@ NFKC를 먼저 두는 이유는 전각 입력(`ｅｘｅ`)을 `exe`로 접기 �
 
 **`@neondatabase/serverless` + 파라미터화된 평문 SQL 채택. Drizzle 기각.**
 
-간소화 사다리 적용 결과: 테이블 2개, 쿼리 약 8개다. Drizzle은 스키마 DSL·마이그레이션 생성기·추가 빌드 단계를 가져오는데, 그 대가로 얻는 타입 안전성은 여기서 손으로 쓴 행 타입 8개로 대체된다. 결정적으로 **과제 제출물이 "사람이 읽는 table schema"를 요구**하므로, 평문 DDL이 곧 제출물이 되는 구성이 문서와 코드의 이중 관리를 없앤다.
+간소화 사다리 적용 결과: 테이블 2개, 쿼리 약 8개다. Drizzle은 스키마 DSL·마이그레이션 생성기·추가 빌드 단계를 가져오는데, 그 대가로 얻는 타입 안전성은 여기서 손으로 쓴 행 타입 8개로 대체된다. 결정적으로 **산출물로 "사람이 읽는 table schema"가 요구**되므로, 평문 DDL이 곧 그 문서가 되는 구성이 문서와 코드의 이중 관리를 없앤다.
 
 - 드라이버는 HTTP 모드(`neon()` 태그드 템플릿)를 쓴다. 쿼리당 1 왕복이라 serverless에 적합하고, 태그드 템플릿이 파라미터 바인딩을 강제해 SQL 인젝션 표면을 구조적으로 없앤다(문자열 연결 금지).
 - 대화형 트랜잭션이 필요한 경우는 없다. 배치가 필요하면 `sql.transaction([...])`. 마이그레이션: `migrations/NNN_*.sql`을 순서대로 적용하는 `scripts/migrate.ts`(약 30줄). 적용 이력은 `_migration` 테이블에 파일명으로 기록해 재실행 안전성을 보장한다. `pnpm db:migrate`.
@@ -283,9 +283,9 @@ AC-016a(낙관적 갱신 → 500 실패 → 롤백)는 렌더링된 컴포넌트
 
 **통합 테스트 — PGlite 채택, Neon 브랜치 기각.**
 
-`@electric-sql/pglite`(WASM PostgreSQL)를 인프로세스로 띄우고 `migrations/001_init.sql`을 그대로 적용해 엔드포인트를 검증한다. 근거: 네트워크·크리덴셜 없이 결정적이고 빠르며, 우리 SQL이 Neon 고유 기능을 전혀 쓰지 않는 평범한 PostgreSQL이라 충실도가 충분하다. 테스트 실행마다 Neon 브랜치를 만드는 대안은 API 토큰 배선과 정리 로직을 요구해 과제 규모에 과하다. 잔여 위험(PGlite와 서버 PostgreSQL의 미세한 동작 차이)은 스키마가 코어 기능만 쓰므로 낮게 본다.
+`@electric-sql/pglite`(WASM PostgreSQL)를 인프로세스로 띄우고 `migrations/001_init.sql`을 그대로 적용해 엔드포인트를 검증한다. 근거: 네트워크·크리덴셜 없이 결정적이고 빠르며, 우리 SQL이 Neon 고유 기능을 전혀 쓰지 않는 평범한 PostgreSQL이라 충실도가 충분하다. 테스트 실행마다 Neon 브랜치를 만드는 대안은 API 토큰 배선과 정리 로직을 요구해 이 프로젝트 규모에 과하다. 잔여 위험(PGlite와 서버 PostgreSQL의 미세한 동작 차이)은 스키마가 코어 기능만 쓰므로 낮게 본다.
 
-**Playwright 스모크 — 보류(변경 없음).** 해피 패스 1개는 가치가 있으나 배포 URL의 수동 데모가 같은 확신을 주고 CI 배선 비용이 과제 규모에 비해 크다. 위의 jsdom 컴포넌트 테스트는 이 결정을 뒤집지 않는다 — 브라우저를 띄우지 않기 때문이다. 품질 게이트는 `pnpm check`(svelte-check) 0 error + `pnpm lint` 0 error + 단위 커버리지 85%로 정의한다.
+**Playwright 스모크 — 보류(변경 없음).** 해피 패스 1개는 가치가 있으나 실행 중인 인스턴스에서의 수동 데모가 같은 확신을 주고 CI 배선 비용이 이 프로젝트 규모에 비해 크다. 위의 jsdom 컴포넌트 테스트는 이 결정을 뒤집지 않는다 — 브라우저를 띄우지 않기 때문이다. 품질 게이트는 `pnpm check`(svelte-check) 0 error + `pnpm lint` 0 error + 단위 커버리지 85%로 정의한다.
 
 ---
 
@@ -303,7 +303,7 @@ AC-016a(낙관적 갱신 → 500 실패 → 롤백)는 렌더링된 컴포넌트
 | 3-1-h | MIME 스푸핑 | implement | 선언 MIME은 판정에 미사용, 기록만. 내용-확장자 불일치도 거부가 아닌 `mismatch` 기록으로 관찰(오탐이 차단 UX 신뢰도를 깎는 비용 > 불일치 자체의 위험) |
 | 3-2-a | 고정·커스텀 겹침 | implement | `EXT_IS_FIXED`로 거부, `UNIQUE` 제약이 뒷받침 |
 | 3-2-b | 정책 변경 이력·감사 | defer | 인증이 없어 "누가"를 채울 수 없음. 구조화 로그로 대체, DDL 초안만 제시 |
-| 3-2-c | 200 / 20자 근거와 초과 UX | implement | 과제 명시값. 초과 시 전용 reason code + 카운터 표시 |
+| 3-2-c | 200 / 20자 근거와 초과 UX | implement | 요구사항 명시값. 초과 시 전용 reason code + 카운터 표시 |
 | 3-2-d | 대량 조회 성능·인덱스 | implement | `UNIQUE(extension)` 하나만. 207행에서 추가 인덱스는 쓰기 비용만 늘림 |
 | 3-3-a | 차단 사유 메시지 | implement | reason code → 사용자 문구 매핑, 걸린 세그먼트 표시 |
 | 3-3-b | 로딩 / 에러 / 네트워크 실패 | implement | 버튼 pending 상태, 실패 시 낙관적 갱신 롤백 |
@@ -355,7 +355,7 @@ AC-016a(낙관적 갱신 → 500 실패 → 롤백)는 렌더링된 컴포넌트
 |---|---|---|
 | 시그니처 검사가 텍스트 실행 파일을 못 잡음 | 보안 오해 | prefix 스니핑 보강 + 한계를 문서에 명시(숨기지 않음) |
 | Vercel 4.5MB 본문 한도 | 큰 파일 업로드 불가 | 앱 상한 4MB로 명시, client upload 미채택 사유 문서화 |
-| Neon 콜드 스타트 / Blob Hobby 한도 초과(30일 차단) | 면접 당일 데모 지연·실패 | 데모 직전 URL 예열 + 사용량 확인. 사용량은 업로드 크기 상한(4MB)과 요청당 1파일 제약으로 억제하며 Blob Hobby 무료 한도 안에서 운영 |
+| Neon 콜드 스타트 / Blob Hobby 한도 초과(30일 차단) | 데모 당일 지연·실패 | 데모 직전 URL 예열 + 사용량 확인. 사용량은 업로드 크기 상한(4MB)과 요청당 1파일 제약으로 억제하며 Blob Hobby 무료 한도 안에서 운영 |
 | 200개 상한의 잔여 경합 | 201개 가능 | 단일 원자 SQL로 축소, advisory lock 대안 명시 |
 | PGlite와 서버 PostgreSQL의 동작 차이 | 통합 테스트 신뢰도 | 코어 기능만 사용, 배포 후 수동 스모크로 보완 |
 
@@ -366,7 +366,7 @@ AC-016a(낙관적 갱신 → 500 실패 → 롤백)는 렌더링된 컴포넌트
 | 위치 | 태그 | 내용 |
 |---|---|---|
 | `decideUpload()` | `@MX:ANCHOR` | 업로드 판정의 단일 진입점. 호출부 3곳 이상(엔드포인트·테스트·클라이언트 힌트) |
-| `src/lib/constants.ts` | `@MX:NOTE` | `MAX_CUSTOM_EXTENSIONS=200`, `MAX_EXTENSION_LENGTH=20`, `MAX_UPLOAD_BYTES=4MB`의 출처(과제 명시값 / 플랫폼 한도 역산) |
+| `src/lib/constants.ts` | `@MX:NOTE` | `MAX_CUSTOM_EXTENSIONS=200`, `MAX_EXTENSION_LENGTH=20`, `MAX_UPLOAD_BYTES=4MB`의 출처(요구사항 명시값 / 플랫폼 한도 역산) |
 | `sniffSignature()` | `@MX:WARN` | 판별 불가 시 통과시키는 우회 경로. 확장자 정책이 1차 방어선임을 명시 |
 | `EXTENSION_ALIASES` | `@MX:ANCHOR` | 별칭 표의 단일 원본. 7·8단계와 정책 저장이 모두 참조 — 복제하면 한쪽만 고쳐져 오탐이 조용히 돌아옴 |
 | 커스텀 추가 SQL | `@MX:WARN` | `READ COMMITTED` 잔여 경합. advisory lock이 엄격 모드 |

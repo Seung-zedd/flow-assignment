@@ -158,7 +158,7 @@
 | Q6 | PGlite 통합 · 엔드포인트 · 컴포넌트(jsdom) 테스트 전부 통과 | `pnpm test` (Vitest 두 프로젝트: `node` + `jsdom`) |
 | Q7 | 배포 URL `/` 가 HTTP 200 응답 | 배포 후 실제 호출 |
 | Q8 | `README.md`에 실행 방법 + table schema(컬럼·타입·제약·인덱스) 포함 | 수동 확인 |
-| Q9 | `CONSIDERATIONS.md`가 `plan.md` §9의 28항목(과제 19 + 자체 발굴 E1~E9)을 빠짐없이 다룸 | 항목 수 대조 |
+| Q9 | `CONSIDERATIONS.md`가 `plan.md` §9의 28항목(요구사항 19 + 자체 발굴 E1~E9)을 빠짐없이 다룸 | 항목 수 대조 |
 | Q10 | `plan.md` §13이 지정한 **배치 위치 6곳**에 MX 태그(3종: `@MX:ANCHOR` · `@MX:NOTE` · `@MX:WARN`)가 존재 | `/moai mx` 스캔 + `plan.md` §13 표와 1:1 대조 |
 | Q11 | `PROMPT_LOG.md`가 세 절을 모두 채운 상태로 존재 — §1 타임라인이 마지막 마일스톤(M4)까지 시계열로 이어지고, §2에 사용한 스킬·에이전트·라이브러리 표가 있으며, §3 회고(채택/수정/폐기 판단)가 작성자 본인 서술로 채워져 있음 | 수동 확인 (세 절의 존재 + §1 마지막 항목이 M4를 가리키는지) |
 | Q12 | 차단·거부 사유 문구가 화면에 표시되고 `plan.md` §4 문구 상수 표와 문자열이 일치함 — 사유 코드 10종 + `ALIAS_FOLDED` · `CLIENT_HINT_BLOCKED` · `CLIENT_HINT_DISCLAIMER` | **수동 확인** (배포 URL에서 각 코드를 유발해 화면 문구 대조). API AC(AC-008~015)는 사유 코드·`details`만 단언하므로 화면 문구 검증은 이 게이트가 유일한 소유자다 |

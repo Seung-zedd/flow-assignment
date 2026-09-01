@@ -1,4 +1,4 @@
-// 실행 전 프로덕션 정책의 스냅샷을 남긴다. 이 파일이 원상복구(global-teardown)의 기준이다.
+// 실행 전 대상 환경 정책의 스냅샷을 남긴다. 이 파일이 원상복구(global-teardown)의 기준이다.
 import { getPolicy, saveBaseline, baseURL } from './policy-api';
 
 export default async function globalSetup(): Promise<void> {

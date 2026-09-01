@@ -1,13 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// 배포된 프로덕션을 기본 대상으로 삼는다. 로컬/프리뷰를 겨냥할 때만 PLAYWRIGHT_BASE_URL을 덮어쓴다.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://flow-assignment-opal.vercel.app';
+// 로컬 dev 서버를 기본 대상으로 삼는다. 배포 환경을 겨냥할 때만 PLAYWRIGHT_BASE_URL로 덮어쓴다.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
 
 export default defineConfig({
 	testDir: 'e2e',
 	globalSetup: './e2e/global-setup.ts',
 	globalTeardown: './e2e/global-teardown.ts',
-	// 프로덕션의 공유 상태(정책 테이블)를 건드리므로 병렬 실행을 금지한다.
+	// 대상 환경의 공유 상태(정책 테이블)를 건드리므로 병렬 실행을 금지한다.
 	// 두 테스트가 동시에 exe 토글을 반대로 돌리면 서로의 전제를 무너뜨린다.
 	fullyParallel: false,
 	workers: 1,

@@ -1,9 +1,7 @@
-# 🛡 flow-assignment - 확장자 차단 정책 관리 + 서버 사이드 업로드 검증 웹 애플리케이션
+# 🛡 secure-file-upload — 확장자 차단 정책 관리 + 서버 사이드 업로드 검증 웹 애플리케이션
 
 > **"차단 목록은 화면에만 있으면 안 됩니다. 서버가 막아야 정책입니다."**
 > <br/>
-
-[🌐 서비스 바로가기 (flow-assignment-opal.vercel.app)](https://flow-assignment-opal.vercel.app)
 
   <p align="center">
     <img src="https://img.shields.io/badge/Svelte 5-FF3E00?style=flat-square&logo=Svelte&logoColor=white"/>
@@ -21,20 +19,21 @@
 
 정책 화면만 있고 업로드에서 강제되지 않으면 "정책은 있으나 막지 못하는 화면"에 그칩니다. 그래서 정책 관리와 업로드 강제를 하나의 신뢰 경계 안에 두었습니다. 파일명 확장자뿐 아니라 파일 **내용의 매직 넘버**까지 확인하고, 무엇이 왜 막혔는지를 사유 코드와 함께 돌려줍니다. 브라우저가 보여 주는 차단 안내는 편의용 힌트일 뿐이며 어떤 판정에도 입력으로 쓰이지 않습니다.
 
-- **개발 기간:** 2026.08.29 ~ 2026.08.30 (과제)
-- **담당 역할:** 1인 풀스택 기획/개발/배포, AI 협업 개발
+- **개발 기간:** 2026.08.29 ~ 2026.08.31
+- **담당 역할:** 1인 풀스택 기획·개발·배포, AI 협업 개발
+- **현재 상태:** 참고용 레퍼런스. 운영 중인 배포·DB·스토리지는 없으며, 로컬에서 실행하려면 아래 [로컬 실행 안내](#-로컬-실행-및-테스트-안내)대로 본인 계정의 자원을 연결해야 합니다.
 
 <br/>
 
-## 🔒 열람 안내 (For Interviewers)
+## 🔎 코드 읽는 순서
 
-**이 과제의 핵심은 "서버가 유일한 강제 지점"이라는 설계와, 그 판정 로직의 정확성입니다. 아래 파일을 중점적으로 검토해 주시면 감사하겠습니다.**
+이 저장소의 핵심은 "서버가 유일한 강제 지점"이라는 설계와 그 판정 로직의 정확성입니다. 처음 읽는다면 아래 순서를 권합니다.
 
 - **`src/lib/server/upload/`** — 판정 파이프라인 전체. `decide.ts`(판정 단일 진입점), `extension.ts`(파일명 정규화·확장자 후보 추출·별칭 표), `signature.ts`(매직 넘버 + prefix 스니핑), `reason-codes.ts`(사유 코드 ↔ 상태 코드 ↔ 문구 매핑)
 - **`src/routes/api/upload/+server.ts`** — 서버 사이드 강제가 실제로 일어나는 유일한 엔드포인트
 - **`migrations/001_init.sql`** — DDL 단일 원본
-- **`CONSIDERATIONS.md`** — 과제 §3의 19개 고려사항 + 자체 발굴 9개, 총 28항목의 판단과 근거
-- **`PROMPT_LOG.md`** — AI 활용 기록 (프롬프트 타임라인, 사용 도구, 채택/수정/폐기 회고)
+- **`CONSIDERATIONS.md`** — 기획·보안·예외·운영 고려사항 28항목의 판단과 근거
+- **`PROMPT_LOG.md`** — AI 협업 개발 기록 (프롬프트 타임라인, 사용 도구, 채택/수정/폐기 회고)
 
 <br/>
 
@@ -169,7 +168,7 @@ DDL의 단일 원본은 [`migrations/001_init.sql`](./migrations/001_init.sql)�
 
 **해결.** 애플리케이션은 `$env/dynamic/private`로만 시크릿을 읽고, Vercel 변수는 대화형 `vercel env add`로만 등록하며 전부 Sensitive로 둡니다. 이 규칙을 훅으로 기계 강제해(`block-env-edit.mjs`, `block-vercel-env-insecure.mjs`) `--value` 옵션, 파이프 입력, `vercel env pull`을 아예 거부하게 만들었습니다.
 
-**결과.** 실제로 연결 문자열이 AI 채팅에 한 번 노출되는 사고가 있었는데, AI가 그 값의 사용을 거부하고 즉시 교체를 권고해 `neondb_owner` 비밀번호를 재설정했습니다. 현재 모든 값은 교체 후의 값입니다. 이 과정에서 테스트가 `.env`를 자동으로 읽고 있던 문제도 발견해 `$env/dynamic/private` 모킹으로 격리했습니다(자세한 경위는 `CONSIDERATIONS.md` E5).
+**결과.** 실제로 연결 문자열이 AI 채팅에 한 번 노출되는 사고가 있었는데, AI가 그 값의 사용을 거부하고 즉시 교체를 권고해 `neondb_owner` 비밀번호를 재설정했습니다. 노출된 값은 그 시점에 폐기했고, 관련 자원은 이후 모두 철거했습니다. 이 과정에서 테스트가 `.env`를 자동으로 읽고 있던 문제도 발견해 `$env/dynamic/private` 모킹으로 격리했습니다(자세한 경위는 `CONSIDERATIONS.md` E5).
 
 <br/>
 
@@ -207,7 +206,7 @@ pnpm dev
 
 ### 환경 변수
 
-값은 저장소에 두지 않습니다. 이름과 용도만 적고, 실제 값은 로컬 `.env`(추적 제외)와 Vercel 프로젝트 설정에만 존재합니다.
+값은 저장소에 두지 않습니다. 이름과 용도만 적고, 실제 값은 로컬 `.env`(추적 제외)와 배포 플랫폼 설정에만 둡니다. 이 저장소에 연결된 운영 자원은 현재 없으므로, 실행하려면 아래 발급처에서 본인 계정의 값을 직접 만들어야 합니다.
 
 | 이름 | 용도 | 발급처 |
 |---|---|---|
@@ -216,9 +215,9 @@ pnpm dev
 
 애플리케이션 코드는 이 값들을 **`$env/dynamic/private`로만** 읽습니다. `process.env` 직접 접근은 SvelteKit 밖에서 도는 `scripts/`에만 허용합니다. `PUBLIC_` 접두사를 쓰지 않으므로 클라이언트 번들에 유입될 경로가 없습니다.
 
-### 배포
+### 배포 (참고 — 현재 운영 중인 배포는 없습니다)
 
-배포 대상은 Vercel이며 GitHub 저장소가 연결되어 있습니다. **`main`에 push하면 프로덕션 배포가 자동으로 시작됩니다.** 별도의 배포 명령이 필요 없습니다.
+이 애플리케이션은 Vercel 배포를 전제로 만들었습니다. GitHub 저장소를 Vercel 프로젝트에 연결하면 `main` push가 곧 프로덕션 배포가 되어 별도의 배포 명령이 필요 없습니다. 아래는 그때 필요한 절차를 기록으로 남긴 것입니다.
 
 시크릿 등록은 운영자가 직접, 최초 1회 수행합니다. 이 프로젝트는 [`.claude/rules/local/secret-management.md`](./.claude/rules/local/secret-management.md)의 zero-trust 규칙을 따릅니다(근거: 2026년 4월 Vercel 공급망 사고).
 
@@ -234,7 +233,7 @@ vercel env add BLOB_READ_WRITE_TOKEN production
 - Development 타깃은 sensitive로 만들 수 없으므로 **로컬 개발용 값은 Vercel에 등록하지 않고** 추적되지 않는 `.env`에 직접 타이핑합니다.
 - `.vercel/` 디렉터리는 커밋하지 않습니다.
 
-> **주의:** [`src/hooks.server.ts`](./src/hooks.server.ts)가 매 요청마다 DB 클라이언트와 Blob 스토어를 만듭니다. 두 환경 변수 중 **하나라도 비어 있으면 모든 요청이 500**입니다. 의도된 fail-closed 동작으로, 시크릿이 빠진 채 정책이 무력화된 상태로 서비스되는 것보다 낫습니다. 배포 전 Vercel 대시보드에서 두 변수가 Production 스코프·Sensitive 배지로 존재하는지, Neon에 마이그레이션이 적용됐는지 확인해 주세요.
+> **주의:** [`src/hooks.server.ts`](./src/hooks.server.ts)가 매 요청마다 DB 클라이언트와 Blob 스토어를 만듭니다. 두 환경 변수 중 **하나라도 비어 있으면 모든 요청이 500**입니다. 의도된 fail-closed 동작으로, 시크릿이 빠진 채 정책이 무력화된 상태로 서비스되는 것보다 낫습니다. 배포한다면 그 전에 Vercel 대시보드에서 두 변수가 Production 스코프·Sensitive 배지로 존재하는지, DB에 마이그레이션이 적용됐는지 확인해야 합니다.
 
 <br/>
 
@@ -242,6 +241,6 @@ vercel env add BLOB_READ_WRITE_TOKEN production
 
 | 파일 | 내용 |
 |---|---|
-| [`PROMPT_LOG.md`](./PROMPT_LOG.md) | AI 활용 기록 — 프롬프트 타임라인, 사용한 스킬·에이전트·라이브러리, 채택/수정/폐기 판단 회고 |
-| [`CONSIDERATIONS.md`](./CONSIDERATIONS.md) | 과제 §3의 19개 고려사항 + 자체 발굴 9개, 총 28항목의 판단과 근거 |
+| [`PROMPT_LOG.md`](./PROMPT_LOG.md) | AI 협업 개발 기록 — 프롬프트 타임라인, 사용한 스킬·에이전트·라이브러리, 채택/수정/폐기 판단 회고 |
+| [`CONSIDERATIONS.md`](./CONSIDERATIONS.md) | 기획·보안·예외·운영 고려사항 28항목의 판단과 근거 |
 | `.moai/specs/SPEC-UPLOAD-001/` | 요구사항 16개(GEARS) · 설계 결정과 마일스톤 · 인수 기준 16개와 품질 게이트 12개 · 마일스톤별 실행 증거 |

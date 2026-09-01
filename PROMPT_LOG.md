@@ -1,7 +1,7 @@
 # PROMPT_LOG — AI 활용 & 개발 기록
 
-> 과제 안내문 §4 (AI 활용 & 개발 기록) 제출용.
-> 환경: Claude Code (Sonnet 5) + MoAI-ADK 3.1.2, 출력 스타일 MoAI-Easy. 프롬프트 원문은 그대로 보존하고, 의도·결과·판단은 뒤에 덧붙임.
+> 이 프로젝트를 만들며 AI(코딩 에이전트/LLM)를 어떻게 썼는지 남긴 개발 기록.
+> 환경: Claude Code (Sonnet 5) + MoAI-ADK 3.1.2, 출력 스타일 MoAI-Easy. 프롬프트는 당시 문장을 유지하되 이 저장소에 두지 않는 요구사항 원문의 파일명·절 번호만 일반 표현으로 바꿨고, 의도·결과·판단은 뒤에 덧붙임.
 > 표기: 🟢 채택 / 🟡 수정 후 채택 / 🔴 폐기 / ⏳ 미정
 
 ### 판단 집계 (#01~#94 기준, 2026-08-31)
@@ -27,7 +27,7 @@
 
 #### #01 `! moai cc -k` (터미널 명령, 2회 실행)
 
-MoAI의 칸반 모드(lead/plan/run/sync 세션을 나눠 협업하는 모드)로 과제를 시작하려 했는데, 두 가지 오류로 즉시 종료됐다.
+MoAI의 칸반 모드(lead/plan/run/sync 세션을 나눠 협업하는 모드)로 작업을 시작하려 했는데, 두 가지 오류로 즉시 종료됐다.
 
 - `Input must be provided either through stdin or as a prompt argument when using --print`
 - `SessionEnd hook ... Executable not found in $PATH: "bash"`
@@ -36,18 +36,18 @@ AI의 진단은 이랬다. 첫 번째 오류는 moai 바이너리가 Claude를 `
 
 판단은 둘로 갈랐다. 🟢 PATH 수정은 1줄짜리 되돌리기 쉬운 변경이라 채택했고, 🔴 칸반 모드는 Windows 미지원이라 폐기하고 일반 세션으로 진행하기로 했다. 검증으로는 settings.json의 PATH 문자열을 PowerShell에 그대로 적용해 `Get-Command bash`가 `C:\Program Files\Git\usr\bin\bash.exe`를 찾는 것을 확인했다.
 
-#### #02 (AskUserQuestion 응답) `PATH 수정 + 칸반 없이 과제 진행 (권장)`
+#### #02 (AskUserQuestion 응답) `PATH 수정 + 칸반 없이 진행 (권장)`
 
-환경 문제는 최소 수정으로 닫고 과제 본체로 빨리 넘어가자는 선택이다. `.claude/settings.json:485`의 PATH 앞에 `C:\Program Files\Git\usr\bin;C:\Program Files\Git\bin;`을 추가했다.
+환경 문제는 최소 수정으로 닫고 본 작업으로 빨리 넘어가자는 선택이다. `.claude/settings.json:485`의 PATH 앞에 `C:\Program Files\Git\usr\bin;C:\Program Files\Git\bin;`을 추가했다.
 
 #### #03 (AI가 기술 스택을 물었을 때 → 답 대신 방향 수정)
-> https://github.com/Seung-zedd 내가 지금까지 만든 레포(Lucidify 포함)에서 최적의 기술 스택을 적용할 만한게 없을까? 그리고 아마 까먹었을텐데 과제_파일업로드_AI개발.md의 4. AI 활용 & 개발 기록 (필수 제출)은 필수
+> https://github.com/Seung-zedd 내가 지금까지 만든 레포(Lucidify 포함)에서 최적의 기술 스택을 적용할 만한게 없을까? 그리고 아마 까먹었을텐데 요구사항 원문의 "AI 활용 & 개발 기록"은 필수
 
-의도는 두 가지였다. 하나는 AI가 제시한 일반적인 스택 후보(Next.js, FastAPI 등) 대신 내가 이미 운영해 본 스택을 기준으로 고르게 하는 것 — 면접에서 "왜 이 스택인지"를 실제 경험으로 설명할 수 있어야 하기 때문이다. 다른 하나는 AI가 §4(AI 활용 기록)를 빠뜨리지 않도록 못 박는 것.
+의도는 두 가지였다. 하나는 AI가 제시한 일반적인 스택 후보(Next.js, FastAPI 등) 대신 내가 이미 운영해 본 스택을 기준으로 고르게 하는 것 — 나중에 "왜 이 스택인지"를 실제 경험으로 설명할 수 있어야 하기 때문이다. 다른 하나는 AI가 AI 활용 기록을 빠뜨리지 않도록 못 박는 것.
 
 AI는 `gh repo list`와 `gh api`로 40개 레포의 언어·의존성·배포 설정을 조사했다. 요약하면 이렇다.
 
-| 레포 | 스택 | 배포 | 과제 연관 |
+| 레포 | 스택 | 배포 | 이 프로젝트와의 연관 |
 |---|---|---|---|
 | cubrain (실서비스) | Java 21, Spring Boot 3.5, PostgreSQL, Flyway, Svelte 5 | Docker → Railway, GitHub Actions | PDF 업로드 처리(`FileDropzone.svelte`, `PdfIngestionController`), JPA 감사(`BaseEntity`) 보유 |
 | lucidify | SvelteKit(Svelte 5), Supabase, adapter-vercel | Vercel | 서버리스 API 라우트, Vercel 배포 경험 |
@@ -58,25 +58,25 @@ AI는 `gh repo list`와 `gh api`로 40개 레포의 언어·의존성·배포 �
 #### #04 (AskUserQuestion 응답 — 옵션 대신 직접 입력)
 > 아 그러니까 파일 업로드에 제일 최적화된 기술스택은 cubrain이란 말이지? 만약에 lucidify 방식으로 깔끔하게 vercel로 무료 호스팅 및 배포하고 sveltekit를 사용하면 어떻지?
 
-AI의 "cubrain 권장"이 기술적 최적이라서인지, 경험 재사용 때문인지 구분해서 확인하려는 되물음이다. 과제 규모가 작고 무료 호스팅과 단일 배포를 원한다면 SvelteKit + Vercel이 더 단순할 수 있다는 가설도 함께 제시했다.
+AI의 "cubrain 권장"이 기술적 최적이라서인지, 경험 재사용 때문인지 구분해서 확인하려는 되물음이다. 프로젝트 규모가 작고 무료 호스팅과 단일 배포를 원한다면 SvelteKit + Vercel이 더 단순할 수 있다는 가설도 함께 제시했다.
 
-AI는 cubrain이 "최적"이 아니라 "이미 다뤄본 코드가 있음"이었음을 정정했다. SvelteKit + Vercel은 이 과제 규모에 적합하고, 대신 서버리스 특유의 제약 — 요청 본문 크기 한도, 영구 디스크 없음, 무료 DB의 절전·일시정지 정책 — 을 고려사항으로 문서화해야 한다고 답했다(상세는 CONSIDERATIONS.md에 반영). 같은 응답에서 🟢 PROMPT_LOG.md는 AI가 매 단계 자동 기록하고 회고(§3)는 본인이 직접 작성하는 것으로 정했다.
+AI는 cubrain이 "최적"이 아니라 "이미 다뤄본 코드가 있음"이었음을 정정했다. SvelteKit + Vercel은 이 프로젝트 규모에 적합하고, 대신 서버리스 특유의 제약 — 요청 본문 크기 한도, 영구 디스크 없음, 무료 DB의 절전·일시정지 정책 — 을 고려사항으로 문서화해야 한다고 답했다(상세는 CONSIDERATIONS.md에 반영). 같은 응답에서 🟢 PROMPT_LOG.md는 AI가 매 단계 자동 기록하고 회고(§3)는 본인이 직접 작성하는 것으로 정했다.
 
 #### #05
 > 그치? 굳이 무겁고 환경세팅하는데 시간 다날라가는 스프링부트3을 기술 스택으로 채택할 필요가 없지? 다량 컬렉션 조회에 유리한 JPA를 사용할 것도 아니고
 
-SvelteKit + Vercel 채택을 확정하면서, Spring Boot를 제외하는 근거를 내 말로 정리한 것이다. AI는 결론에 동의하되 근거 표현 하나를 정정했다. JPA의 강점은 "다량 조회"가 아니라 "복잡한 객체 관계 매핑"이고(다량 조회는 오히려 N+1을 조심해야 하는 영역), 이 과제는 테이블 2개에 정책 행 최대 207개라 ORM·컨테이너·상시 서버를 정당화할 크기가 아니다. 절약한 세팅 시간은 채점 비중 1위인 "고려사항의 깊이"에 쓰는 편이 합리적이라는 것이다.
+SvelteKit + Vercel 채택을 확정하면서, Spring Boot를 제외하는 근거를 내 말로 정리한 것이다. AI는 결론에 동의하되 근거 표현 하나를 정정했다. JPA의 강점은 "다량 조회"가 아니라 "복잡한 객체 관계 매핑"이고(다량 조회는 오히려 N+1을 조심해야 하는 영역), 이 프로젝트는 테이블 2개에 정책 행 최대 207개라 ORM·컨테이너·상시 서버를 정당화할 크기가 아니다. 절약한 세팅 시간은 비중이 가장 큰 "고려사항의 깊이"에 쓰는 편이 합리적이라는 것이다.
 
 최종 결정: 🟢 SvelteKit(Svelte 5) + Neon PostgreSQL + Vercel Blob을 Vercel에 단일 배포. cubrain 경험은 코드가 아니라 CONSIDERATIONS.md의 비교 근거로 활용한다. 다음 단계는 `/moai plan`으로 SPEC(요구사항·인수 기준)을 쓰는 것.
 
 #### #06 (AI 주도) `/moai plan "..."` 호출
 
-확정된 스택과 과제 §2·§3·§5 요구사항을 한 번에 담아 SPEC 워크플로를 시작했다. 워크플로 사전 질문 3개에는 이렇게 답했다. 프로젝트 문서 인터뷰는 건너뛴다(백지 프로젝트라 안내문이 곧 제품 문서다). 디자인 방향 단계도 건너뛴다(과제는 화면보다 고려사항을 평가한다). GitHub Issue는 만든다(요구사항→구현 추적을 레포에 남긴다).
+확정된 스택과 요구사항 원문의 기능 범위·고려사항·산출물 요구를 한 번에 담아 SPEC 워크플로를 시작했다. 워크플로 사전 질문 3개에는 이렇게 답했다. 프로젝트 문서 인터뷰는 건너뛴다(백지 프로젝트라 요구사항 원문이 곧 제품 문서다). 디자인 방향 단계도 건너뛴다(화면보다 고려사항의 깊이가 중심이다). GitHub Issue는 만든다(요구사항→구현 추적을 레포에 남긴다).
 
 AI는 동기화 검사(origin/main 차이 0, 다른 세션 없음)를 거친 뒤 `manager-spec` 에이전트(Opus)에 plan.md 초안 작성을 위임했다. 지시에는 "코드 작성 금지", OWASP 파일 업로드 체크리스트 스킬 선행 로드, 그리고 Vercel 본문 한도와 Blob 한도는 공식 문서로 검증한 뒤 URL을 인용하라는 조건을 담았다.
 
 #### #07
-> 커밋메시지도 이번 과제 전형에서만 ko로 설정해줘
+> 커밋메시지도 이번 프로젝트에서만 ko로 설정해줘
 
 커밋 메시지를 한국어로, 단 이 프로젝트에 한정해서 바꾸는 요청이다. 🟢 `.moai/config/sections/language.yaml:22`의 `git_commit_messages`를 `"en"`에서 `"ko"`로 바꿨다. 프로젝트 안 설정 파일이라 다른 레포에는 영향이 없다. 곁가지로 `error_messages`가 en으로 남아 있음을 AI가 알렸는데, 그건 그대로 두기로 했다.
 
@@ -85,16 +85,16 @@ AI는 동기화 검사(origin/main 차이 0, 다른 세션 없음)를 거친 뒤
 
 부탁은 두 겹이다. 자리를 비운 동안 자율 진행하되 판단 게이트에서는 멈출 것(자율과 승인의 경계 명시), 그리고 다른 프로젝트(컨테이너·pillwriter)에서 쓰던 "기계적 구현과 RED→GREEN은 GLM(저비용 모델)에 위임" 규칙이 이 프로젝트에도 상속됐는지 확인할 것.
 
-AI 조사 결과, 그 규칙은 `C:\Users\sdok1\projects\CLAUDE.md`(63-64행 `fast-worker` 라우팅, 267-276행 "Mechanical work routes to GLM first")에 있고 pillwriter는 `projects/` 하위라 부모 CLAUDE.md를 상속해서 적용된다. 반면 flow-assignment는 `C:\Users\sdok1\code\` 아래라 부모 CLAUDE.md가 없으니 이 프로젝트에는 적용되지 않는다. 이 프로젝트 CLAUDE.md의 GLM 언급(§12·§15)은 MoAI 표준의 CG 모드 설명일 뿐 위임 규칙이 아니다. 게다가 현재 세션은 `GLM_API_KEY` 미설정에 tmux도 없어 규칙을 복사해도 즉시 효력이 없다. GLM 위임은 `moai glm`으로 별도 세션을 띄워야 하는 세션 단위 스위치이기 때문이다.
+AI 조사 결과, 그 규칙은 `C:\Users\sdok1\projects\CLAUDE.md`(63-64행 `fast-worker` 라우팅, 267-276행 "Mechanical work routes to GLM first")에 있고 pillwriter는 `projects/` 하위라 부모 CLAUDE.md를 상속해서 적용된다. 반면 이 저장소는 `C:\Users\sdok1\code\` 아래라 부모 CLAUDE.md가 없으니 이 프로젝트에는 적용되지 않는다. 이 프로젝트 CLAUDE.md의 GLM 언급(§12·§15)은 MoAI 표준의 CG 모드 설명일 뿐 위임 규칙이 아니다. 게다가 현재 세션은 `GLM_API_KEY` 미설정에 tmux도 없어 규칙을 복사해도 즉시 효력이 없다. GLM 위임은 `moai glm`으로 별도 세션을 띄워야 하는 세션 단위 스위치이기 때문이다.
 
-판단: 🟢 사용자 결정 "ㅇㅇ 그러면 (a)로 가자" — run 단계는 Claude/Opus(manager-develop)를 유지한다. 코드량이 작아 절약 폭이 작고, 채점 비중은 고려사항과 AI 활용 판단에 있다는 것이 근거다.
+판단: 🟢 사용자 결정 "ㅇㅇ 그러면 (a)로 가자" — run 단계는 Claude/Opus(manager-develop)를 유지한다. 코드량이 작아 절약 폭이 작고, 비중은 고려사항과 AI 활용 판단에 있다는 것이 근거다.
 
 #### #09
 > 아 그리고 practice-for-claude-code-architecture에서 설정한 pkg-global-chain 훅하고 preToolUse, PostToolUse, 그리고 Stop 훅도 여기에 설정했는지 확인해줘. 어짜피 저 레포는 실습용이기 때문에 웬만한 히스토리 내역들을 여기에 적용해도 문제 없을꺼야
 
-실습 레포(`C:\Users\sdok1\projects\practice-for-claude-code-architecutre`)에서 만든 보안 훅(공급망·유출 방지·.env 보호)과 편의 훅(자동 lint·변경 파일 표시)이 이 과제에도 있는지 확인하고, 없으면 옮기라는 사전 승인이다.
+실습 레포(`C:\Users\sdok1\projects\practice-for-claude-code-architecutre`)에서 만든 보안 훅(공급망·유출 방지·.env 보호)과 편의 훅(자동 lint·변경 파일 표시)이 이 프로젝트에도 있는지 확인하고, 없으면 옮기라는 사전 승인이다.
 
-AI가 조사해 보니 실습 레포에는 `.claude/hooks/` 스크립트 5개와 `permissions.deny` 21개가 있는데, flow-assignment에는 모두 없었다(MoAI 기본 훅만 있고 `.env` 읽기 ask만 존재). "pkg-global-chain"은 `block-npm-supply-chain-risk.js`(npm 공급망 훅)와 `pkg-check`(`projects/pkg-supply-chain-check.sh`)의 조합을 가리킨다. 적용하려면 손볼 곳도 짚었다. ESM `import` 스크립트라 package.json이 없는 현 상태에선 `.mjs`로 저장해야 하고, pnpm 프로젝트라 `pnpm dlx/exec/add -g` 규칙을 추가하되 pnpm 10은 의존성 lifecycle 스크립트를 기본 차단하므로 `--ignore-scripts` 강제는 npm에만 건다. `.env.example`은 README용으로 작성해야 하니 차단 예외로 두고, settings PATH에는 훅 실행기가 node를 찾도록 `C:\Program Files\nodejs`를 추가한다. 적용 내역과 검증은 아래 #10에 기록했다.
+AI가 조사해 보니 실습 레포에는 `.claude/hooks/` 스크립트 5개와 `permissions.deny` 21개가 있는데, 이 저장소에는 모두 없었다(MoAI 기본 훅만 있고 `.env` 읽기 ask만 존재). "pkg-global-chain"은 `block-npm-supply-chain-risk.js`(npm 공급망 훅)와 `pkg-check`(`projects/pkg-supply-chain-check.sh`)의 조합을 가리킨다. 적용하려면 손볼 곳도 짚었다. ESM `import` 스크립트라 package.json이 없는 현 상태에선 `.mjs`로 저장해야 하고, pnpm 프로젝트라 `pnpm dlx/exec/add -g` 규칙을 추가하되 pnpm 10은 의존성 lifecycle 스크립트를 기본 차단하므로 `--ignore-scripts` 강제는 npm에만 건다. `.env.example`은 README용으로 작성해야 하니 차단 예외로 두고, settings PATH에는 훅 실행기가 node를 찾도록 `C:\Program Files\nodejs`를 추가한다. 적용 내역과 검증은 아래 #10에 기록했다.
 
 #### #10 (AI 주도) 실습 레포 훅 이관 + 검증
 
@@ -102,16 +102,16 @@ AI가 조사해 보니 실습 레포에는 `.claude/hooks/` 스크립트 5개와
 
 검증은 `.moai/state/verify/guards/test-guards.mjs` 17개 케이스 ALL PASS(출력은 같은 폴더 `test-guards.out`), settings.json JSON 파싱 OK. 훅이 실제로 살아 있다는 실증도 있었다 — 검증 명령어 자체가 새 훅에 두 번 차단됐다(명령 텍스트에 `curl`, `pnpm dlx some-random-pkg` 포함). 이후 테스트는 파일 스크립트로 우회했다.
 
-판단: 🟡 원본 수정 후 채택(ESM→.mjs, pnpm 대응, `.env.example` 예외, 허용 목록 확장). `lint-on-edit`는 MoAI `handle-post-tool.sh`(LSP 진단)와 일부 겹치지만 eslint 실행은 MoAI 쪽에 없어 보완 관계로 판단해 유지했다. Stop 훅이 MoAI 기본 7개에 1개 더해져 매 턴 변경 파일 목록이 뜨는 소음은 감수했다. 과제 기록 관점에서는 오히려 유용하다.
+판단: 🟡 원본 수정 후 채택(ESM→.mjs, pnpm 대응, `.env.example` 예외, 허용 목록 확장). `lint-on-edit`는 MoAI `handle-post-tool.sh`(LSP 진단)와 일부 겹치지만 eslint 실행은 MoAI 쪽에 없어 보완 관계로 판단해 유지했다. Stop 훅이 MoAI 기본 7개에 1개 더해져 매 턴 변경 파일 목록이 뜨는 소음은 감수했다. 개발 기록 관점에서는 오히려 유용하다.
 
 #### #11 (AI 주도) SPEC 초안 완성 → 검토 게이트
 
-에이전트 산출물은 `.moai/specs/SPEC-UPLOAD-001/plan.md` 347줄. manager-spec(Opus)이 OWASP 파일 업로드 체크리스트 스킬을 먼저 로드한 뒤 작성했다. 결정 8개(데이터 모델, 200개 상한, 11단계 검증 파이프라인, 입력 정규화, API, DB 계층, 운영, 테스트), 고려사항 매트릭스 26항목(과제 19 + 자체 발굴 7), 마일스톤 M1~M4, 위험 6건, MX 태그 계획, 그리고 검증 URL 5개·패키지 버전 8개·미검증 1개가 담겼다.
+에이전트 산출물은 `.moai/specs/SPEC-UPLOAD-001/plan.md` 347줄. manager-spec(Opus)이 OWASP 파일 업로드 체크리스트 스킬을 먼저 로드한 뒤 작성했다. 결정 8개(데이터 모델, 200개 상한, 11단계 검증 파이프라인, 입력 정규화, API, DB 계층, 운영, 테스트), 고려사항 매트릭스 26항목(요구사항 19 + 자체 발굴 7), 마일스톤 M1~M4, 위험 6건, MX 태그 계획, 그리고 검증 URL 5개·패키지 버전 8개·미검증 1개가 담겼다.
 
 오케스트레이터(AI) 검토에서 초안이 놓친 보완점 3개를 잡았다.
 
 1. `jpg`/`jpeg`, `tif`/`tiff`, `htm`/`html` 별칭 미처리 — 이대로면 정상 `.jpeg`가 `EXTENSION_CONTENT_MISMATCH`로 오거부된다.
-2. "판별 타입 ≠ 선언 확장자면 거부"는 과도하다(`.txt` 이름의 PNG까지 거부). 과제 예시는 "판별 결과가 차단 목록에 있을 때 거부"만으로도 충족되므로, 어느 쪽이든 정책 선택과 근거가 필요하다.
+2. "판별 타입 ≠ 선언 확장자면 거부"는 과도하다(`.txt` 이름의 PNG까지 거부). 요구사항 예시는 "판별 결과가 차단 목록에 있을 때 거부"만으로도 충족되므로, 어느 쪽이든 정책 선택과 근거가 필요하다.
 3. prefix 스니핑(`<svg`, `<!DOCTYPE html` 등)은 감지 후 동작이 정의돼 있지 않다 — 무조건 거부하면 정상 `.html`이 막힌다.
 
 판단: 🟢 사용자 선택 "보완점 3개 반영시킨 뒤 SPEC 파일 생성까지 진행". 검토 메모 3건을 manager-spec에 주석으로 넘겨 plan.md 수정 → spec.md / acceptance.md / spec-compact.md 생성 → plan-auditor 감사 → GitHub Issue 순으로 진행하기로 했다.
@@ -119,20 +119,20 @@ AI가 조사해 보니 실습 레포에는 `.claude/hooks/` 스크립트 5개와
 #### #12
 > 어? 혹시 general-moai-adk(컨테이너)의 spec-interrogator는 없니?
 
-다른 프로젝트에서 만든 "SPEC 적대적 심문" 에이전트 — 사람이 결정해야 할 지점만 뽑아내고 답은 절대 하지 않는다 — 를 이 과제 SPEC에도 적용하고 싶었다. 과제 §3 "요건에 없는 위험을 스스로 발견"과 §4 "AI 결과를 비판적으로 취사선택" 둘 다에 직결되는 장치다.
+다른 프로젝트에서 만든 "SPEC 적대적 심문" 에이전트 — 사람이 결정해야 할 지점만 뽑아내고 답은 절대 하지 않는다 — 를 이 프로젝트 SPEC에도 적용하고 싶었다. 요구사항의 "요건에 없는 위험을 스스로 발견"과 "AI 결과를 비판적으로 취사선택" 둘 다에 직결되는 장치다.
 
 AI가 확인해 보니 있었다. `C:\Users\sdok1\projects\.claude\agents\spec-interrogator.md`(전역 링크, Opus/high)다. 입력은 SPEC 디렉터리 경로뿐이고(작성 맥락은 규칙상 무시), 5개 공격 범주(내부 모순, 중의적 문장, 암묵 가정, 검증 불가, 조용한 제품 결정)를 강제로 훑으며, 산출물은 `docs/review/SPEC-UPLOAD-001/question/interrogation-draft.md`(한국어 질문 초안)다. 설계상 plan-auditor(기계적 검증)의 다음 단계로 돌리게 돼 있다.
 
 판단: 🟢 워크플로에 편입한다. plan-auditor PASS 후 실행하고, 질문 초안은 다음 판단 게이트에 감사 결과와 함께 제시한다. 사용자가 단 답은 CONSIDERATIONS.md의 근거와 §4-3 회고의 1차 재료가 된다.
 
 #### #13
-> 굿. 혹시 이 과제 전형에도 C:\Users\sdok1\projects\pillwriter\core-skills 적용이 되어있니? @../../projects/pillwriter/ 여기에서 너의 추천을 하지 않고 내 스스로 플래그를 설정하는 spec-authority도 적용이 됬는지 궁금해. 이건 단순한 과제 전형이니까 내가 판단하기에는 필요 없을 것 같아 도메인이 그렇게 복잡한 것도 아니고
+> 굿. 혹시 이 프로젝트에도 C:\Users\sdok1\projects\pillwriter\core-skills 적용이 되어있니? @../../projects/pillwriter/ 여기에서 너의 추천을 하지 않고 내 스스로 플래그를 설정하는 spec-authority도 적용이 됬는지 궁금해. 이건 단순한 프로젝트니까 내가 판단하기에는 필요 없을 것 같아 도메인이 그렇게 복잡한 것도 아니고
 
-pillwriter의 두 장치 — `core-skills/` 문서 4종과, AI가 추천을 먼저 내지 않고 founder가 플래그를 직접 판정하는 SPEC 리뷰 권한 규칙 — 가 여기에도 상속됐는지 확인하는 질문이다. 후자는 이 과제 규모엔 과하다는 본인 판단을 먼저 밝혀 두었다.
+pillwriter의 두 장치 — `core-skills/` 문서 4종과, AI가 추천을 먼저 내지 않고 founder가 플래그를 직접 판정하는 SPEC 리뷰 권한 규칙 — 가 여기에도 상속됐는지 확인하는 질문이다. 후자는 이 프로젝트 규모엔 과하다는 본인 판단을 먼저 밝혀 두었다.
 
-AI 확인 결과 둘 다 미적용이었다. `core-skills/`는 flow-assignment에 폴더도 CLAUDE.md 참조도 없다(공급망 훅만 #10에서 별도 이관). 해당 규칙은 pillwriter `CLAUDE.md` §3 "SPEC Review Pipeline"과 `.claude/rules/local/spec-review-authority.md`에 있는데, 이 프로젝트 CLAUDE.md에는 §3 자체가 없다. 실증도 하나 있다. 지금까지 AskUserQuestion마다 `(권장)` 라벨을 붙여 왔는데, 그 규칙([HARD] "No AI recommendation reaches the founder before their independent judgment")이 살아 있었다면 전부 위반이었을 것이다.
+AI 확인 결과 둘 다 미적용이었다. `core-skills/`는 이 저장소에 폴더도 CLAUDE.md 참조도 없다(공급망 훅만 #10에서 별도 이관). 해당 규칙은 pillwriter `CLAUDE.md` §3 "SPEC Review Pipeline"과 `.claude/rules/local/spec-review-authority.md`에 있는데, 이 프로젝트 CLAUDE.md에는 §3 자체가 없다. 실증도 하나 있다. 지금까지 AskUserQuestion마다 `(권장)` 라벨을 붙여 왔는데, 그 규칙([HARD] "No AI recommendation reaches the founder before their independent judgment")이 살아 있었다면 전부 위반이었을 것이다.
 
-판단: 🟢 사용자 판단에 동의 — 3단계 founder 판정 파이프라인(질문→답변 파일→확정 항목만 반영)은 미적용을 유지한다. 도메인이 작고, 과제 §4는 오히려 "AI 추천 + 사용자의 비판적 취사선택" 과정 자체를 평가하기 때문이다. 대신 그 규칙의 핵심 가치 하나는 이미 흡수했다. spec-interrogator를 "질문만, 답 없음" 원칙 그대로 2단계로 실행하는 것(#12)이다. AI 추천은 계속 `(권장)`으로 표시하되 근거를 같이 적고, 사용자가 뒤집은 경우는 이 로그에 남긴다.
+판단: 🟢 사용자 판단에 동의 — 3단계 founder 판정 파이프라인(질문→답변 파일→확정 항목만 반영)은 미적용을 유지한다. 도메인이 작고, 요구사항은 오히려 "AI 추천 + 사용자의 비판적 취사선택" 과정 자체를 중요하게 보기 때문이다. 대신 그 규칙의 핵심 가치 하나는 이미 흡수했다. spec-interrogator를 "질문만, 답 없음" 원칙 그대로 2단계로 실행하는 것(#12)이다. AI 추천은 계속 `(권장)`으로 표시하되 근거를 같이 적고, 사용자가 뒤집은 경우는 이 로그에 남긴다.
 
 #### #14 (AI 주도) 보완점 반영 + SPEC 파일 생성 완료
 
@@ -151,7 +151,7 @@ plan.md에 보완점 3건을 반영했다. NOTE 1은 별칭 표 5쌍(`jpeg→jpg
 
 must-pass 7개는 전부 통과했지만 차원 점수가 Clarity 0.75, Completeness 0.70, Testability 0.75, Traceability 0.50으로 조화평균 0.66 FAIL이었다. 보고서는 `.moai/reports/plan-audit/SPEC-UPLOAD-001-review-1.md`.
 
-blocking은 6건이었다. 과제 필수 동작(고정 토글 저장, 커스텀 X 삭제)이 엔드포인트 표에만 있고 REQ가 없다(D3). REQ-015(policy-ui)와 REQ-012에 AC가 0건이다(D1·D2). AC-012의 "본문 전체 읽은 흔적 없음"은 이진 판정이 불가능하다(D5). `PROMPT_LOG.md` 제출 게이트가 없다(D4). Q10의 MX 태그 수가 plan §13과 불일치한다(D6).
+blocking은 6건이었다. 요구사항의 필수 동작(고정 토글 저장, 커스텀 X 삭제)이 엔드포인트 표에만 있고 REQ가 없다(D3). REQ-015(policy-ui)와 REQ-012에 AC가 0건이다(D1·D2). AC-012의 "본문 전체 읽은 흔적 없음"은 이진 판정이 불가능하다(D5). `PROMPT_LOG.md` 완결성 게이트가 없다(D4). Q10의 MX 태그 수가 plan §13과 불일치한다(D6).
 
 AI는 절차대로 founder 판정 없이 manager-spec에 수정을 위임했다(재감사 2/3). 지시에는 사용자 원칙을 반영했다 — REQ/AC 상한(16/16)은 SPEC 분할이나 Tier 상향 없이 통합으로 해결하고, 감사관이 보존하라고 한 성질(차단 케이스마다 통과 케이스 쌍, 한계를 숨기지 않은 판단)은 유지한다.
 
@@ -175,7 +175,7 @@ AI는 감사관 권고대로 재감사 없이 선수정했다. N1은 파일표�
 
 N1 컴포넌트 테스트는 Vitest `jsdom` + `@testing-library/svelte` 5.4.2 + `jsdom` 30.0.1(npm 실조회)로 확정했다. `vitest-browser-svelte`는 실제 브라우저(Playwright provider)를 띄워 "Playwright 보류"와 충돌하므로 기각했다. 테스트 파일명은 지시 예시(`PolicyPanel`) 대신 이미 선언된 컴포넌트인 `FixedExtensionList.test.ts`로 잡았는데, 없는 이름을 새로 만들지 않겠다는 에이전트 자체 결정이 타당해서 수용했다. N3은 REQ-007에 "NFC 정규화"와 파일명 NFC vs 입력 NFKC 비대칭을 본문으로 명시했다. N2/N4/N5도 반영했고, REQ/AC 16/16과 h3 5는 유지, 감사 grep은 0건에서 8건이 됐다.
 
-판단: 🟢 채택. plan 단계 감사는 2회로 종료(최종 PASS 0.86). spec-interrogator에는 SPEC 경로와 과제 안내문(제품 의도 원본)만 넘겨 실행했다 — 작성 맥락은 전달하지 않았다.
+판단: 🟢 채택. plan 단계 감사는 2회로 종료(최종 PASS 0.86). spec-interrogator에는 SPEC 경로와 요구사항 원문(제품 의도 원본)만 넘겨 실행했다 — 작성 맥락은 전달하지 않았다.
 
 #### #20 (AI 주도) spec-interrogator 심문 결과 → founder 판단 게이트
 
@@ -183,16 +183,16 @@ N1 컴포넌트 테스트는 Vitest `jsdom` + `@testing-library/svelte` 5.4.2 + 
 
 AI는 founder가 읽을 양을 줄이려고 17개를 뿌리별로 묶었다. A 다중 파일 여부(Q1·Q9·Q16), B 확장자 없는 파일(Q14), C 별칭 처리(Q5·Q7·Q15), D 요청 단위 거부 기록(Q2), 그리고 나머지 9개는 제안표로 정리했다. 사용자가 spec-authority(AI 추천 금지) 미적용을 결정했으므로(#13) 각 항목에 (권장)과 근거를 붙였다.
 
-AI 제안의 핵심은 이렇다. A는 요청당 1파일로 단순화한다(세 질문이 동시에 풀리고, 과제가 다중 파일을 요구하지 않는다). B는 거부를 유지한다. C는 대표형으로 통일하고 안내 문구를 더한다. D는 테이블에 기록하지 않고 로그만 남긴다. Q8의 `/api/uploads/recent`는 REQ 예산 포화로 스코프에서 제외하고, Q17의 PROMPT_LOG는 SPEC 밖에 둔다.
+AI 제안의 핵심은 이렇다. A는 요청당 1파일로 단순화한다(세 질문이 동시에 풀리고, 요구사항이 다중 파일을 요구하지 않는다). B는 거부를 유지한다. C는 대표형으로 통일하고 안내 문구를 더한다. D는 테이블에 기록하지 않고 로그만 남긴다. Q8의 `/api/uploads/recent`는 REQ 예산 포화로 스코프에서 제외하고, Q17의 PROMPT_LOG는 SPEC 밖에 둔다.
 
 판단: ⏳ founder 선택 대기(AskUserQuestion 2라운드).
 
 #### #21
-> 아 맞다 pillwriter에도 같은 방식을 했었는데 우리가 과제.md 파일을 PRD문서로 취급하기로 했지? 심문 초안에도 PRD 문서에 근거가 있으면 그 부분을 작성해주고, 없으면 그냥 NONE이라고 적으면 돼
+> 아 맞다 pillwriter에도 같은 방식을 했었는데 우리가 요구사항 원문을 PRD문서로 취급하기로 했지? 심문 초안에도 PRD 문서에 근거가 있으면 그 부분을 작성해주고, 없으면 그냥 NONE이라고 적으면 돼
 
-판단 지점마다 "제품 문서(PRD=과제.md)가 이미 이 결정을 제약하는가"를 한눈에 보이게 하려는 요구다. 근거 있는 질문은 PRD에 맞춰 답하고, NONE인 질문만 순수 제품 판단으로 남긴다.
+판단 지점마다 "제품 문서(PRD=요구사항 원문)가 이미 이 결정을 제약하는가"를 한눈에 보이게 하려는 요구다. 근거 있는 질문은 PRD에 맞춰 답하고, NONE인 질문만 순수 제품 판단으로 남긴다.
 
-AI는 초안 17개 질문 전부에 `PRD 근거` 줄을 추가했다(오케스트레이터 직접 편집, 에이전트 재실행 없음). 근거 있음이 14개(§2-A/B 필수 동작, §3 고려사항, §5 제출물, 화면 예시 인용)이고 NONE이 3개다 — Q5(파일명 별칭 정규화), Q8(`/api/uploads/recent`), Q9(다중 파일 부분 성공 규격). 이 셋은 과제가 요구하지 않은 설계 산물이라 순수 제품 판단 대상이 된다.
+AI는 초안 17개 질문 전부에 `PRD 근거` 줄을 추가했다(오케스트레이터 직접 편집, 에이전트 재실행 없음). 근거 있음이 14개(필수 동작, 고려사항, 산출물 요구, 화면 예시 인용)이고 NONE이 3개다 — Q5(파일명 별칭 정규화), Q8(`/api/uploads/recent`), Q9(다중 파일 부분 성공 규격). 이 셋은 요구사항이 요구하지 않은 설계 산물이라 순수 제품 판단 대상이 된다.
 
 판단: 🟢 규칙으로 기억한다(다음 심문부터 에이전트 지시에 포함).
 
@@ -250,7 +250,7 @@ run 진입 전에 AI가 사용자에게 묻지 않고 내린 결정이 3건 있�
 #### #27
 > 아마 general-moai-adk 아니면 pillwriter에서 vercel-supply-chain-attack에 대비한 vercel cli에서 --sensitive로 env value 직접 설정하기 관련 룰이 있을꺼야 그것도 여기에 적용할꺼임 / (이어서) 거기에도 없으면 github mcp server를 사용해서 cubrain 쪽에서도 찾아봐봐
 
-다른 프로젝트에서 세운 시크릿 취급 규칙을 이 과제 배포에도 적용하려는 요청이다.
+다른 프로젝트에서 세운 시크릿 취급 규칙을 이 프로젝트 배포에도 적용하려는 요청이다.
 
 AI가 조사해 보니 로컬(pillwriter, 컨테이너, 실습 레포)에는 `--sensitive`나 `vercel env` 규칙이 없었다(일반적인 "sensitive data" 언급뿐). GitHub MCP 서버는 이 세션에 등록돼 있지 않아 `gh api`로 대체했고, cubrain `skills/AGENTS.md` §28 Zero-Trust Secret Management에서 원하는 규칙을 찾았다. AI는 실제 시크릿을 요청하지도 읽지도 않는다, CLI로 env를 추가할 때 값을 명령 문자열에 넣지 말고 대화형 프롬프트를 쓴다(히스토리 유출 방지), Vercel 환경변수는 전부 Sensitive로 둔다, `.env`의 gitignore 누락은 최우선으로 고친다는 내용이다. 배경에는 2026-04 Vercel 보안 사고 후 cubrain 키 전수 교체(`whats-new/v1-6-0`)가 있다.
 
@@ -268,9 +268,9 @@ AI가 pillwriter git 이력으로 검증했다. SPEC 7개 중 6개에서 `progre
 #### #29
 > 앞으로 git commit msg도 전부 에이전트가 읽잖아? 근데 굳이 commit msg도 ko로 작성할 필요가 있을까? … PRD 문서에 별도의 커밋 메시지 제약조건이 있으면 ko로 하고 그렇지 않으면 en로 해도 된다고 나는 생각해
 
-AI의 답은 이랬다. "에이전트가 영어에 특화됐다"는 근거는 약하다. 커밋 메시지는 수십 글자라 토큰 차이가 무시할 수준이고, 기계가 파싱하는 부분(`feat`, scope, `Refs #1`)은 어차피 영어다. 진짜 기준은 최종 독자, 즉 한국어를 읽는 Flow 평가자다. PRD를 확인해 보니 커밋 관련 제약은 없었다(112행의 GitHub 주소 요건뿐).
+AI의 답은 이랬다. "에이전트가 영어에 특화됐다"는 근거는 약하다. 커밋 메시지는 수십 글자라 토큰 차이가 무시할 수준이고, 기계가 파싱하는 부분(`feat`, scope, `Refs #1`)은 어차피 영어다. 진짜 기준은 최종 독자, 즉 한국어를 읽는 사람이다. PRD를 확인해 보니 커밋 관련 제약은 없었다(GitHub 주소 요건뿐).
 
-판단: 사용자가 두 라운드 모두 🟢 ko 유지를 선택했다. "PRD 제약 없으면 en"이라는 기준을 스스로 세웠지만, 최종적으로는 평가자가 읽는 톤의 일관성을 우선했다. 설정 변경은 없다.
+판단: 사용자가 두 라운드 모두 🟢 ko 유지를 선택했다. "PRD 제약 없으면 en"이라는 기준을 스스로 세웠지만, 최종적으로는 읽는 사람의 톤 일관성을 우선했다. 설정 변경은 없다.
 
 #### #30
 > 아무래도 기존의 방식대로 하니까 세션이 너무 빨리 한도에 도달하는 것 같아. 그래서 기존의 pillwriter 방식과 동일하게 메인 세션(너하고 내가 직접 interact하는 곳은 Fable) / SPEC 단계와 TDD의 REFACTOR은 Opus / 단순 구현 및 TDD의 RED -> GREEN은 Sonnet로 변경할 것. (e.g. model: "opus")
@@ -367,7 +367,7 @@ AI는 솔직하게 답했다. 이번 세션 분은 갱신되지 않은 상태였
 #### #44
 > PROMPT_LOG.md 갱신 주기도 PRD 문서에 맞게 룰북에 추가해줘
 
-`.claude/rules/local/prompt-log-cadence.md`를 신설했다. 과제 §4-1/4-2/4-3과 인수 기준 Q11을 표로 대응시키고, 갱신 주기를 고정했다. 작업을 바꾸는 프롬프트마다 같은 턴에 `#N`을 기록하고(재질문과 교정은 🟡로 감추지 않는다), AI 주도 단계는 완료 시점에 실제 증거로 기록하며, §2 표는 도구를 실제로 처음 쓴 시점에 추가하고, §3 회고는 마일스톤과 세션 종료마다 쓰고, 커밋은 `docs(PROMPT_LOG)`로 분리한다(서브에이전트 실행 중엔 커밋 보류). 턴 종료 전 자체 점검 4항목도 넣었다. 메모리 `flow-assignment-context.md`에 포인터를 추가했다.
+`.claude/rules/local/prompt-log-cadence.md`를 신설했다. AI 활용 기록의 세 요구(프롬프트 타임라인 · 사용 도구 · 회고)와 인수 기준 Q11을 표로 대응시키고, 갱신 주기를 고정했다. 작업을 바꾸는 프롬프트마다 같은 턴에 `#N`을 기록하고(재질문과 교정은 🟡로 감추지 않는다), AI 주도 단계는 완료 시점에 실제 증거로 기록하며, §2 표는 도구를 실제로 처음 쓴 시점에 추가하고, §3 회고는 마일스톤과 세션 종료마다 쓰고, 커밋은 `docs(PROMPT_LOG)`로 분리한다(서브에이전트 실행 중엔 커밋 보류). 턴 종료 전 자체 점검 4항목도 넣었다. 메모리의 프로젝트 컨텍스트 파일에 포인터를 추가했다.
 
 #### #45
 > 마일스톤 개요가 잘 생각이 안나 짧게 브리핑해줘
@@ -495,7 +495,7 @@ M3 Founder digest ①의 4건을 확정했다. AC-UPLOAD-014 2절은 코드를 �
 
 Neon이 안내하는 "코딩 에이전트에 붙여넣기" 문장(`npx skills add neondatabase/agent-skills … -y` → Neon CLI·MCP 설정 → "write my env vars")을 따라도 되는지 판단해 달라는 요청과, 오늘 순서 브리핑 요청이다.
 
-결론은 붙여넣지 않는 것이었다. 근거는 세 가지다. "write my env vars"는 AI가 `DATABASE_URL` 값을 받아 쓰라는 뜻이라 접속 문자열이 대화 기록에 남는다(`secret-management.md` §1 위배, 어차피 `block-env-edit.mjs`가 차단한다). `-y`로 확인 없이 외부 패키지를 설치하는 것은 M3에서 지킨 pkg-check 습관과 반대다. Neon MCP는 프로젝트 전체 권한 API 키를 AI에 쥐여주는데 과제에 필요한 건 접속 문자열 하나뿐이다. 그래서 "Prefer to wire it up yourself?" 경로로 가서 세션 4 메모(founder-memo §0)의 5단계 수동 경로를 유지했다. 이는 CONSIDERATIONS E5의 "AI가 값을 한 번도 안 봤다"는 서사와도 맞아떨어진다.
+결론은 붙여넣지 않는 것이었다. 근거는 세 가지다. "write my env vars"는 AI가 `DATABASE_URL` 값을 받아 쓰라는 뜻이라 접속 문자열이 대화 기록에 남는다(`secret-management.md` §1 위배, 어차피 `block-env-edit.mjs`가 차단한다). `-y`로 확인 없이 외부 패키지를 설치하는 것은 M3에서 지킨 pkg-check 습관과 반대다. Neon MCP는 프로젝트 전체 권한 API 키를 AI에 쥐여주는데 여기에 필요한 건 접속 문자열 하나뿐이다. 그래서 "Prefer to wire it up yourself?" 경로로 가서 세션 4 메모(founder-memo §0)의 5단계 수동 경로를 유지했다. 이는 CONSIDERATIONS E5의 "AI가 값을 한 번도 안 봤다"는 서사와도 맞아떨어진다.
 
 🟡 부수 관찰도 있었다. 이 항목을 Bash 히어독으로 쓰려다 `block-npm-supply-chain-risk.mjs`에 차단됐는데, 로그 본문의 `npx skills add …` 문자열을 실행 명령으로 오인한 것이다. 가드가 데이터와 명령을 구분하지 못하는 한계지만, 정확히 막아야 할 패턴을 막았다는 증거이기도 하다. Edit 도구로 우회해 기록했다.
 
@@ -520,7 +520,7 @@ AI는 `secret-management.md` §1의 "실제 시크릿이 대화에 나타나면 
 
 시크릿 준비가 끝났다는 보고이자, AI가 지켜야 할 제약 6개를 명시한 M4 착수 지시다. `/clear` 없이 이 세션에서 진행하기로 했다(컨텍스트가 작아 재개 블록은 참조만 하면 됐다).
 
-AI는 값을 열람하지 않고 사전 확인을 했다. `.env` 존재, git `0 3`(로컬만 앞섬), 동시 세션 없음, Vercel 프로젝트 `flow-assignment` 존재(17분 전 생성, Production 배포 2건 Ready), 현재 URL `flow-assignment-opal.vercel.app`의 `GET /`가 500(마이그레이션 전, 환경변수 반영 전). `vercel project ls` 도중 CLI 로그인 흐름이 떠서 브라우저 승인으로 로그인했고, `vercel link --yes`로 프로젝트를 연결했다(`.vercel/`는 gitignore).
+AI는 값을 열람하지 않고 사전 확인을 했다. `.env` 존재, git `0 3`(로컬만 앞섬), 동시 세션 없음, Vercel 프로젝트 존재(17분 전 생성, Production 배포 2건 Ready), 현재 프로덕션 URL의 `GET /`가 500(마이그레이션 전, 환경변수 반영 전). `vercel project ls` 도중 CLI 로그인 흐름이 떠서 브라우저 승인으로 로그인했고, `vercel link --yes`로 프로젝트를 연결했다(`.vercel/`는 gitignore).
 
 AskUserQuestion으로 두 가지를 확인했다. 노출됐던 Neon 비밀번호가 교체한 새 값인지, Vercel 프로젝트가 GitHub에 연결돼 push가 자동 Production 배포로 이어지는지다.
 
@@ -535,17 +535,17 @@ AI는 manager-develop(Opus)을 스폰해 테스트 격리 수정, `node --env-fi
 
 포트폴리오 README를 기존 프로젝트(cubrain)와 같은 골격으로 맞추자는 요청이다. 배포 후 버퍼 순서도 함께 정했다 — ui-ux-pro-max 디자인 패스 → diagram-design(시스템 아키텍처, ERD, 업로드 판정 플로우차트) → README에 이미지 삽입.
 
-조회 시점에 GitHub MCP가 로드돼 있지 않아 `gh api repos/Seung-zedd/cubrain/readme`(읽기 전용)로 대체해 골격을 추출했다(직후 `plugin:github` MCP가 세션에 연결됐지만 같은 GitHub API라 결과는 동일했고, 이후엔 MCP를 썼다). 골격은 H1+이모지, 태그라인, 서비스 링크, shields 배지, 프로젝트 소개, 열람 안내(For Interviewers), 기술 스택, 시스템 아키텍처(이미지), ERD(이미지), Key Engineering Decisions(문제/해결/결과), 로컬 실행 안내 순이었다. 실행 중인 M4 에이전트에는 SendMessage로 골격을 전달했다(내용 복사는 금지하고, 다이어그램 자리는 `<!-- TODO(diagram-design) -->`로 표시). 메모리 `feedback-readme-layout-and-diagrams`에 저장했다.
+조회 시점에 GitHub MCP가 로드돼 있지 않아 `gh api repos/Seung-zedd/cubrain/readme`(읽기 전용)로 대체해 골격을 추출했다(직후 `plugin:github` MCP가 세션에 연결됐지만 같은 GitHub API라 결과는 동일했고, 이후엔 MCP를 썼다). 골격은 H1+이모지, 태그라인, 서비스 링크, shields 배지, 프로젝트 소개, 코드 읽는 순서, 기술 스택, 시스템 아키텍처(이미지), ERD(이미지), Key Engineering Decisions(문제/해결/결과), 로컬 실행 안내 순이었다. 실행 중인 M4 에이전트에는 SendMessage로 골격을 전달했다(내용 복사는 금지하고, 다이어그램 자리는 `<!-- TODO(diagram-design) -->`로 표시). 메모리 `feedback-readme-layout-and-diagrams`에 저장했다.
 
 #### #65
-> @과제_파일업로드_AI개발.md 혹시 여기에서 내가 직접 배포된 사이트에 들어가서 QA해야할 부분이 있니?
+> 요구사항 원문 기준으로, 내가 직접 배포된 사이트에 들어가서 QA해야할 부분이 있니?
 
-과제 문서 기준으로 사람 손이 꼭 필요한 QA 항목을 뽑아 달라는 요청이다. 본인 전용 4건이 나왔다. §5의 "누구나 접속"을 확인하려면 로그아웃하거나 시크릿 창에서 접속해야 한다(로그인 세션은 Vercel 보호 설정을 걸러내지 못한다). §5의 "면접 당일 호출 가능"을 위해 당일 예열이 필요하다(Neon이 5분 유휴면 절전한다). §2-A의 새로고침 유지를 눈으로 한 번 확인한다. §3-3의 차단 문구가 사람 말로 납득되는지 본다. 나머지(§2-A 전 항목, §2-B, Q12 문구 13종, 200개 상한)는 배포 후 Playwright 스모크와 캡처로 AI가 담당하기로 했다.
+요구사항 원문 기준으로 사람 손이 꼭 필요한 QA 항목을 뽑아 달라는 요청이다. 본인 전용 4건이 나왔다. "누구나 접속"을 확인하려면 로그아웃하거나 시크릿 창에서 접속해야 한다(로그인 세션은 Vercel 보호 설정을 걸러내지 못한다). "필요한 시점에 바로 열려야 한다"는 조건을 위해 당일 예열이 필요하다(Neon이 5분 유휴면 절전한다). 새로고침 유지를 눈으로 한 번 확인한다. 차단 문구가 사람 말로 납득되는지 본다. 나머지(§2-A 전 항목, §2-B, Q12 문구 13종, 200개 상한)는 배포 후 Playwright 스모크와 캡처로 AI가 담당하기로 했다.
 
 #### #66
-> 추후 프로세스 : 과제제출 → 인적성검사 → 실무인터뷰 → 컬쳐인터뷰 → 처우협의 // … 인적성검사 통과 이후에 Neon 프로젝트 예열시키면 되겠다
+> 데모를 보여줄 일정이 잡히면 그 며칠 전에 Neon 프로젝트를 예열시켜 두면 되겠다
 
-채용 일정에 맞춰 데모 예열 시점을 정하는 것이다. 🟡 시점을 보정했다. Neon 무료 플랜은 5분 유휴면 다시 잠들어 "며칠 전 예열"은 효과가 없다. 인적성 통과 직후에는 점검(시크릿 창에서 정책 화면과 업로드를 한 번 확인)만 하고, 실무 인터뷰 당일 시작 5~10분 전에 예열(URL을 열고 새로고침)하며, 인터뷰 중 5분 이상 쓰지 않으면 재접속하는 것으로 정리했다. 메모리 `project-flow-hiring-process-warmup`에 저장했다.
+데모 시연 시점에 맞춰 예열 시점을 정하는 것이다. 🟡 시점을 보정했다. Neon 무료 플랜은 5분 유휴면 다시 잠들어 "며칠 전 예열"은 효과가 없다. 일정이 확정되면 점검(시크릿 창에서 정책 화면과 업로드를 한 번 확인)만 해 두고, 시연 당일 시작 5~10분 전에 예열(URL을 열고 새로고침)하며, 시연 중 5분 이상 쓰지 않으면 재접속하는 것으로 정리했다.
 
 #### #67
 > 스프링부트 JVM은 콜드 스타트가 굉장히 최악이라고 정평나 있잖아? 그에 비해 Neon은 ms단위 밖에 안된다고??
@@ -570,7 +570,7 @@ M4 완료 보고는 이랬다. 커밋 5건 — `3461a41`(테스트 격리), `d9f
 
 조치로 `settings.local.json`에 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"`을 넣어 다음 세션부터 적용하기로 했다. 다음 세션 첫 작업은 모델 프로브로 정했다 — 실제 작업 전에 작은 읽기 전용 스폰을 한 번 돌려 창의 모델 표시와 `.moai/logs/agent-model-audit.jsonl`을 대조하고, Opus나 Sonnet이 확인될 때까지 구현 스폰을 금지하는 것이다.
 
-세션 5 종료 시점 상태는 이랬다. M4 커밋 6건 중 5건이 push됐고(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬에 남아 push 대기였다. 배포 URL의 `/`와 `/api/policy`는 여전히 500이었다 — push로 새 배포(`efihchig1`, Ready)는 만들어졌지만 런타임 오류가 지속돼, 다음 세션에서 Vercel Runtime Logs로 예외 문구를 확인하는 것이 1순위로 남았다(후보는 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7은 미충족이었다. 사용자가 README 에이전트를 중지시켰는데(커밋은 이미 완료된 뒤였다), 워크트리 `.claude/worktrees/agent-a44a…`가 남아 정리가 필요했다. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 MoAI-ADK 템플릿 기본값이었다(전역 `~/.claude/settings.json`에도 동일하게 있었다). 과제 규모엔 불필요해서 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 껐다(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트에 영향이 있어 보류했다.
+세션 5 종료 시점 상태는 이랬다. M4 커밋 6건 중 5건이 push됐고(`4f72b84` = origin), `251a074`(README 재구성)와 progress.md bookkeeping 커밋은 로컬에 남아 push 대기였다. 배포 URL의 `/`와 `/api/policy`는 여전히 500이었다 — push로 새 배포(`efihchig1`, Ready)는 만들어졌지만 런타임 오류가 지속돼, 다음 세션에서 Vercel Runtime Logs로 예외 문구를 확인하는 것이 1순위로 남았다(후보는 환경변수 미적재, `getDb`/`getBlobStore` throw). Q7은 미충족이었다. 사용자가 README 에이전트를 중지시켰는데(커밋은 이미 완료된 뒤였다), 워크트리 `.claude/worktrees/agent-a44a…`가 남아 정리가 필요했다. `.claude/settings.json:543`의 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`은 첫 커밋 `b3bda27`(moai-adk 3.1.2 scaffold)이 넣은 MoAI-ADK 템플릿 기본값이었다(전역 `~/.claude/settings.json`에도 동일하게 있었다). 이 프로젝트 규모엔 불필요해서 세션 마무리 때 `.claude/settings.local.json`에 `"0"`으로 프로젝트만 껐다(다음 세션부터 적용, 템플릿 갱신에도 유지). 전역은 다른 프로젝트에 영향이 있어 보류했다.
 
 ### 2026-08-30 — 세션 6: M4 마무리 — 배포 500 추적 (`/clear` 후 재개, 메인 세션 Fable 5)
 
@@ -585,7 +585,7 @@ AI는 값을 열람하지 않고 진단했다. 정적 파일 `/robots.txt`는 20
 
 로컬에서 재현도 해봤다. `pnpm build` 후 `DATABASE_URL= BLOB_READ_WRITE_TOKEN= pnpm preview`로 돌리면 `/health`와 `/` 모두 500에 동일한 JSON이 나오고 서버 로그에 `Error: DATABASE_URL이 설정되지 않았습니다.`가 찍힌다. 로컬 `.env`가 로드된 상태에서는 `/health`가 404, `/`가 200이었다. 증거는 `.moai/state/verify/2b3763e1/deploy-500-diagnosis.md`.
 
-GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f72b84 13:43Z, ad2d740 14:00Z) 모두 success인데 전부 500이었다. #63의 변수 등록이 이보다 앞서므로 "등록 후 재배포 누락"은 제외할 수 있었다. 남은 후보는 변수를 등록한 프로젝트가 배포 프로젝트(`prj_KsXr…`, `flow-assignment`)와 다른 경우, 변수 이름 불일치, 값 형식 오류(`neon()` 파서 거부), 스코프 착오였다. 넷 중 무엇인지는 Runtime Logs의 문구로만 갈릴 수 있었다.
+GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f72b84 13:43Z, ad2d740 14:00Z) 모두 success인데 전부 500이었다. #63의 변수 등록이 이보다 앞서므로 "등록 후 재배포 누락"은 제외할 수 있었다. 남은 후보는 변수를 등록한 프로젝트가 배포 프로젝트(`prj_KsXr…`)와 다른 경우, 변수 이름 불일치, 값 형식 오류(`neon()` 파서 거부), 스코프 착오였다. 넷 중 무엇인지는 Runtime Logs의 문구로만 갈릴 수 있었다.
 
 빌드 산출물 `.vc-config.json`에서 런타임이 `nodejs24.x`(adapter-vercel)임을 확인했고, `$env/dynamic/private`는 `process.env`를 읽으니 코드 경로 문제는 아니라고 판단했다. 배포별 URL은 302(배포 보호)이고 프로덕션 도메인만 공개돼 있어 정상이었다.
 
@@ -600,7 +600,7 @@ GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f
 
 무인 진행 범위를 지정한 것으로, 여러 선택지 중 판단이 필요한 분기 직전까지만 진행하는 것이다. 진단과 증거 보관, 잔여 정리, PROMPT_LOG 커밋까지 마치고 AskUserQuestion으로 정지했다.
 
-제시한 선택지는 네 가지였다. 대시보드에서 `flow-assignment` 프로젝트의 Settings → Environment Variables에 두 변수가 Production 스코프로 있는지, Deployments → 최신 배포 → Runtime Logs의 예외 문구가 무엇인지 확인해 알려주는 것(A). 터미널에서 직접 `npx vercel env ls`와 `npx vercel logs https://flow-assignment-opal.vercel.app`을 실행하는 것(B, 값은 출력되지 않는다). 값 노출 없는 진단 엔드포인트(`/api/health`, 변수 존재 여부만 boolean으로)를 추가해 push하는 것(C). Chrome 확장을 연결해 AI가 대시보드를 직접 읽게 하는 것(D). Q7과 Playwright 스모크는 200을 확인한 뒤 이어가기로 했다.
+제시한 선택지는 네 가지였다. 대시보드에서 배포 프로젝트의 Settings → Environment Variables에 두 변수가 Production 스코프로 있는지, Deployments → 최신 배포 → Runtime Logs의 예외 문구가 무엇인지 확인해 알려주는 것(A). 터미널에서 직접 `npx vercel env ls`와 `npx vercel logs <프로덕션 도메인>`을 실행하는 것(B, 값은 출력되지 않는다). 값 노출 없는 진단 엔드포인트(`/api/health`, 변수 존재 여부만 boolean으로)를 추가해 push하는 것(C). Chrome 확장을 연결해 AI가 대시보드를 직접 읽게 하는 것(D). Q7과 Playwright 스모크는 200을 확인한 뒤 이어가기로 했다.
 
 #### #72 세션 6 마무리
 > 내일하자 고생했어 알아서 마무리지어
@@ -616,7 +616,7 @@ GitHub deployments(`gh api`)를 보니 Production 배포 3건(95cb161 12:35Z, 4f
 
 세션 재개 브리핑 요청 뒤, #71에서 제시한 배포 500 확인 방법 4택 중 A(사용자가 Vercel 대시보드를 직접 확인)를 선택했다.
 
-재개 시점을 재검증하니 origin/main은 `fdddf33`(`0 0`)이었고, 배포 URL의 `GET /`는 여전히 500이었다. A 절차를 안내했다. 대시보드에서 프로젝트가 `flow-assignment`(prj_KsXr…)인지 확인하고, Settings → Environment Variables에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 Production 스코프로 존재하는지(Sensitive 배지 포함) 보고, Deployments → 최신 배포 → Runtime Logs의 예외 문구를 확인해 달라는 것이었다. 값 자체는 여전히 AI에게 전달하지 않는다(secret-management 룰).
+재개 시점을 재검증하니 origin/main은 `fdddf33`(`0 0`)이었고, 배포 URL의 `GET /`는 여전히 500이었다. A 절차를 안내했다. 대시보드에서 프로젝트가 맞는지(prj_KsXr…) 확인하고, Settings → Environment Variables에서 `DATABASE_URL`과 `BLOB_READ_WRITE_TOKEN`이 Production 스코프로 존재하는지(Sensitive 배지 포함) 보고, Deployments → 최신 배포 → Runtime Logs의 예외 문구를 확인해 달라는 것이었다. 값 자체는 여전히 AI에게 전달하지 않는다(secret-management 룰).
 
 #### #74
 > (Runtime Logs 원문 붙여넣기) `Error: DATABASE_URL이 설정되지 않았습니다. at getDb (…hooks.server.js:9:27)` 로그 확인했어
@@ -659,7 +659,7 @@ GitHub MCP(`search_code` → `get_file_contents`)로 cubrain `skills/AGENTS.md` 
 
 값 재등록과 Redeploy가 성공했다는 보고다. 오해를 낳았던 cubrain §28.1 원문도 고쳐 재발을 막자고 했다가, 수정은 본인이 직접 하겠다고 다시 정정했다.
 
-프로덕션 도메인 `GET https://flow-assignment-opal.vercel.app/`가 200을 돌려주는 것을 node fetch로 실측해 Q7을 충족했다. 근본 원인 체인도 확정됐다 — 최초 등록 때 값 프롬프트에 키 이름을 붙여넣어 빈 값 또는 무의미한 값이 됐고, 그래서 `handle`에서 throw가 나 500이 됐다. cubrain 수정 위치는 `Seung-zedd/cubrain`의 `skills/AGENTS.md` §28.1 "Blind CLI Updates" 불릿(L346)이라고 전달했고, 제안 문안으로 금지 위치와 입력 위치를 쌍으로 명시하고 따옴표는 제외하며 키와 값이 다르다는 점을 넣도록 했다. AI의 직접 push는 사용자가 중단시키고 본인이 수행하는 것으로 전환됐다.
+프로덕션 도메인의 `GET /`가 200을 돌려주는 것을 node fetch로 실측해 Q7을 충족했다. 근본 원인 체인도 확정됐다 — 최초 등록 때 값 프롬프트에 키 이름을 붙여넣어 빈 값 또는 무의미한 값이 됐고, 그래서 `handle`에서 throw가 나 500이 됐다. cubrain 수정 위치는 `Seung-zedd/cubrain`의 `skills/AGENTS.md` §28.1 "Blind CLI Updates" 불릿(L346)이라고 전달했고, 제안 문안으로 금지 위치와 입력 위치를 쌍으로 명시하고 따옴표는 제외하며 키와 값이 다르다는 점을 넣도록 했다. AI의 직접 push는 사용자가 중단시키고 본인이 수행하는 것으로 전환됐다.
 
 #### #81
 > 그럼 혹시 너가 github mcp server를 활용해서 cubrain의 잘못된 vercel cli --sensitive 룰 문장도 수정해 줄 수 있니?
@@ -742,17 +742,17 @@ QA 관찰 2건을 추가로 보고한 것이다.
 #### #91
 > (스크린샷: Vercel Add Domain 다이얼로그) vercel에서 도메인 붙이는거 어떰? 기존 도메인은 배포할 때마다 url이 미묘하게 달라지지 않음?
 
-커스텀 도메인(`flow-assignment.com`)을 구매해 연결할지 검토하는 것이다. AI는 먼저 전제를 정정했다. 프로덕션 도메인(`flow-assignment-opal.vercel.app`)은 배포마다 바뀌지 않는 고정 별칭이고, 바뀌는 것은 배포별 미리보기 URL인데 그건 외부 접근 시 302로 막혀 있다(#70). 커스텀 도메인은 유료(구매+DNS)에 README와 e2e URL을 전면 교체해야 하고 PRD상 가점 근거도 없어, 붙이지 않기를 권고했다.
+커스텀 도메인을 구매해 연결할지 검토하는 것이다. AI는 먼저 전제를 정정했다. Vercel의 프로덕션 도메인은 배포마다 바뀌지 않는 고정 별칭이고, 바뀌는 것은 배포별 미리보기 URL인데 그건 외부 접근 시 302로 막혀 있다(#70). 커스텀 도메인은 유료(구매+DNS)에 README와 e2e URL을 전면 교체해야 하고 PRD상 가점 근거도 없어, 붙이지 않기를 권고했다.
 
 #### #92 (사용자 QA) 리전 핀 체감 확인 + 새로고침 유지 통과
 > (스크린샷) 굿굿 확실히 리전을 싱가포르로 바꾸니까 딜레이가 안 느껴질 정도로 빠르고 새로고침해도 고정 확장자 체크 및 커스텀 확장자 추가된 것들 그대로 유지되어 있어 새로고침 시 업로드 목록 소실 되는 것도 확인했구
 
-QA 3건이 통과했다. sin1 핀의 체감 개선을 사용자가 직접 검증했다(#89 수정 확인). §2-A의 새로고침 유지도 확인됐다 — 고정 토글 7종과 커스텀 6개(6/200 카운터)가 그대로 남아 있었다. 업로드 목록의 새로고침 소실이 의도대로임도 확인했다(#90 판정 수용). 시크릿 창 접속(#65-①)도 이 QA 자체가 증거가 됐다. 남은 QA는 §3-3 차단 문구 납득 확인 1건과, 선택 사항인 `EXT_LIMIT_REACHED` 수동 캡처였다. 부수적으로, QA 잔여물(전 고정 체크와 test1~4 등 커스텀 6개)이 프로덕션 정책에 남아 있어 제출 전 데모 상태로 정리가 필요하다는 메모를 남겼다.
+QA 3건이 통과했다. sin1 핀의 체감 개선을 사용자가 직접 검증했다(#89 수정 확인). 새로고침 유지도 확인됐다 — 고정 토글 7종과 커스텀 6개(6/200 카운터)가 그대로 남아 있었다. 업로드 목록의 새로고침 소실이 의도대로임도 확인했다(#90 판정 수용). 시크릿 창 접속(#65-①)도 이 QA 자체가 증거가 됐다. 남은 QA는 §3-3 차단 문구 납득 확인 1건과, 선택 사항인 `EXT_LIMIT_REACHED` 수동 캡처였다. 부수적으로, QA 잔여물(전 고정 체크와 test1~4 등 커스텀 6개)이 프로덕션 정책에 남아 있어 데모 상태로 정리가 필요하다는 메모를 남겼다.
 
 #### #93 (사용자 QA) 차단 문구 납득 확인 — QA 4건 전부 통과
 > slack.exe: 업로드 성공 (스크린샷 2장) 거부 사유도 확실하게 텍스트로 있어
 
-§3-3의 마지막 QA가 통과했다. `exe` 체크 상태에서 `slack.exe`와 `chrome_proxy.exe`를 업로드하니 서버 거부 문구("차단된 확장자예요: exe")가 파일명 옆에 명확히 표시되는 것을 사용자가 납득했다. 스크린샷에는 업로드 전 클라이언트 힌트(주황색 "이 확장자는 지금 차단 목록에 있어요. 올리면 서버에서 거부돼요.", AC-016b)와 서버 거부가 한 화면에 같이 찍혀 있어 이중 구조를 보여 주는 증거로도 유효했다. "업로드 성공"이라는 말은 차단 해제 상태에서의 성공 경로 확인으로 읽었다(§2-B의 성공과 차단 양쪽을 관측한 것이다). 이걸로 #65의 QA 4건이 모두 종결됐다(예열은 면접 당일의 별도 항목이다). 남은 것은 QA 잔여물 정리(사용자가 직접 클릭), 선택 사항인 `EXT_LIMIT_REACHED` 캡처, §3 회고 확정, 디자인·다이어그램 버퍼, 제출 전 최종 점검이었다.
+마지막 QA가 통과했다. `exe` 체크 상태에서 `slack.exe`와 `chrome_proxy.exe`를 업로드하니 서버 거부 문구("차단된 확장자예요: exe")가 파일명 옆에 명확히 표시되는 것을 사용자가 납득했다. 스크린샷에는 업로드 전 클라이언트 힌트(주황색 "이 확장자는 지금 차단 목록에 있어요. 올리면 서버에서 거부돼요.", AC-016b)와 서버 거부가 한 화면에 같이 찍혀 있어 이중 구조를 보여 주는 증거로도 유효했다. "업로드 성공"이라는 말은 차단 해제 상태에서의 성공 경로 확인으로 읽었다(§2-B의 성공과 차단 양쪽을 관측한 것이다). 이걸로 #65의 QA 4건이 모두 종결됐다(예열은 시연 당일의 별도 항목이다). 남은 것은 QA 잔여물 정리(사용자가 직접 클릭), 선택 사항인 `EXT_LIMIT_REACHED` 캡처, §3 회고 확정, 디자인·다이어그램 버퍼, 최종 점검이었다.
 
 #### #94 `EXT_LIMIT_REACHED` 자동 캡처 — Q12 증거 13/13 완성
 > 이것도 마지막으로 한번 해보자 (+ AskUserQuestion "캡처 후 버퍼 진입 (권장)" 선택)
@@ -778,16 +778,16 @@ AskUserQuestion 4택에서 사용자가 "클린 프로덕트 톤 (권장)"을 �
 
 자율 진행 범위를 위임한 것으로 #50·#58·#71과 같은 패턴이다. AI가 버퍼의 나머지(다이어그램 → README)를 판단 지점 없이 완주했다.
 
-`diagram-design` 스킬을 처음 실사용했다. 스타일 가이드가 기본 스킨을 쓰는 방식이라 프로젝트 관례를 확인해야 했는데, 기존 프로젝트 자산(sbb_board)이 프로젝트별로 브랜드 스킨을 따로 쓴다는 것(빨강이었다)을 확인하고, 사용자에게 묻지 않고 그 관례를 그대로 따랐다 — 이 프로젝트의 디자인 토큰(trust blue)으로 3종을 만들었다. 시스템 아키텍처(브라우저→icn1 엣지→sin1 함수→Neon·Blob과 GitHub 배포 흐름), ERD(blocked_extension과 upload_attempt, FK 없는 논리적 참조와 의도된 비정규화를 명시), 업로드 판정 플로우차트(정규화 → 4관문 → 거부 수집/성공, decideUpload의 실제 순서 그대로)다. 소스 HTML과 2x PNG를 `docs/diagrams/`에 커밋하고 README의 TODO 마커 3곳을 교체했으며(`1382cac`), 전역 자산 폴더(`diagram-design/assets/flow-assignment/`)에도 복사했다.
+`diagram-design` 스킬을 처음 실사용했다. 스타일 가이드가 기본 스킨을 쓰는 방식이라 프로젝트 관례를 확인해야 했는데, 기존 프로젝트 자산(sbb_board)이 프로젝트별로 브랜드 스킨을 따로 쓴다는 것(빨강이었다)을 확인하고, 사용자에게 묻지 않고 그 관례를 그대로 따랐다 — 이 프로젝트의 디자인 토큰(trust blue)으로 3종을 만들었다. 시스템 아키텍처(브라우저→icn1 엣지→sin1 함수→Neon·Blob과 GitHub 배포 흐름), ERD(blocked_extension과 upload_attempt, FK 없는 논리적 참조와 의도된 비정규화를 명시), 업로드 판정 플로우차트(정규화 → 4관문 → 거부 수집/성공, decideUpload의 실제 순서 그대로)다. 소스 HTML과 2x PNG를 `docs/diagrams/`에 커밋하고 README의 TODO 마커 3곳을 교체했으며(`1382cac`), 전역 자산 폴더(`diagram-design/assets/<프로젝트>/`)에도 복사했다.
 
 부수 관찰도 있었다. Write 도구가 프로젝트 밖 경로(전역 자산 폴더, 스크래치패드)를 차단해(#81과 같은 가드) 리포 안에 작성한 뒤 Bash `cp`로 전역 폴더에 동기화했다. pre-commit 게이트가 또 병렬 부하 경합으로 한 번 실패했는데(같은 blob store 테스트에 워커 기동 타임아웃이 겹쳤고, diff는 문서·이미지뿐이었다), 재시도로 통과했다. 게이트 경합이 세 번째로 재발한 것은 회고에 남길 개선 후보였다(테스트 워커 수 고정 등).
 
 #### #97 세션 8 마무리 — 컨텍스트 60% → /clear 판단
 > 지금 컨텍스트 창이 60%가 됬는데 어떻게 해? compact해 clear해?
 
-컨텍스트 관리 방법을 결정해 달라는 요청이다. `/clear`를 권고했다. 이 세션은 `fable[1m]`(1M 창)이라 60%면 핸드오프 문턱(50%)을 이미 넘은 상태였다. `/compact`는 진행 중인 작업을 이어갈 때 쓰는 도구인데, 세션 8의 작업(QA 4건, EXT_LIMIT_REACHED 캡처, 디자인 패스, 다이어그램 3종, 제출물 §5 대조 4/4)은 전부 push가 끝난 상태라 이어갈 컨텍스트가 없었다. 재개 블록을 발행하고 메모리에 저장한 뒤 세션을 종료했다.
+컨텍스트 관리 방법을 결정해 달라는 요청이다. `/clear`를 권고했다. 이 세션은 `fable[1m]`(1M 창)이라 60%면 핸드오프 문턱(50%)을 이미 넘은 상태였다. `/compact`는 진행 중인 작업을 이어갈 때 쓰는 도구인데, 세션 8의 작업(QA 4건, EXT_LIMIT_REACHED 캡처, 디자인 패스, 다이어그램 3종, 산출물 대조 4/4)은 전부 push가 끝난 상태라 이어갈 컨텍스트가 없었다. 재개 블록을 발행하고 메모리에 저장한 뒤 세션을 종료했다.
 
-세션 8 종료 시점 상태는 origin/main이 `df5bd06`(이후 이 #97 커밋)이었고, 배포는 200(sin1), Q12는 13/13, 판단 집계는 46건이었다. 사용자에게 남은 것은 §3 회고 초안을 본인 문장으로 확정하는 것, 새 디자인과 다이어그램 3장을 눈으로 검수하는 것, 그리고 제출이었다. 면접 일정 항목(예열)은 별도로 남겨 두었다.
+세션 8 종료 시점 상태는 origin/main이 `df5bd06`(이후 이 #97 커밋)이었고, 배포는 200(sin1), Q12는 13/13, 판단 집계는 46건이었다. 사용자에게 남은 것은 §3 회고 초안을 본인 문장으로 확정하는 것과, 새 디자인과 다이어그램 3장을 눈으로 검수하는 것이었다. 데모 예열 항목은 별도로 남겨 두었다.
 
 ---
 
@@ -832,8 +832,8 @@ AskUserQuestion 4택에서 사용자가 "클린 프로덕트 톤 (권장)"을 �
 ### 세션 1 — 환경과 SPEC
 
 - **그대로 쓴 것**: plan-audit 2회(0.66 → 0.86)와 그 사이의 자동 수정 절차(#16~#18). 결함이 전부 기계적(추적성·AC 누락)이라 내가 끼어들 이유가 없었고, 결과만 확인했다. 심문 17개(#22~#23)도 AI 권장과 같은 쪽으로 판정했는데, 이건 "AI가 시켜서"가 아니라 항목마다 PRD 근거 줄(#21)을 붙이게 한 뒤 근거를 읽고 동의한 것이다.
-- **고쳐 쓴 것**: 기술 스택. AI는 처음에 cubrain(Spring Boot) 스택을 권했는데, 되물어 보니 "최적"이 아니라 "다뤄본 코드가 있음"이었다(#04). 과제 규모와 무료 단일 배포를 놓고 SvelteKit + Neon + Vercel Blob으로 바꿨다(#05). 반대로 내가 든 근거("JPA는 다량 조회에 유리")는 AI가 정정했고, 그 정정이 맞아서 받아들였다. 실습 레포의 보안 훅(#09~#10)은 원본을 그대로 옮기지 않고 pnpm·ESM·`.env.example` 예외에 맞춰 손봤다.
-- **버린 것**: 칸반 모드(#01 — Windows 미지원, 환경 문제에 시간을 쓰지 않기로), Spring Boot·JPA·Drizzle(규모 대비 과함), pillwriter의 spec-authority 파이프라인(#13 — 도메인이 작고, 과제가 오히려 "AI 추천을 비판적으로 취사선택하는 과정"을 평가하므로). Playwright E2E는 SPEC에서 보류(#18)했다가 M3 뒤에 배포 URL 스모크 1회로 되살릴 예정(#54).
+- **고쳐 쓴 것**: 기술 스택. AI는 처음에 cubrain(Spring Boot) 스택을 권했는데, 되물어 보니 "최적"이 아니라 "다뤄본 코드가 있음"이었다(#04). 프로젝트 규모와 무료 단일 배포를 놓고 SvelteKit + Neon + Vercel Blob으로 바꿨다(#05). 반대로 내가 든 근거("JPA는 다량 조회에 유리")는 AI가 정정했고, 그 정정이 맞아서 받아들였다. 실습 레포의 보안 훅(#09~#10)은 원본을 그대로 옮기지 않고 pnpm·ESM·`.env.example` 예외에 맞춰 손봤다.
+- **버린 것**: 칸반 모드(#01 — Windows 미지원, 환경 문제에 시간을 쓰지 않기로), Spring Boot·JPA·Drizzle(규모 대비 과함), pillwriter의 spec-authority 파이프라인(#13 — 도메인이 작고, 요구사항이 오히려 "AI 추천을 비판적으로 취사선택하는 과정"을 중요하게 보므로). Playwright E2E는 SPEC에서 보류(#18)했다가 M3 뒤에 배포 URL 스모크 1회로 되살릴 예정(#54).
 - **AI가 놓친 것을 내가 잡은 것**: 칸반 모드가 이 환경에서 성립하지 않는다는 진단은 AI가 했지만, 시작 명령을 두 번 실행해 오류를 재현시킨 건 나였다. "cubrain이 최적이냐"는 되물음(#04)이 없었으면 무거운 스택으로 갔을 것이다. 심문 초안에 PRD 근거 줄을 붙이게 한 것(#21)도 내 요구다 — 그 덕에 NONE 3개(순수 제품 판단)가 분리됐다.
 
 ### M1 — 스키마와 순수 검증 코어
@@ -841,7 +841,7 @@ AskUserQuestion 4택에서 사용자가 "클린 프로덕트 톤 (권장)"을 �
 - **그대로 쓴 것**: 판정 로직을 순수 함수 4개로 뽑은 설계, 별칭 표 단일 원본, 텍스트 실행 파일용 prefix 스니핑(#11 보완점 3개 — 이건 AI 오케스트레이터가 SPEC 초안에서 스스로 잡은 것이다). CRLF 문제의 근본 해결(`.gitattributes`, #33).
 - **고쳐 쓴 것**: 에이전트가 만든 스캐폴드의 `eslint.config.js`(ESLint 10에서 배열 미전개로 즉사)와 `.prettierignore`(#31) — AI 산출물을 AI가 고친 경우라 내 몫은 아니다.
 - **버린 것**: GLM 저비용 위임(#08 — 코드량이 작아 절약 폭이 없고, 별도 세션이 필요). Opus 단일 배분(#30 — 세션 한도 429를 실제로 맞고 나서 Fable/Opus/Sonnet 역할 배분으로).
-- **AI가 놓친 것을 내가 잡은 것**: `progress.md`를 SPEC 단계에서 만들어 둔 것(#28). 템플릿이 그렇게 시키지만 pillwriter 이력을 확인시켰더니 run 단계 산출물이 맞았다. 커밋 메시지 언어(#29)는 AI 기준("에이전트가 읽으니 en")을 듣고도 평가자 읽기 톤을 우선해 ko로 남겼다. 그리고 240줄짜리 `progress.md`를 사람이 다 읽을 필요가 없다는 것(#32) — 이후 마일스톤마다 3블록 digest만 받는다.
+- **AI가 놓친 것을 내가 잡은 것**: `progress.md`를 SPEC 단계에서 만들어 둔 것(#28). 템플릿이 그렇게 시키지만 pillwriter 이력을 확인시켰더니 run 단계 산출물이 맞았다. 커밋 메시지 언어(#29)는 AI 기준("에이전트가 읽으니 en")을 듣고도 사람이 읽는 톤을 우선해 ko로 남겼다. 그리고 240줄짜리 `progress.md`를 사람이 다 읽을 필요가 없다는 것(#32) — 이후 마일스톤마다 3블록 digest만 받는다.
 
 ### M2 — 정책 API와 정책 화면
 

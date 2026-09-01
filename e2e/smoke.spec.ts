@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { restoreToBaseline } from './policy-api';
 
-// 배포된 프로덕션을 대상으로 도는 스모크. 공유 상태를 바꾸는 여정은 반드시 스스로 되돌리고,
+// 실행 중인 대상 환경을 향해 도는 스모크. 공유 상태를 바꾸는 여정은 반드시 스스로 되돌리고,
 // afterEach가 스냅샷 기준으로 한 번 더 되돌린다(이중 방어).
 test.describe.configure({ mode: 'serial' });
 
@@ -118,7 +118,7 @@ test('업로드 성공 — 차단되지 않은 .txt 파일이 통과한다', asy
 	await page.locator('input[type="file"]').setInputFiles({
 		name,
 		mimeType: 'text/plain',
-		buffer: Buffer.from('flow-assignment e2e smoke: plain text payload\n', 'utf8')
+		buffer: Buffer.from('secure-file-upload e2e smoke: plain text payload\n', 'utf8')
 	});
 
 	await page.getByRole('button', { name: '업로드', exact: true }).click();
